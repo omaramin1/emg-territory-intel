@@ -1,0 +1,353 @@
+{
+  "metadata": {
+    "research_date": "2026-02-28",
+    "data_period": "2025-2026",
+    "geographic_area": "Virginia",
+    "fpl_version": "2026 Federal Poverty Level Guidelines",
+    "notes": "Income limits for 48 contiguous states unless otherwise noted. All figures represent annual amounts unless marked as monthly."
+  },
+  "fpl_2025": {
+    "1": 15650,
+    "2": 21150,
+    "3": 26650,
+    "4": 32150,
+    "5": 37650,
+    "6": 43150,
+    "7": 48650,
+    "8": 54150,
+    "additional_per_person": 5500
+  },
+  "fpl_2026": {
+    "1": 15960,
+    "2": 21620,
+    "3": 27280,
+    "4": 33000,
+    "5": 38660,
+    "6": 44320,
+    "7": 49980,
+    "8": 55640,
+    "additional_per_person": 5380
+  },
+  "programs": {
+    "medicaid_expansion_aca": {
+      "program_name": "Virginia Medicaid (ACA Expansion - Adults 19-64)",
+      "fpl_pct": 138,
+      "income_type": "MAGI (Modified Adjusted Gross Income)",
+      "coverage_details": "Covers adults ages 19-64 without Medicare and no asset test",
+      "annual_limits_2026": {
+        "1": 21597,
+        "2": 29187,
+        "3": 36777,
+        "4": 43056,
+        "5": 50480,
+        "6": 57905
+      },
+      "monthly_limits_2026": {
+        "1": 1800,
+        "2": 2432,
+        "3": 3065,
+        "4": 3588,
+        "5": 4207,
+        "6": 4825
+      },
+      "source": "Virginia CoverVA (coverva.dmas.virginia.gov)",
+      "effective_date": "2026-01-13"
+    },
+    "snap_food_assistance": {
+      "program_name": "SNAP (Supplemental Nutrition Assistance Program)",
+      "gross_income_type": "gross",
+      "gross_income_fpl_pct": 130,
+      "net_income_type": "net",
+      "net_income_fpl_pct": 100,
+      "special_rules": "Households with elderly (60+) or disabled members skip gross income test, only need net income limit. Virginia uses Broad-Based Categorical Eligibility (BBCE) allowing some households up to 200% FPL.",
+      "gross_monthly_limits_fy2026": {
+        "1": 2152,
+        "2": 2909,
+        "3": 3665,
+        "4": 4421,
+        "5": 5177,
+        "6": 5934
+      },
+      "gross_annual_limits_fy2026": {
+        "1": 25824,
+        "2": 34908,
+        "3": 43980,
+        "4": 53052,
+        "5": 62124,
+        "6": 71208
+      },
+      "net_monthly_limits_fy2026": {
+        "1": 1305,
+        "2": 1763,
+        "3": 2221,
+        "4": 2679,
+        "5": 3137,
+        "6": 3595
+      },
+      "net_annual_limits_fy2026": {
+        "1": 15660,
+        "2": 21156,
+        "3": 26652,
+        "4": 32148,
+        "5": 37644,
+        "6": 43140
+      },
+      "program_period": "October 1, 2025 - September 30, 2026",
+      "source": "USDA Food and Nutrition Service (fns.usda.gov)",
+      "note": "Both gross AND net income tests must be met in most states"
+    },
+    "liheap_energy_assistance": {
+      "program_name": "LIHEAP (Low Income Home Energy Assistance Program)",
+      "fpl_pct": 150,
+      "income_type": "gross",
+      "alternative_threshold": "60% of State Median Income (whichever is higher)",
+      "annual_limits_fy2026": {
+        "1": 23475,
+        "2": 31725,
+        "3": 39975,
+        "4": 48225,
+        "5": 56475,
+        "6": 64725
+      },
+      "monthly_limits_fy2026": {
+        "1": 1956,
+        "2": 2644,
+        "3": 3331,
+        "4": 4019,
+        "5": 4706,
+        "6": 5394
+      },
+      "additional_per_person": 8250,
+      "program_periods": {
+        "heating_assistance": "October 8 - November 8, 2025",
+        "cooling_assistance": "June 15 - August 15, 2026",
+        "winter_crisis": "November 1, 2025 - March 17, 2026",
+        "weatherization": "Year-round"
+      },
+      "administering_agency": "Virginia Department of Social Services (VDSS)",
+      "source": "The LIHEAP Clearinghouse (liheapch.acf.gov)"
+    },
+    "lifeline_fcc": {
+      "program_name": "Lifeline (FCC Phone/Internet Subsidy)",
+      "fpl_pct": 135,
+      "income_type": "gross",
+      "annual_limits_2026": {
+        "1": 21547,
+        "2": 29214,
+        "3": 36881,
+        "4": 44548,
+        "5": 52215,
+        "6": 59882
+      },
+      "monthly_limits_2026": {
+        "1": 1796,
+        "2": 2435,
+        "3": 3074,
+        "4": 3712,
+        "5": 4351,
+        "6": 4990
+      },
+      "alternative_qualification": "Automatic eligibility if household member receives SNAP, Medicaid, SSI, Federal Public Housing Assistance, or Veterans Survivors Pension Benefit",
+      "geographic_variation": "Income limits are uniform nationwide for 48 contiguous states",
+      "source": "USAC (Universal Service Administrative Company) - lifelinesupport.org"
+    },
+    "section_8_housing_choice_voucher": {
+      "program_name": "Section 8 Housing Choice Voucher Program",
+      "ami_pct": "50% AMI (Area Median Income)",
+      "income_type": "gross",
+      "qualification_note": "Households earning less than 50% of Area Median Income in their jurisdiction",
+      "virginia_regional_examples_2025": {
+        "richmond": {
+          "region": "Richmond MSA",
+          "example_4_person_limit": 52350,
+          "note": "Actual limits vary by family size"
+        },
+        "northern_virginia": {
+          "region": "Arlington/Fairfax/Loudoun County",
+          "example_note": "Much higher limits than state average due to higher housing costs",
+          "example_single_fairfax": 51650
+        },
+        "hampton_roads": {
+          "region": "Norfolk/Virginia Beach Area",
+          "note": "Higher than rural areas, lower than Northern Virginia"
+        }
+      },
+      "important_notes": "Income limits vary significantly by specific jurisdiction and household size. Must contact local Public Housing Authority (PHA) for exact current limits.",
+      "local_phas": [
+        "Virginia Housing Development Authority",
+        "Richmond Redevelopment & Housing Authority (RRHA)",
+        "Loudoun County Housing Authority",
+        "Fairfax County Housing Authority",
+        "James City County Housing Authority"
+      ],
+      "source": "Virginia Housing Development Authority (virginiahousing.com), HUD"
+    },
+    "ssi_supplemental_security_income": {
+      "program_name": "SSI (Supplemental Security Income)",
+      "income_limit_type": "countable monthly income",
+      "asset_limits": {
+        "single": 2000,
+        "married_couple": 3000,
+        "note": "Asset limits have not been adjusted for inflation since many years ago"
+      },
+      "monthly_income_limits_2026": {
+        "single": 2073,
+        "married_couple": 3067
+      },
+      "monthly_benefit_amounts_2026": {
+        "single": 994,
+        "married_couple": 1491
+      },
+      "monthly_income_limits_2025": {
+        "single": 1980,
+        "married_couple": 2967
+      },
+      "monthly_benefit_amounts_2025": {
+        "single": 967,
+        "married_couple": 1450
+      },
+      "important_notes": "SSI is individual-based, not household-based. Income and asset limits apply per individual or couple. Asset limit has not been updated since Congress has not modified SSI asset limits for inflation.",
+      "source": "Social Security Administration (ssa.gov)"
+    },
+    "free_reduced_school_lunch": {
+      "program_name": "Free and Reduced-Price School Lunch Program (NSLP)",
+      "school_year": "2025-2026",
+      "program_period": "July 1, 2025 - June 30, 2026",
+      "free_meals_fpl_pct": 130,
+      "reduced_meals_fpl_pct": 185,
+      "annual_limits_free_meals_2025_fpl": {
+        "1": 20345,
+        "2": 27495,
+        "3": 34645,
+        "4": 41795,
+        "5": 48945,
+        "6": 56095
+      },
+      "annual_limits_reduced_meals_2025_fpl": {
+        "1": 28953,
+        "2": 39128,
+        "3": 49303,
+        "4": 59478,
+        "5": 69653,
+        "6": 79828
+      },
+      "income_type": "gross household income",
+      "calculation_method": "2025 FPL multiplied by 1.30 (free) or 1.85 (reduced) and rounded up",
+      "covered_programs": [
+        "National School Lunch Program",
+        "School Breakfast Program",
+        "Special Milk Program for Children",
+        "Child and Adult Care Food Program",
+        "Summer Food Service Program",
+        "Summer Electronic Benefits Transfer for Children (SEBTC)"
+      ],
+      "source": "USDA Food and Nutrition Service (fns.usda.gov)"
+    },
+    "medicare_savings_programs": {
+      "program_name": "Medicare Savings Programs (QMB, SLMB, QI)",
+      "qmb": {
+        "name": "Qualified Medicare Beneficiary (QMB)",
+        "fpl_pct": "100% FPL",
+        "monthly_income_limits_2026": {
+          "single": 1350,
+          "married": 1824
+        },
+        "annual_income_limits_2026": {
+          "single": 16200,
+          "married": 21888
+        },
+        "asset_limits": {
+          "single": 9950,
+          "married": 14910
+        },
+        "coverage": "Medicare Part A and B premiums, deductibles, copayments, coinsurance"
+      },
+      "slmb": {
+        "name": "Specified Low-Income Medicare Beneficiary (SLMB)",
+        "fpl_pct": "120% FPL",
+        "monthly_income_limits_2026": {
+          "single": 1616,
+          "married": 2184
+        },
+        "annual_income_limits_2026": {
+          "single": 19392,
+          "married": 26208
+        },
+        "asset_limits": {
+          "single": 9950,
+          "married": 14910
+        },
+        "coverage": "Medicare Part B premiums only"
+      },
+      "qi": {
+        "name": "Qualifying Individual (QI)",
+        "fpl_pct": "135% FPL",
+        "monthly_income_limits_2026": {
+          "single": 1816,
+          "married": 2455
+        },
+        "note": "Limited funding; only covers Part B premiums if funds available"
+      },
+      "virginia_specific_notes": "Virginia uses federal asset limits of $9,660 (single) and $14,470 (married) for QMB, SLMB, and QI",
+      "state_income_disregard": 20,
+      "source": "Medicare.gov and Virginia Department of Medical Assistance Services (DMAS)"
+    }
+  },
+  "research_sources": {
+    "federal_poverty_level": [
+      "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines",
+      "https://www.federalregister.gov/documents/2025/01/17/2025-01377/annual-update-of-the-hhs-poverty-guidelines",
+      "https://www.federalregister.gov/documents/2026/01/15/2026-00755/annual-update-of-the-hhs-poverty-guidelines"
+    ],
+    "virginia_medicaid": [
+      "https://coverva.dmas.virginia.gov/learn/coverage-for-adults/adults-19-64-years-old/",
+      "https://www.dmas.virginia.gov/media/nlydw411/hpe-income-chart-all-groups-and-location-with-5-percent-disregard-04-03-2025.pdf",
+      "https://medicaideligibilitycalculator.com/medicaid-eligibility/virginia/"
+    ],
+    "snap": [
+      "https://fns.usda.gov/snap/recipient/eligibility",
+      "https://fns-prod.azureedge.us/sites/default/files/media/file/FY2025-Income-Eligibility-Standards.pdf",
+      "https://www.dss.virginia.gov/benefit/snap.cgi"
+    ],
+    "liheap": [
+      "https://liheapch.acf.gov/profiles/Virginia.htm",
+      "https://liheapch.acf.gov/delivery/income_eligibility.htm",
+      "https://www.ncoa.org/article/what-is-the-income-limit-for-liheap/"
+    ],
+    "lifeline": [
+      "https://www.lifelinesupport.org/do-i-qualify/",
+      "https://www.usac.org/lifeline/consumer-eligibility/",
+      "https://www.fcc.gov/lifeline-consumers"
+    ],
+    "section_8": [
+      "https://www.virginiahousing.com/en/partners/housing-choice-vouchers/income-limits",
+      "https://affordablehousinghub.org/state-section-8-guides/virginia-section-8-housing/",
+      "https://www.huduser.gov/portal/datasets/home-datasets/files/HOME_IncomeLmts_State_VA_2025.pdf"
+    ],
+    "ssi": [
+      "https://www.ssa.gov/ssi/text-income-ussi.htm",
+      "https://www.ssa.gov/oact/cola/SSI.html",
+      "https://www.nerdwallet.com/retirement/learn/ssi-income-limits"
+    ],
+    "school_lunch": [
+      "https://www.fns.usda.gov/schoolmeals/income-eligibility-guidelines",
+      "https://www.fns.usda.gov/cn/fr-031325",
+      "https://www.federalregister.gov/documents/2025/03/13/2025-03821/child-nutrition-programs-income-eligibility-guidelines"
+    ],
+    "medicare_savings_programs": [
+      "https://www.medicare.gov/basics/costs/help/medicare-savings-programs",
+      "https://www.dmas.virginia.gov/media/4863/the-medicare-savings-programs-01-2022.pdf",
+      "https://www.medicareinteractive.org/understanding-medicare/cost-saving-programs/medicare-savings-programs-qmb-slmb-qi/medicare-savings-program-income-and-asset-limits"
+    ]
+  },
+  "key_findings": {
+    "multiple_income_tests": "SNAP requires both gross AND net income limits to be met for most households",
+    "categorical_eligibility": "Virginia SNAP uses BBCE allowing some households to qualify with income up to 200% FPL",
+    "magi_usage": "Virginia Medicaid uses MAGI (Modified Adjusted Gross Income) methodology, not regular gross income",
+    "ami_variation": "Section 8 income limits vary significantly by geographic area (50% AMI used for qualification)",
+    "asset_limits": "SSI asset limits ($2,000 single/$3,000 married) have not been updated for inflation in many years",
+    "lifeline_alternative": "Can qualify for Lifeline automatically if receiving SNAP, Medicaid, SSI, Fed Housing Assistance, or Veterans Benefits",
+    "school_lunch_calculation": "2025 FPL multiplied by 130% (free) or 185% (reduced) and rounded up",
+    "medicare_savings_state_variation": "Virginia uses specific asset limits slightly different from federal defaults in some cases"
+  }
+}
