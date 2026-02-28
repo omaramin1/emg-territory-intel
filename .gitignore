@@ -28,3 +28,9 @@ npm-debug.log*
 # misc
 .DS_Store
 *.pem
+
+# Large data files (seed locally)
+data/sales_orders.json
+data/comprehensive_analysis.txt
+data/merge_summary.txt
+scripts/__pycache__/
