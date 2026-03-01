@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import type { RepAssignment, DailyLog } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
+
+/** Attach rep_name from the joined reps table to each record. */
+function attachRepName<T extends { reps?: { name: string } | null }>(
+  items: T[]
+): (Omit<T, 'reps'> & { rep_name?: string })[] {
+  return items.map(({ reps, ...rest }) => ({
+    ...rest,
+    rep_name: reps?.name ?? undefined,
+  }))
+}
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,19 +31,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     supabase.from('daily_logs').select('*, reps(name)').eq('zone_id', id).order('log_date', { ascending: false }).limit(10),
   ])
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapWithRepName = (items: any[]) => items.map((item) => ({
-    ...item,
-    rep_name: item.reps?.name ?? undefined,
-  }))
-
   const result = {
     zone,
     demographics: demoRes.data ?? null,
     eligibility: eligRes.data ?? null,
     streets: streetsRes.data ?? [],
-    recent_assignments: mapWithRepName(assignRes.data ?? []),
-    recent_logs: mapWithRepName(logsRes.data ?? []),
+    recent_assignments: attachRepName((assignRes.data ?? []) as (RepAssignment & { reps?: { name: string } | null })[]),
+    recent_logs: attachRepName((logsRes.data ?? []) as (DailyLog & { reps?: { name: string } | null })[]),
   }
 
   return NextResponse.json(result)

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { ZoneDetail, Rep } from '@/types/database'
+import { getZoneTier, getScoreColor, getCloseRateColor, TIER_STYLES, DEMO_COLORS, REST_PERIOD_DAYS } from '@/lib/constants'
 
 interface Props {
   zone: ZoneDetail
@@ -28,17 +29,17 @@ function DemoBar({ white, black, hispanic, asian }: { white: number; black: numb
   return (
     <div className="space-y-1">
       <div className="flex h-4 rounded-full overflow-hidden">
-        {white > 0 && <div style={{ width: `${white}%`, backgroundColor: '#94a3b8' }} title={`White ${white.toFixed(1)}%`} />}
-        {black > 0 && <div style={{ width: `${black}%`, backgroundColor: '#7c3aed' }} title={`Black ${black.toFixed(1)}%`} />}
-        {hispanic > 0 && <div style={{ width: `${hispanic}%`, backgroundColor: '#f59e0b' }} title={`Hispanic ${hispanic.toFixed(1)}%`} />}
-        {asian > 0 && <div style={{ width: `${asian}%`, backgroundColor: '#10b981' }} title={`Asian ${asian.toFixed(1)}%`} />}
-        {other > 0 && <div style={{ width: `${other}%`, backgroundColor: '#475569' }} title={`Other ${other.toFixed(1)}%`} />}
+        {white > 0 && <div style={{ width: `${white}%`, backgroundColor: DEMO_COLORS.WHITE }} title={`White ${white.toFixed(1)}%`} />}
+        {black > 0 && <div style={{ width: `${black}%`, backgroundColor: DEMO_COLORS.BLACK }} title={`Black ${black.toFixed(1)}%`} />}
+        {hispanic > 0 && <div style={{ width: `${hispanic}%`, backgroundColor: DEMO_COLORS.HISPANIC }} title={`Hispanic ${hispanic.toFixed(1)}%`} />}
+        {asian > 0 && <div style={{ width: `${asian}%`, backgroundColor: DEMO_COLORS.ASIAN }} title={`Asian ${asian.toFixed(1)}%`} />}
+        {other > 0 && <div style={{ width: `${other}%`, backgroundColor: DEMO_COLORS.OTHER }} title={`Other ${other.toFixed(1)}%`} />}
       </div>
       <div className="flex gap-3 text-[10px] text-gray-400 flex-wrap">
-        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: '#94a3b8' }} />White {white.toFixed(0)}%</span>
-        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: '#7c3aed' }} />Black {black.toFixed(0)}%</span>
-        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: '#f59e0b' }} />Hispanic {hispanic.toFixed(0)}%</span>
-        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: '#10b981' }} />Asian {asian.toFixed(0)}%</span>
+        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: DEMO_COLORS.WHITE }} />White {white.toFixed(0)}%</span>
+        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: DEMO_COLORS.BLACK }} />Black {black.toFixed(0)}%</span>
+        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: DEMO_COLORS.HISPANIC }} />Hispanic {hispanic.toFixed(0)}%</span>
+        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: DEMO_COLORS.ASIAN }} />Asian {asian.toFixed(0)}%</span>
       </div>
     </div>
   )
@@ -60,15 +61,18 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
   const [showAllStreets, setShowAllStreets] = useState(false)
   const { zone: z, demographics: d, eligibility: e, streets, recent_assignments, recent_logs } = zone
 
-  const scoreColor = z.deploy_score >= 0.6 ? '#22c55e' : z.deploy_score >= 0.4 ? '#eab308' : '#ef4444'
-  const tierLabel = (e?.any_program_pct ?? 0) >= 35 ? 'HOT' : (e?.any_program_pct ?? 0) >= 20 ? 'WARM' : 'COOL'
-  const tierColor = tierLabel === 'HOT' ? '#ef4444' : tierLabel === 'WARM' ? '#f59e0b' : '#3b82f6'
+  const scoreColor = getScoreColor(z.deploy_score)
+  const tier = getZoneTier(e?.any_program_pct)
+  const tierStyle = TIER_STYLES[tier]
 
   const handleAssign = async () => {
     if (!selectedRep) return
     setAssigning(true)
-    await onAssignRep(z.id, selectedRep)
-    setAssigning(false)
+    try {
+      await onAssignRep(z.id, selectedRep)
+    } finally {
+      setAssigning(false)
+    }
   }
 
   const streetsToShow = showAllStreets ? streets : streets.slice(0, 8)
@@ -77,7 +81,7 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="relative bg-[#0f172a] border border-gray-700 rounded-2xl shadow-2xl w-full max-w-3xl mx-4"
-           onClick={e => e.stopPropagation()}>
+           onClick={ev => ev.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-700">
@@ -85,8 +89,8 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-white">{z.city}</h2>
               <span className="text-sm font-mono text-gray-400">ZIP {z.zip_code}</span>
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: tierColor, color: '#fff' }}>
-                {tierLabel}
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: tierStyle.color, color: '#fff' }}>
+                {tierStyle.label}
               </span>
             </div>
             <p className="text-sm text-gray-400 mt-1">{z.zone_id}</p>
@@ -102,16 +106,16 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
 
         <div className="p-5 space-y-5">
 
-          {/* KEY DECISION METRICS — what a manager needs at a glance */}
+          {/* KEY DECISION METRICS */}
           <div className="grid grid-cols-5 gap-2">
             <Stat label="Target Doors" value={e?.target_hh_broad?.toLocaleString() ?? '—'} sub="Eligible + Dominion" />
             <Stat label="Any Benefit %" value={`${e?.any_program_pct?.toFixed(1) ?? '—'}%`} sub={`${e?.any_program_eligible_hh?.toLocaleString() ?? '—'} HH`} />
             <Stat label="Untapped" value={`${(100 - z.saturation_pct).toFixed(1)}%`} sub={`${z.untapped_est.toLocaleString()} doors`} />
             <Stat label="Close Rate" value={`${(z.close_rate * 100).toFixed(1)}%`} sub={`${z.doors_enrolled}/${z.total_knocks}`} />
-            <Stat label="Days Idle" value={z.days_idle} sub={z.days_idle >= 60 ? 'Ready' : `${60 - z.days_idle}d until rest`} />
+            <Stat label="Days Idle" value={z.days_idle} sub={z.days_idle >= REST_PERIOD_DAYS ? 'Ready' : `${REST_PERIOD_DAYS - z.days_idle}d until rest`} />
           </div>
 
-          {/* BENEFITS ELIGIBILITY — which programs are most prevalent */}
+          {/* BENEFITS ELIGIBILITY */}
           {e && (
             <div className="bg-gray-900/50 rounded-xl p-4">
               <h3 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">
@@ -181,7 +185,7 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
                 <div className="flex justify-between"><span className="text-gray-400">Doors Touched</span><span className="text-white font-mono">{z.doors_touched}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Doors Enrolled</span><span className="text-white font-mono">{z.doors_enrolled}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Total Knocks</span><span className="text-white font-mono">{z.total_knocks}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Close Rate</span><span className="font-mono" style={{ color: z.close_rate >= 0.5 ? '#22c55e' : z.close_rate >= 0.3 ? '#eab308' : '#ef4444' }}>{(z.close_rate * 100).toFixed(1)}%</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Close Rate</span><span className="font-mono" style={{ color: getCloseRateColor(z.close_rate) }}>{(z.close_rate * 100).toFixed(1)}%</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Saturation</span><span className="text-white font-mono">{z.saturation_pct.toFixed(1)}%</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">LMI Doc Rate</span><span className="text-white font-mono">{(z.doc_lmi_pct * 100).toFixed(0)}%</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Streets Worked</span><span className="text-white font-mono">{z.total_streets_worked}</span></div>
@@ -246,7 +250,7 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
                           <td className="text-right px-2 text-gray-300 font-mono">{s.doors}</td>
                           <td className="text-right px-2 text-gray-300 font-mono">{s.enrolled}</td>
                           <td className="text-right px-2 text-green-400 font-mono">{s.untapped}</td>
-                          <td className="text-right px-2 font-mono" style={{ color: s.close_rate >= 0.5 ? '#22c55e' : s.close_rate >= 0.3 ? '#eab308' : '#ef4444' }}>
+                          <td className="text-right px-2 font-mono" style={{ color: getCloseRateColor(s.close_rate) }}>
                             {(s.close_rate * 100).toFixed(0)}%
                           </td>
                           <td className="text-right px-2 text-gray-300 font-mono">{s.days_idle}</td>
@@ -272,7 +276,7 @@ export default function ZoneDetailModal({ zone, reps, onClose, onAssignRep }: Pr
           <div className="bg-gray-900/50 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">Assign Rep</h3>
             <div className="flex gap-3">
-              <select value={selectedRep} onChange={e => setSelectedRep(e.target.value)}
+              <select value={selectedRep} onChange={ev => setSelectedRep(ev.target.value)}
                       className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none">
                 <option value="">Select a rep...</option>
                 {reps.filter(r => r.active).map(r => (

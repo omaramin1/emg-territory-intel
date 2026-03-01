@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@/lib/supabase'
+import { MAX_RECORDS_PER_REQUEST } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,18 +53,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<SeedRespo
       )
     }
 
-    if (body.records.length > 1000) {
+    if (body.records.length > MAX_RECORDS_PER_REQUEST) {
       return NextResponse.json(
-        { success: false, inserted: 0, failed: 0, message: 'Maximum 1000 records per request' },
+        { success: false, inserted: 0, failed: 0, message: `Maximum ${MAX_RECORDS_PER_REQUEST} records per request` },
         { status: 400 }
       )
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    )
+    const supabase = createServerClient()
 
     let successCount = 0
     let failureCount = 0
@@ -115,7 +112,7 @@ export async function GET(): Promise<NextResponse> {
     endpoint: '/api/seed-sales',
     method: 'POST',
     description: 'Bulk insert sales records (chunked upload)',
-    max_records_per_request: 1000,
+    max_records_per_request: MAX_RECORDS_PER_REQUEST,
     schema: {
       records: [
         {

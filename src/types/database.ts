@@ -139,6 +139,39 @@ export interface ZoneDetail {
   recent_logs: (DailyLog & { rep_name?: string })[]
 }
 
+// Combined zone data for card display (flattened from zone + eligibility + demographics)
+export interface ZoneCardData {
+  id: string
+  zone_id: string
+  zip_code: string
+  city: string
+  deploy_score: number
+  close_rate: number
+  untapped_est: number
+  saturation_pct: number
+  days_idle: number
+  doors_enrolled: number
+  total_knocks: number
+  est_doors: number
+  // Eligibility (from zone_eligibility join)
+  any_program_pct?: number
+  any_program_eligible_hh?: number
+  target_hh_broad?: number
+  target_pct_broad?: number
+  electric_heat_pct?: number
+  snap_pct?: number
+  medicaid_pct?: number
+  // Demographics (from zone_demographics join)
+  dominant_demo?: string
+  white_pct?: number
+  black_pct?: number
+  hispanic_pct?: number
+  asian_pct?: number
+  median_income?: number
+  population?: number
+  rep_match_note?: string
+}
+
 // Database type for Supabase client
 export interface Database {
   public: {

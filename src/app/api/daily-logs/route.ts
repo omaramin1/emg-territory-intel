@@ -20,8 +20,48 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const supabase = createServerClient()
-  const body = await req.json()
-  const { data, error } = await supabase.from('daily_logs').insert(body).select().single()
+
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  // Validate required fields
+  const { rep_id, zone_id, log_date, doors_knocked, doors_enrolled, hours_worked } = body
+  if (!rep_id || typeof rep_id !== 'string') {
+    return NextResponse.json({ error: 'rep_id is required (UUID string)' }, { status: 400 })
+  }
+  if (!zone_id || typeof zone_id !== 'string') {
+    return NextResponse.json({ error: 'zone_id is required (UUID string)' }, { status: 400 })
+  }
+  if (!log_date || typeof log_date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(log_date)) {
+    return NextResponse.json({ error: 'log_date is required (YYYY-MM-DD format)' }, { status: 400 })
+  }
+  if (typeof doors_knocked !== 'number' || doors_knocked < 0) {
+    return NextResponse.json({ error: 'doors_knocked is required (non-negative number)' }, { status: 400 })
+  }
+  if (typeof doors_enrolled !== 'number' || doors_enrolled < 0) {
+    return NextResponse.json({ error: 'doors_enrolled is required (non-negative number)' }, { status: 400 })
+  }
+  if (typeof hours_worked !== 'number' || hours_worked < 0) {
+    return NextResponse.json({ error: 'hours_worked is required (non-negative number)' }, { status: 400 })
+  }
+
+  const insert = {
+    rep_id,
+    zone_id,
+    log_date,
+    doors_knocked,
+    doors_enrolled,
+    hours_worked,
+    streets_worked: Array.isArray(body.streets_worked) ? body.streets_worked : [],
+    lmi_types_collected: Array.isArray(body.lmi_types_collected) ? body.lmi_types_collected : [],
+    notes: typeof body.notes === 'string' ? body.notes : null,
+  }
+
+  const { data, error } = await supabase.from('daily_logs').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }

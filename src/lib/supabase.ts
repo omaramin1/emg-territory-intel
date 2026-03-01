@@ -1,18 +1,42 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Lazy client creation — avoids build-time errors when env vars aren't set
-export function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+// ---------------------------------------------------------------------------
+// Environment Validation
+// ---------------------------------------------------------------------------
+
+function requireEnv(key: string): string {
+  const value = process.env[key]
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${key}. ` +
+      `Ensure it is set in your .env.local (dev) or Vercel project settings (prod).`
+    )
+  }
+  return value
 }
 
-// Server-side client with service role key (for API routes / seed scripts)
-export function createServerClient() {
+// ---------------------------------------------------------------------------
+// Client Factories
+// ---------------------------------------------------------------------------
+
+let _anonClient: SupabaseClient | null = null
+
+/** Browser-safe Supabase client using the public anon key. Singleton. */
+export function getSupabase(): SupabaseClient {
+  if (!_anonClient) {
+    _anonClient = createClient(
+      requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    )
+  }
+  return _anonClient
+}
+
+/** Server-side Supabase client with service role key. Creates a new instance each call (no session persistence). */
+export function createServerClient(): SupabaseClient {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
     { auth: { persistSession: false } }
   )
 }

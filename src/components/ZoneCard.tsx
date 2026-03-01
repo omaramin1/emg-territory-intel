@@ -1,36 +1,7 @@
 'use client'
 
-interface ZoneCardData {
-  id: string
-  zone_id: string
-  zip_code: string
-  city: string
-  deploy_score: number
-  close_rate: number
-  untapped_est: number
-  saturation_pct: number
-  days_idle: number
-  doors_enrolled: number
-  total_knocks: number
-  est_doors: number
-  // Eligibility
-  any_program_pct?: number
-  any_program_eligible_hh?: number
-  target_hh_broad?: number
-  target_pct_broad?: number
-  electric_heat_pct?: number
-  snap_pct?: number
-  medicaid_pct?: number
-  // Demographics
-  dominant_demo?: string
-  white_pct?: number
-  black_pct?: number
-  hispanic_pct?: number
-  asian_pct?: number
-  median_income?: number
-  population?: number
-  rep_match_note?: string
-}
+import type { ZoneCardData } from '@/types/database'
+import { getZoneTier, getScoreColor, getCloseRateColor, TIER_STYLES, DEMO_COLORS } from '@/lib/constants'
 
 interface Props {
   zone: ZoneCardData
@@ -40,13 +11,13 @@ interface Props {
 
 export default function ZoneCard({ zone, rank, onClick }: Props) {
   const z = zone
-  const scoreColor = z.deploy_score >= 0.6 ? '#22c55e' : z.deploy_score >= 0.4 ? '#eab308' : '#ef4444'
-  const tierLabel = (z.any_program_pct ?? 0) >= 35 ? 'HOT' : (z.any_program_pct ?? 0) >= 20 ? 'WARM' : 'COOL'
-  const tierBg = tierLabel === 'HOT' ? 'bg-red-900/40 border-red-700/50' : tierLabel === 'WARM' ? 'bg-amber-900/40 border-amber-700/50' : 'bg-blue-900/40 border-blue-700/50'
+  const scoreColor = getScoreColor(z.deploy_score)
+  const tier = getZoneTier(z.any_program_pct)
+  const tierStyle = TIER_STYLES[tier]
 
   return (
     <div onClick={onClick}
-         className={`cursor-pointer rounded-xl border p-4 transition-all hover:scale-[1.02] hover:shadow-xl ${tierBg}`}>
+         className={`cursor-pointer rounded-xl border p-4 transition-all hover:scale-[1.02] hover:shadow-xl ${tierStyle.bg}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -73,7 +44,7 @@ export default function ZoneCard({ zone, rank, onClick }: Props) {
           <div className="text-[9px] text-gray-500">Benefits</div>
         </div>
         <div className="bg-black/30 rounded-lg py-1.5 px-1">
-          <div className="text-sm font-bold" style={{ color: z.close_rate >= 0.5 ? '#22c55e' : z.close_rate >= 0.3 ? '#eab308' : '#ef4444' }}>
+          <div className="text-sm font-bold" style={{ color: getCloseRateColor(z.close_rate) }}>
             {(z.close_rate * 100).toFixed(0)}%
           </div>
           <div className="text-[9px] text-gray-500">Close Rate</div>
@@ -96,10 +67,10 @@ export default function ZoneCard({ zone, rank, onClick }: Props) {
 
       {/* Demographics mini */}
       <div className="flex h-1.5 rounded-full overflow-hidden mb-2">
-        {z.white_pct != null && <div style={{ width: `${z.white_pct}%`, backgroundColor: '#94a3b8' }} />}
-        {z.black_pct != null && <div style={{ width: `${z.black_pct}%`, backgroundColor: '#7c3aed' }} />}
-        {z.hispanic_pct != null && <div style={{ width: `${z.hispanic_pct}%`, backgroundColor: '#f59e0b' }} />}
-        {z.asian_pct != null && <div style={{ width: `${z.asian_pct}%`, backgroundColor: '#10b981' }} />}
+        {z.white_pct != null && <div style={{ width: `${z.white_pct}%`, backgroundColor: DEMO_COLORS.WHITE }} />}
+        {z.black_pct != null && <div style={{ width: `${z.black_pct}%`, backgroundColor: DEMO_COLORS.BLACK }} />}
+        {z.hispanic_pct != null && <div style={{ width: `${z.hispanic_pct}%`, backgroundColor: DEMO_COLORS.HISPANIC }} />}
+        {z.asian_pct != null && <div style={{ width: `${z.asian_pct}%`, backgroundColor: DEMO_COLORS.ASIAN }} />}
       </div>
 
       {/* Bottom stats */}

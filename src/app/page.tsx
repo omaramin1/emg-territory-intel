@@ -1,43 +1,37 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import ZoneCard from '@/components/ZoneCard'
 import ZoneDetailModal from '@/components/ZoneDetailModal'
-import type { ZoneDetail, Rep } from '@/types/database'
+import type { ZoneDetail, Rep, ZoneCardData } from '@/types/database'
+import { getZoneTier, TIER_THRESHOLDS, type Tier } from '@/lib/constants'
 
-// Combined zone data for card display
-interface ZoneCardData {
-  id: string
-  zone_id: string
-  zip_code: string
-  city: string
-  deploy_score: number
-  close_rate: number
-  untapped_est: number
-  saturation_pct: number
-  days_idle: number
-  doors_enrolled: number
-  total_knocks: number
-  est_doors: number
-  any_program_pct?: number
-  any_program_eligible_hh?: number
-  target_hh_broad?: number
-  target_pct_broad?: number
-  electric_heat_pct?: number
-  snap_pct?: number
-  medicaid_pct?: number
-  dominant_demo?: string
-  white_pct?: number
-  black_pct?: number
-  hispanic_pct?: number
-  asian_pct?: number
-  median_income?: number
-  population?: number
-  rep_match_note?: string
-}
+// ---------------------------------------------------------------------------
+// Sort configuration
+// ---------------------------------------------------------------------------
 
 type SortKey = 'deploy_score' | 'target_hh_broad' | 'close_rate' | 'any_program_pct' | 'untapped_est' | 'days_idle'
-type Tier = 'all' | 'hot' | 'warm' | 'cool'
+
+/** Keys where lower = better (ascending sort). All others sort descending. */
+const ASCENDING_SORT_KEYS: ReadonlySet<SortKey> = new Set(['days_idle'])
+
+// ---------------------------------------------------------------------------
+// CSV helpers
+// ---------------------------------------------------------------------------
+
+/** Escape a value for CSV output (handles commas, quotes, newlines). */
+function csvEscape(value: string | number | null | undefined): string {
+  if (value == null) return ''
+  const str = String(value)
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
 
 export default function Dashboard() {
   const [zones, setZones] = useState<ZoneCardData[]>([])
@@ -49,6 +43,14 @@ export default function Dashboard() {
   const [tier, setTier] = useState<Tier>('all')
   const [selectedZone, setSelectedZone] = useState<ZoneDetail | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   // Fetch all zones on mount
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function Dashboard() {
           fetch('/api/zones'),
           fetch('/api/reps')
         ])
-        if (!zonesRes.ok) throw new Error('Failed to fetch zones')
+        if (!zonesRes.ok) throw new Error(`Failed to fetch zones (${zonesRes.status})`)
         const zonesData = await zonesRes.json()
         const repsData = repsRes.ok ? await repsRes.json() : []
         setZones(zonesData)
@@ -72,6 +74,18 @@ export default function Dashboard() {
     fetchData()
   }, [])
 
+  // Precompute tier counts (avoid recalculating on every button render)
+  const tierCounts = useMemo(() => {
+    let hot = 0, warm = 0, cool = 0
+    for (const z of zones) {
+      const t = getZoneTier(z.any_program_pct)
+      if (t === 'HOT') hot++
+      else if (t === 'WARM') warm++
+      else cool++
+    }
+    return { hot, warm, cool }
+  }, [zones])
+
   // Filter and sort
   const filtered = useMemo(() => {
     let result = [...zones]
@@ -82,67 +96,88 @@ export default function Dashboard() {
       result = result.filter(z => z.zip_code.includes(q) || z.city.toLowerCase().includes(q))
     }
 
-    // Tier
-    if (tier === 'hot') result = result.filter(z => (z.any_program_pct ?? 0) >= 35)
-    else if (tier === 'warm') result = result.filter(z => (z.any_program_pct ?? 0) >= 20 && (z.any_program_pct ?? 0) < 35)
-    else if (tier === 'cool') result = result.filter(z => (z.any_program_pct ?? 0) < 20)
+    // Tier filter using shared thresholds
+    if (tier === 'hot') result = result.filter(z => (z.any_program_pct ?? 0) >= TIER_THRESHOLDS.HOT)
+    else if (tier === 'warm') result = result.filter(z => (z.any_program_pct ?? 0) >= TIER_THRESHOLDS.WARM && (z.any_program_pct ?? 0) < TIER_THRESHOLDS.HOT)
+    else if (tier === 'cool') result = result.filter(z => (z.any_program_pct ?? 0) < TIER_THRESHOLDS.WARM)
 
-    // Sort
+    // Sort — ascending for days_idle, descending for everything else
     result.sort((a, b) => {
-      const av = a[sortBy] ?? 0
-      const bv = b[sortBy] ?? 0
-      return sortBy === 'days_idle' ? (bv as number) - (av as number) : (bv as number) - (av as number)
+      const av = (a[sortBy] as number | undefined) ?? 0
+      const bv = (b[sortBy] as number | undefined) ?? 0
+      return ASCENDING_SORT_KEYS.has(sortBy) ? av - bv : bv - av
     })
 
     return result
   }, [zones, search, sortBy, tier])
 
   // Open zone detail
-  const openZoneDetail = async (zoneId: string) => {
+  const openZoneDetail = useCallback(async (zoneId: string) => {
     setModalLoading(true)
     try {
       const res = await fetch(`/api/zones/${zoneId}`)
-      if (!res.ok) throw new Error('Failed to load zone detail')
+      if (!res.ok) throw new Error(`Zone detail request failed (${res.status})`)
       const data: ZoneDetail = await res.json()
       setSelectedZone(data)
-    } catch {
-      console.error('Failed to load zone detail')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load zone detail'
+      setToast({ message: msg, type: 'error' })
     } finally {
       setModalLoading(false)
     }
-  }
+  }, [])
 
   // Assign rep
-  const handleAssignRep = async (zoneId: string, repId: string) => {
-    await fetch('/api/assignments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ zone_id: zoneId, rep_id: repId, assigned_date: new Date().toISOString().split('T')[0] })
-    })
-    // Refresh zone detail
-    if (selectedZone) openZoneDetail(selectedZone.zone.id)
-  }
+  const handleAssignRep = useCallback(async (zoneId: string, repId: string) => {
+    try {
+      const res = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zone_id: zoneId, rep_id: repId, assigned_date: new Date().toISOString().split('T')[0] })
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `Assignment failed (${res.status})`)
+      }
+      setToast({ message: 'Rep assigned successfully', type: 'success' })
+      // Refresh zone detail
+      await openZoneDetail(zoneId)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Assignment failed'
+      setToast({ message: msg, type: 'error' })
+    }
+  }, [openZoneDetail])
 
   // Summary stats
   const totalTarget = zones.reduce((s, z) => s + (z.target_hh_broad ?? 0), 0)
   const totalEligible = zones.reduce((s, z) => s + (z.any_program_eligible_hh ?? 0), 0)
   const avgScore = zones.length > 0 ? zones.reduce((s, z) => s + z.deploy_score, 0) / zones.length : 0
 
-  // CSV export
+  // CSV export with proper escaping
   const exportCSV = () => {
     const headers = ['Rank', 'ZIP', 'City', 'Deploy Score', 'Target HH', 'Any Program %', 'Close Rate', 'Untapped %', 'Days Idle', 'Electric Heat %', 'Median Income', 'Population']
     const rows = filtered.map((z, i) => [
-      i + 1, z.zip_code, z.city, z.deploy_score.toFixed(3), z.target_hh_broad ?? '', `${z.any_program_pct?.toFixed(1) ?? ''}%`,
-      `${(z.close_rate * 100).toFixed(1)}%`, `${(100 - z.saturation_pct).toFixed(1)}%`, z.days_idle,
-      `${z.electric_heat_pct?.toFixed(0) ?? ''}%`, z.median_income ?? '', z.population ?? ''
+      i + 1,
+      csvEscape(z.zip_code),
+      csvEscape(z.city),
+      z.deploy_score.toFixed(3),
+      z.target_hh_broad ?? '',
+      z.any_program_pct != null ? `${z.any_program_pct.toFixed(1)}%` : '',
+      `${(z.close_rate * 100).toFixed(1)}%`,
+      `${(100 - z.saturation_pct).toFixed(1)}%`,
+      z.days_idle,
+      z.electric_heat_pct != null ? `${z.electric_heat_pct.toFixed(0)}%` : '',
+      z.median_income ?? '',
+      z.population ?? ''
     ])
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const csv = [headers.map(csvEscape).join(','), ...rows.map(r => r.map(csvEscape).join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `emg_territories_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
+    URL.revokeObjectURL(url)
   }
 
   if (loading) {
@@ -170,6 +205,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a0a1a] text-gray-100">
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[60] px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
+          toast.type === 'error' ? 'bg-red-900/90 border border-red-700 text-red-200' : 'bg-green-900/90 border border-green-700 text-green-200'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-[#0f172a] border-b border-gray-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -225,9 +269,9 @@ export default function Dashboard() {
                           tier === t ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}>
                   {t === 'all' ? `All (${zones.length})` :
-                   t === 'hot' ? `Hot (${zones.filter(z => (z.any_program_pct ?? 0) >= 35).length})` :
-                   t === 'warm' ? `Warm (${zones.filter(z => (z.any_program_pct ?? 0) >= 20 && (z.any_program_pct ?? 0) < 35).length})` :
-                   `Cool (${zones.filter(z => (z.any_program_pct ?? 0) < 20).length})`}
+                   t === 'hot' ? `Hot (${tierCounts.hot})` :
+                   t === 'warm' ? `Warm (${tierCounts.warm})` :
+                   `Cool (${tierCounts.cool})`}
                 </button>
               ))}
             </div>
