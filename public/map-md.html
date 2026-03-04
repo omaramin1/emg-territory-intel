@@ -712,29 +712,62 @@
 
         // ── Search ──
         function searchLocation() {
-            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            const term = document.getElementById('searchInput').value.trim();
             if (!term) return;
+            const lower = term.toLowerCase();
+
+            // 1. Exact ZIP match → zoom to centroid
+            if (/^\d{5}$/.test(term) && zipCentroids[term]) {
+                map.setView(zipCentroids[term], 13);
+                const s = zipSalesData[term];
+                updateStatus(`ZIP ${term}${s ? ` — ${s.c || ''} | ${s.n} sales` : ''}`);
+                return;
+            }
+
+            // 2. City name match from zipSalesData (partial, case-insensitive)
+            for (const [zip, info] of Object.entries(zipSalesData)) {
+                if (info.c && info.c.toLowerCase().includes(lower) && zipCentroids[zip]) {
+                    map.setView(zipCentroids[zip], 13);
+                    updateStatus(`${info.c} (ZIP ${zip}) — ${info.n} sales`);
+                    return;
+                }
+            }
+
+            // 3. City match from LMI data
+            for (const [zip, lmi] of Object.entries(lmiData)) {
+                if (lmi.city.toLowerCase().includes(lower) && zipCentroids[zip]) {
+                    map.setView(zipCentroids[zip], 13);
+                    updateStatus(`${lmi.city} (ZIP ${zip}) — LMI Target`);
+                    return;
+                }
+            }
+
+            // 4. Scan sales records for partial city/ZIP match
             if (salesData.length) {
                 for (const d of salesData) {
-                    if ((d[2]||'').toLowerCase() === term || (d[3]||'') === term) {
+                    if ((d[2]||'').toLowerCase().includes(lower) || (d[3]||'') === term) {
                         map.setView([d[0], d[1]], 14);
-                        updateStatus(`Found "${term}"`);
+                        updateStatus(`Found "${term}" — ${d[2] || ''} ${d[3] || ''}`);
                         return;
                     }
                 }
             }
+
+            // 5. Search housing pins and other popup layers
             let found = false;
             map.eachLayer(layer => {
                 if (found) return;
-                if (layer.getPopup) {
-                    const p = layer.getPopup();
-                    if (p && p.getContent().toLowerCase().includes(term)) {
-                        if (layer.getLatLng) { map.setView(layer.getLatLng(), 13); layer.openPopup(); found = true; }
-                        else if (layer.getBounds) { map.fitBounds(layer.getBounds()); found = true; }
-                    }
+                const p = layer.getPopup ? layer.getPopup() : null;
+                const t = layer.getTooltip ? layer.getTooltip() : null;
+                const content = (p ? p.getContent() : '') + (t ? t.getContent() : '');
+                if (content && content.toLowerCase().includes(lower)) {
+                    if (layer.getLatLng) { map.setView(layer.getLatLng(), 13); found = true; }
+                    else if (layer.getBounds) { map.fitBounds(layer.getBounds()); found = true; }
                 }
             });
-            if (!found) alert(`No results for "${term}"`);
+            if (found) { updateStatus(`Found "${term}"`); return; }
+
+            alert(`No results for "${term}". Try a ZIP code, city name, or address.`);
         }
 
         // ── Init ──
