@@ -466,12 +466,17 @@
             maxZoom: 18
         });
 
-        const streetsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        const streetsLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        });
+
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '© CartoDB',
             maxZoom: 18
         });
 
-        satelliteLayer.addTo(map);
+        streetsLayer.addTo(map);
 
         // Data storage
         const featureGroups = {
@@ -486,8 +491,9 @@
         // Layer control
         const layerControl = L.control.layers(
             {
+                'Streets': streetsLayer,
                 'Satellite': satelliteLayer,
-                'Streets': streetsLayer
+                'Dark': darkLayer
             },
             {
                 'LMI Zones': featureGroups.lmiZones,
