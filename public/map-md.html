@@ -22,7 +22,6 @@
         .leaflet-control-layers label { color: #e0e0e0 !important; font-size: 12px; }
         .leaflet-control-layers input { accent-color: #ff8800; }
 
-        /* Custom cluster styles */
         .marker-cluster-small { background-color: rgba(255,136,0,0.4); }
         .marker-cluster-small div { background-color: rgba(255,136,0,0.7); color: #fff; }
         .marker-cluster-medium { background-color: rgba(255,80,0,0.4); }
@@ -48,22 +47,22 @@
         .legend-color { width: 18px; height: 18px; border-radius: 50%; margin-right: 8px; border: 1px solid #444; }
         .legend-color.square { border-radius: 2px; }
 
-        .info-panel { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.98); padding: 20px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 340px; max-height: 500px; overflow-y: auto; display: none; }
+        .info-panel { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.98); padding: 20px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 360px; max-height: 550px; overflow-y: auto; display: none; }
         .info-panel.active { display: block; }
         .info-panel h3 { color: #ff8800; font-size: 14px; margin-bottom: 12px; }
-        .info-item { margin-bottom: 8px; font-size: 12px; }
         .info-label { color: #ff8800; font-weight: 600; }
         .info-value { color: #e0e0e0; margin-left: 5px; }
         .info-section { border-top: 1px solid #333; padding-top: 8px; margin-top: 8px; }
         .info-section-title { color: #ffaa44; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
+        .info-row { margin-bottom: 5px; font-size: 12px; }
 
         .search-panel { position: absolute; top: 100px; right: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 15px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); min-width: 250px; }
         .search-panel h3 { color: #ff8800; font-size: 14px; margin-bottom: 10px; }
-        .search-panel input { width: 100%; padding: 8px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid #ff8800; border-radius: 4px; color: #e0e0e0; font-size: 12px; }
+        .search-panel input { width: 100%; padding: 8px; margin-bottom: 8px; background: rgba(255,255,255,0.1); border: 1px solid #ff8800; border-radius: 4px; color: #e0e0e0; font-size: 12px; }
         .search-panel input::placeholder { color: #666; }
-        .search-panel input:focus { outline: none; border-color: #00ff88; box-shadow: 0 0 8px rgba(0, 255, 136, 0.3); }
-        .search-btn { width: 100%; padding: 8px; background: #ff8800; border: none; border-radius: 4px; color: #0a0a12; font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.3s; }
-        .search-btn:hover { background: #00ff88; box-shadow: 0 0 12px rgba(0, 255, 136, 0.5); }
+        .search-panel input:focus { outline: none; border-color: #00ff88; }
+        .search-btn { width: 100%; padding: 8px; background: #ff8800; border: none; border-radius: 4px; color: #0a0a12; font-weight: 600; cursor: pointer; font-size: 12px; }
+        .search-btn:hover { background: #00ff88; }
         .close-button { position: absolute; top: 10px; right: 10px; background: #ff8800; border: none; width: 24px; height: 24px; border-radius: 50%; color: #0a0a12; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         .close-button:hover { background: #00ff88; }
 
@@ -71,15 +70,14 @@
         .stats-panel .stat { margin-bottom: 4px; }
         .stats-panel .stat-val { color: #ff8800; font-weight: 700; }
 
-        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 18, 0.98); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 18, 0.98); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .loading-screen.hidden { display: none; }
         .spinner { width: 50px; height: 50px; border: 3px solid #ff8800; border-top: 3px solid #00ff88; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-text { color: #ff8800; font-size: 14px; margin-bottom: 10px; }
         .loading-progress { width: 200px; height: 4px; background: #222; border-radius: 2px; overflow: hidden; border: 1px solid #ff8800; }
         .loading-bar { height: 100%; background: linear-gradient(90deg, #ff8800, #00ff88); width: 0%; transition: width 0.3s; }
-
-        .status-banner { position: absolute; top: 70px; left: 10px; z-index: 1000; background: rgba(255, 136, 0, 0.15); padding: 8px 15px; border-radius: 6px; border: 1px solid rgba(255, 136, 0, 0.4); font-size: 11px; color: #ffaa44; }
+        .status-banner { position: absolute; top: 70px; left: 10px; z-index: 1000; background: rgba(255,136,0,0.15); padding: 8px 15px; border-radius: 6px; border: 1px solid rgba(255,136,0,0.4); font-size: 11px; color: #ffaa44; }
     </style>
 </head>
 <body>
@@ -97,82 +95,47 @@
 
     <div class="status-banner" id="statusBanner">Loading data layers...</div>
 
-    <div class="search-panel" style="top:auto;bottom:10px;">
+    <div class="stats-panel" id="statsPanel">
+        <div style="color:#ff8800;font-weight:700;margin-bottom:6px;">📊 Sales Data</div>
+        <div class="stat">Total Sales: <span class="stat-val" id="statTotal">—</span></div>
+        <div class="stat">ZIP Zones: <span class="stat-val" id="statZips">—</span></div>
+        <div class="stat">Cities: <span class="stat-val" id="statCities">—</span></div>
+        <div class="stat">In View: <span class="stat-val" id="statVisible">—</span></div>
+    </div>
+
+    <div class="search-panel" style="top:auto;bottom:10px;right:10px;">
         <h3>Search Location</h3>
-        <input type="text" id="searchInput" placeholder="Search city or ZIP...">
+        <input type="text" id="searchInput" placeholder="City, ZIP, or address...">
         <button class="search-btn" onclick="searchLocation()">Search</button>
     </div>
 
-    <div class="stats-panel" id="statsPanel">
-        <div style="color:#ff8800;font-weight:700;margin-bottom:6px;">📊 Sales Data Stats</div>
-        <div class="stat">Total Records: <span class="stat-val" id="statTotal">—</span></div>
-        <div class="stat">Cities: <span class="stat-val" id="statCities">—</span></div>
-        <div class="stat">ZIP Codes: <span class="stat-val" id="statZips">—</span></div>
-        <div class="stat">Visible: <span class="stat-val" id="statVisible">—</span></div>
-    </div>
-
     <div class="legend-panel" id="legendPanel">
-        <h4>Sales Data (25K+ Records)</h4>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ff8800;"></div>
-            <span>Individual Sale Pin</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: rgba(255,80,0,0.7);"></div>
-            <span>Clustered Sales (zoom in)</span>
-        </div>
-
-        <h4>Utility Service Areas</h4>
-        <div class="legend-item">
-            <div class="legend-color square" style="background: rgba(0,170,255,0.3); border: 2px solid #00aaff;"></div>
-            <span>Pepco (DC Metro / PG / MoCo)</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color square" style="background: rgba(255,136,0,0.3); border: 2px solid #ff8800;"></div>
-            <span>Potomac Edison (Western MD)</span>
-        </div>
+        <h4>Sales Density (ZIP Zones)</h4>
+        <div class="legend-item"><div class="legend-color square" style="background: #ff2200;"></div><span>200+ sales (hottest)</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: #ff6600;"></div><span>100-199 sales</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: #ff9900;"></div><span>50-99 sales</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: #ffcc44;"></div><span>10-49 sales</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: #ffe888;"></div><span>1-9 sales</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: rgba(100,100,100,0.2); border:1px dashed #666;"></div><span>No sales data</span></div>
 
         <h4>LMI Target Zones</h4>
-        <div class="legend-item">
-            <div class="legend-color square" style="background: #00ff88;"></div>
-            <span>High LMI (>70%)</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color square" style="background: #00bbff;"></div>
-            <span>Moderate LMI (50-70%)</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color square" style="background: #ffaa00;"></div>
-            <span>Low LMI (30-50%)</span>
-        </div>
+        <div class="legend-item"><div class="legend-color square" style="background: none; border: 3px solid #00ff88;"></div><span>High LMI (>70%) — Priority</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: none; border: 3px solid #00bbff;"></div><span>Moderate LMI (50-70%)</span></div>
 
-        <h4>Housing Types</h4>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #aa66ff;"></div>
-            <span>🏢 Apartments / LIHTC</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ff6666;"></div>
-            <span>🏘 Public Housing</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #66aaff;"></div>
-            <span>🏠 Section 8 / HUD</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #00ddff;"></div>
-            <span>🏕 Mobile Homes</span>
-        </div>
+        <h4>Individual Sales Pins</h4>
+        <div class="legend-item"><div class="legend-color" style="background: #ff8800;"></div><span>Sale record (zoom in)</span></div>
+        <div class="legend-item"><div class="legend-color" style="background: rgba(255,80,0,0.7);"></div><span>Clustered (zoom to expand)</span></div>
 
-        <h4>Target Zones (Score)</h4>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #22aa22; border: 2px solid #fff;"></div>
-            <span>High Priority</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ffaa22; border: 2px solid #fff;"></div>
-            <span>Medium Priority</span>
-        </div>
+        <h4>Utility Territories</h4>
+        <div class="legend-item"><div class="legend-color square" style="background: none; border: 2px dashed #00aaff;"></div><span>Pepco</span></div>
+        <div class="legend-item"><div class="legend-color square" style="background: none; border: 2px dashed #ff8800;"></div><span>Potomac Edison</span></div>
+
+        <h4>Housing Pins</h4>
+        <div class="legend-item"><div class="legend-color" style="background: #aa66ff;"></div><span>🏢 LIHTC</span></div>
+        <div class="legend-item"><div class="legend-color" style="background: #ff6666;"></div><span>🏘 Public Housing</span></div>
+        <div class="legend-item"><div class="legend-color" style="background: #66aaff;"></div><span>🏠 Section 8</span></div>
+        <div class="legend-item"><div class="legend-color" style="background: #00ddff;"></div><span>🏕 Mobile Homes</span></div>
+        <div class="legend-item"><div class="legend-color" style="background: #ffcc66;"></div><span>👴 Senior</span></div>
     </div>
 
     <div class="info-panel" id="infoPanel">
@@ -199,30 +162,26 @@
         streetsLayer.addTo(map);
 
         // Feature groups
-        const featureGroups = {
+        const fg = {
+            zipZones: L.featureGroup(),      // Real ZIP boundary polygons
+            lmiOutlines: L.featureGroup(),    // LMI target zone outlines
             pepcoArea: L.featureGroup(),
             potomacArea: L.featureGroup(),
-            lmiZones: L.featureGroup(),
             housingPins: L.featureGroup(),
             targetZones: L.featureGroup()
         };
 
-        // Sales cluster group
+        // Sales cluster
         const salesCluster = L.markerClusterGroup({
-            chunkedLoading: true,
-            chunkInterval: 100,
-            chunkDelay: 10,
-            maxClusterRadius: 30,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            disableClusteringAtZoom: 13,
+            chunkedLoading: true, chunkInterval: 100, chunkDelay: 10,
+            maxClusterRadius: 30, spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false, disableClusteringAtZoom: 13,
             iconCreateFunction: function(cluster) {
-                const count = cluster.getChildCount();
+                const n = cluster.getChildCount();
                 let c = 'small';
-                if (count > 100) c = 'large';
-                else if (count > 30) c = 'medium';
+                if (n > 100) c = 'large'; else if (n > 30) c = 'medium';
                 return L.divIcon({
-                    html: '<div>' + (count >= 1000 ? (count/1000).toFixed(1)+'K' : count) + '</div>',
+                    html: '<div>' + (n >= 1000 ? (n/1000).toFixed(1)+'K' : n) + '</div>',
                     className: 'marker-cluster marker-cluster-' + c,
                     iconSize: L.point(40, 40)
                 });
@@ -232,369 +191,381 @@
         const layerControl = L.control.layers(
             { 'Streets': streetsLayer, 'Satellite': satelliteLayer, 'Dark': darkLayer },
             {
-                '📍 Sales Data (25K+)': salesCluster,
-                'Pepco Service Area': featureGroups.pepcoArea,
-                'Potomac Edison Area': featureGroups.potomacArea,
-                'LMI Zones (Census)': featureGroups.lmiZones,
-                'Housing Database': featureGroups.housingPins,
-                'Target Zones': featureGroups.targetZones
+                '🗺 ZIP Zone Boundaries': fg.zipZones,
+                '🎯 LMI Target Outlines': fg.lmiOutlines,
+                '📍 Sales Pins (25K+)': salesCluster,
+                '⚡ Pepco Territory': fg.pepcoArea,
+                '⚡ Potomac Edison Territory': fg.potomacArea,
+                '🏘 Housing Database': fg.housingPins,
+                '🎯 Target Zones': fg.targetZones
             },
             { position: 'bottomright' }
         );
         layerControl.addTo(map);
 
-        // Add defaults
+        // Defaults on
+        fg.zipZones.addTo(map);
+        fg.lmiOutlines.addTo(map);
         salesCluster.addTo(map);
-        featureGroups.pepcoArea.addTo(map);
-        featureGroups.potomacArea.addTo(map);
-        featureGroups.lmiZones.addTo(map);
-        featureGroups.housingPins.addTo(map);
-        featureGroups.targetZones.addTo(map);
+        fg.pepcoArea.addTo(map);
+        fg.potomacArea.addTo(map);
+        fg.housingPins.addTo(map);
+        fg.targetZones.addTo(map);
 
-        // Helpers
-        function updateLoading(status, progress) {
-            document.getElementById('loadingStatus').textContent = status;
-            document.getElementById('loadingBar').style.width = progress + '%';
-        }
+        // State
+        let zipSalesData = {};   // zip -> {n, c}
+        let salesData = [];      // raw sales array
+        let cityStats = {};
+        let zipStats = {};
+
+        // ── Helpers ──
+        function updateLoading(s, p) { document.getElementById('loadingStatus').textContent = s; document.getElementById('loadingBar').style.width = p + '%'; }
         function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
-        function showInfoPanel(title, content) {
-            document.getElementById('infoPanelTitle').textContent = title;
-            document.getElementById('infoPanelContent').innerHTML = content;
-            document.getElementById('infoPanel').classList.add('active');
-        }
+        function showInfoPanel(title, html) { document.getElementById('infoPanelTitle').textContent = title; document.getElementById('infoPanelContent').innerHTML = html; document.getElementById('infoPanel').classList.add('active'); }
         function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('active'); }
         function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
 
-        // LOAD SALES DATA FROM JSON FILE
-        async function loadSalesData() {
+        // Sales density color
+        function getDensityColor(count) {
+            if (count >= 200) return '#ff2200';
+            if (count >= 100) return '#ff6600';
+            if (count >= 50)  return '#ff9900';
+            if (count >= 10)  return '#ffcc44';
+            if (count >= 1)   return '#ffe888';
+            return '#444444';
+        }
+        function getDensityOpacity(count) {
+            if (count >= 200) return 0.45;
+            if (count >= 100) return 0.35;
+            if (count >= 50)  return 0.28;
+            if (count >= 10)  return 0.20;
+            if (count >= 1)   return 0.12;
+            return 0.05;
+        }
+        function getDensityLabel(count) {
+            if (count >= 200) return '🔥 HOT ZONE';
+            if (count >= 100) return '⬆ HIGH';
+            if (count >= 50)  return '📈 MODERATE';
+            if (count >= 10)  return '📊 LOW';
+            if (count >= 1)   return '🔹 MINIMAL';
+            return '—';
+        }
+
+        // ── LMI target data ──
+        const lmiData = {
+            '20743': { city: 'Capitol Heights', lmi: 78, eh: 62, hh: 4200, income: 42500, type: 'Suburban Apt Dense', util: 'Pepco' },
+            '20785': { city: 'Hyattsville', lmi: 72, eh: 58, hh: 5100, income: 48000, type: 'Mixed Residential', util: 'Pepco' },
+            '20737': { city: 'Riverdale', lmi: 81, eh: 65, hh: 3800, income: 38500, type: 'Apt/Townhome Dense', util: 'Pepco' },
+            '20781': { city: 'Hyattsville', lmi: 74, eh: 60, hh: 2900, income: 45200, type: 'Suburban Mixed', util: 'Pepco' },
+            '20710': { city: 'Bladensburg', lmi: 79, eh: 64, hh: 2100, income: 41800, type: 'Urban Mixed', util: 'Pepco' },
+            '20746': { city: 'Suitland', lmi: 76, eh: 61, hh: 5500, income: 43100, type: 'Suburban Apt', util: 'Pepco' },
+            '20748': { city: 'Temple Hills', lmi: 70, eh: 55, hh: 4800, income: 52300, type: 'Suburban SFH/Apt', util: 'Pepco' },
+            '20774': { city: 'Upper Marlboro', lmi: 55, eh: 48, hh: 8200, income: 68500, type: 'Suburban SFH', util: 'Pepco' },
+            '20783': { city: 'Adelphi', lmi: 73, eh: 59, hh: 3400, income: 46700, type: 'Dense Apt/Townhome', util: 'Pepco' },
+            '20706': { city: 'Lanham', lmi: 62, eh: 52, hh: 6100, income: 58200, type: 'Suburban Mixed', util: 'Pepco' },
+            '20770': { city: 'Greenbelt', lmi: 65, eh: 54, hh: 3900, income: 55800, type: 'Planned Community', util: 'Pepco' },
+            '20712': { city: 'Mt Rainier', lmi: 82, eh: 68, hh: 1800, income: 36200, type: 'Urban Dense', util: 'Pepco' },
+            '20906': { city: 'Silver Spring', lmi: 58, eh: 45, hh: 9200, income: 62100, type: 'Suburban Dense', util: 'Pepco' },
+            '20904': { city: 'Colesville', lmi: 52, eh: 42, hh: 7800, income: 71200, type: 'Suburban SFH', util: 'Pepco' },
+            '20902': { city: 'Wheaton', lmi: 61, eh: 50, hh: 5500, income: 59800, type: 'Mixed Residential', util: 'Pepco' },
+            '21740': { city: 'Hagerstown', lmi: 74, eh: 58, hh: 8900, income: 38200, type: 'Urban/Suburban Mix', util: 'Potomac Edison' },
+            '21742': { city: 'Hagerstown W', lmi: 62, eh: 52, hh: 6200, income: 48500, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21701': { city: 'Frederick', lmi: 58, eh: 48, hh: 12500, income: 56800, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21702': { city: 'Frederick N', lmi: 52, eh: 44, hh: 9800, income: 64200, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21502': { city: 'Cumberland', lmi: 80, eh: 72, hh: 5200, income: 32100, type: 'Rural/Urban Mix', util: 'Potomac Edison' },
+            '21532': { city: 'Frostburg', lmi: 76, eh: 68, hh: 2800, income: 35400, type: 'Small Town', util: 'Potomac Edison' },
+            '21795': { city: 'Williamsport', lmi: 65, eh: 55, hh: 3100, income: 47200, type: 'Small Town', util: 'Potomac Edison' },
+            '21793': { city: 'Walkersville', lmi: 45, eh: 40, hh: 4200, income: 72500, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21158': { city: 'Westminster', lmi: 55, eh: 46, hh: 7200, income: 58900, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21550': { city: 'Oakland', lmi: 72, eh: 65, hh: 2400, income: 37800, type: 'Rural', util: 'Potomac Edison' },
+        };
+
+        // ── LOAD ZIP BOUNDARIES (real polygons) ──
+        async function loadZipBoundaries() {
             try {
-                updateLoading('Loading 25,000+ sales records...', 20);
-                const resp = await fetch('md_sales.json');
-                if (!resp.ok) throw new Error('Failed to load md_sales.json');
-                const data = await resp.json();
+                updateLoading('Loading ZIP code boundaries...', 10);
+                const [geoResp, dataResp] = await Promise.all([
+                    fetch('md_zip_boundaries.geojson'),
+                    fetch('md_zip_data.json')
+                ]);
+                if (!geoResp.ok) throw new Error('Failed to load boundaries');
+                const boundaries = await geoResp.json();
+                zipSalesData = dataResp.ok ? await dataResp.json() : {};
 
-                updateLoading(`Processing ${data.length.toLocaleString()} sales pins...`, 40);
+                updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
 
-                const cityStats = {};
-                const zipStats = {};
-                const markers = [];
+                boundaries.features.forEach(feature => {
+                    const zip = feature.properties.zip;
+                    const sales = zipSalesData[zip] || { n: 0, c: '' };
+                    const count = sales.n;
+                    const cities = sales.c;
+                    const lmi = lmiData[zip];
+                    const isTarget = !!lmi;
 
-                for (let i = 0; i < data.length; i++) {
-                    const [lat, lon, city, zip, date] = data[i];
+                    const color = getDensityColor(count);
+                    const opacity = getDensityOpacity(count);
 
-                    // Track stats
-                    if (city) cityStats[city] = (cityStats[city] || 0) + 1;
-                    if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
+                    // Sales density choropleth polygon
+                    const poly = L.geoJSON(feature, {
+                        style: {
+                            fillColor: color,
+                            fillOpacity: opacity,
+                            color: count > 0 ? color : '#555',
+                            weight: count >= 50 ? 2 : 1,
+                            opacity: count > 0 ? 0.7 : 0.3
+                        },
+                        onEachFeature: (feat, layer) => {
+                            layer.on('mouseover', function() {
+                                this.setStyle({ weight: 3, opacity: 1, fillOpacity: opacity + 0.15 });
+                                this.bringToFront();
+                            });
+                            layer.on('mouseout', function() {
+                                this.setStyle({ weight: count >= 50 ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3, fillOpacity: opacity });
+                            });
 
-                    const marker = L.circleMarker([lat, lon], {
-                        radius: 4,
-                        fillColor: '#ff8800',
-                        color: '#ff6600',
-                        weight: 1,
-                        opacity: 0.8,
-                        fillOpacity: 0.7
-                    });
+                            // Build popup
+                            let popup = `<b>ZIP ${zip}</b>`;
+                            if (cities) popup += `<br>${cities}`;
+                            popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+                            if (isTarget) {
+                                const utilColor = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
+                                popup += `<br><span style="color:${utilColor};font-weight:bold;">${lmi.util}</span>`;
+                                popup += `<br>LMI: ${lmi.lmi}% | EH: ${lmi.eh}% | Income: $${lmi.income.toLocaleString()}`;
+                            }
+                            layer.bindPopup(popup);
 
-                    const popupContent = `<b>📍 Sale Record</b><br>` +
-                        (city ? `City: <b>${city}</b><br>` : '') +
-                        (zip ? `ZIP: <b>${zip}</b><br>` : '') +
-                        (date ? `Date: ${date}<br>` : '') +
-                        `Coords: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-                    marker.bindPopup(popupContent);
+                            // Info panel on click
+                            layer.on('click', () => {
+                                let html = `
+                                    <div class="info-section-title">Sales Activity</div>
+                                    <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
+                                    <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
+                                    ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
 
-                    marker.on('click', () => {
-                        const zipCount = zip ? (zipStats[zip] || 0) : 0;
-                        const cityCount = city ? (cityStats[city] || 0) : 0;
-                        showInfoPanel(`Sale — ${city || 'Unknown'}`, `
-                            <div><span class="info-label">Address Area:</span><span class="info-value">${city}${zip ? ' ' + zip : ''}</span></div>
-                            <div><span class="info-label">Sale Date:</span><span class="info-value">${date || 'N/A'}</span></div>
-                            <div><span class="info-label">Coordinates:</span><span class="info-value">${lat.toFixed(5)}, ${lon.toFixed(5)}</span></div>
-                            <div class="info-section">
-                                <div class="info-section-title">Area Sales Density</div>
-                                <div><span class="info-label">Sales in ${city}:</span><span class="info-value">${cityCount.toLocaleString()}</span></div>
-                                ${zip ? `<div><span class="info-label">Sales in ${zip}:</span><span class="info-value">${zipCount.toLocaleString()}</span></div>` : ''}
-                            </div>
-                        `);
-                    });
+                                if (isTarget) {
+                                    const utilColor = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
+                                    html += `
+                                        <div class="info-section">
+                                            <div class="info-section-title">Demographics (Census ACS)</div>
+                                            <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:${utilColor}">${lmi.util}</span></div>
+                                            <div class="info-row"><span class="info-label">LMI %:</span><span class="info-value">${lmi.lmi}%</span></div>
+                                            <div class="info-row"><span class="info-label">Electric Heat:</span><span class="info-value">${lmi.eh}%</span></div>
+                                            <div class="info-row"><span class="info-label">Households:</span><span class="info-value">${lmi.hh.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Median Income:</span><span class="info-value">$${lmi.income.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Housing Type:</span><span class="info-value">${lmi.type}</span></div>
+                                        </div>`;
+                                }
+                                showInfoPanel(`ZIP ${zip} — ${cities || (lmi ? lmi.city : 'MD')}`, html);
+                            });
+                        }
+                    }).addTo(fg.zipZones);
 
-                    markers.push(marker);
-                }
+                    // LMI target outline — thick colored border on top of choropleth
+                    if (isTarget) {
+                        const lmiColor = lmi.lmi >= 70 ? '#00ff88' : '#00bbff';
+                        L.geoJSON(feature, {
+                            style: {
+                                fillColor: 'transparent', fillOpacity: 0,
+                                color: lmiColor, weight: 3, opacity: 0.9,
+                                dashArray: lmi.lmi >= 70 ? null : '6, 4'
+                            }
+                        }).addTo(fg.lmiOutlines);
 
-                updateLoading('Adding markers to cluster layer...', 70);
-                salesCluster.addLayers(markers);
+                        // ZIP label centered on polygon
+                        const bounds = L.geoJSON(feature).getBounds();
+                        const center = bounds.getCenter();
+                        L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'zone-label',
+                                html: `<span style="color:${lmiColor};font-size:11px;">${zip} ${lmi.city}</span>`,
+                                iconSize: [120, 14], iconAnchor: [60, 7]
+                            })
+                        }).addTo(fg.lmiOutlines);
+                    }
+                });
 
-                // Update stats panel
-                document.getElementById('statTotal').textContent = data.length.toLocaleString();
-                document.getElementById('statCities').textContent = Object.keys(cityStats).length.toLocaleString();
-                document.getElementById('statZips').textContent = Object.keys(zipStats).length.toLocaleString();
-                document.getElementById('statVisible').textContent = data.length.toLocaleString();
-
-                // Store for search
-                window._cityStats = cityStats;
-                window._zipStats = zipStats;
-                window._salesData = data;
-
-                console.log('Sales data loaded:', data.length);
-                updateStatus(`Loaded ${data.length.toLocaleString()} sales records across ${Object.keys(cityStats).length} cities`);
+                document.getElementById('statZips').textContent = boundaries.features.length;
+                console.log('ZIP boundaries loaded:', boundaries.features.length);
             } catch (error) {
-                console.error('Error loading sales data:', error);
-                updateStatus('⚠ Could not load sales data file. Check md_sales.json exists.');
+                console.error('Error loading ZIP boundaries:', error);
+                updateStatus('⚠ Could not load ZIP boundaries');
             }
         }
 
-        // Update visible count on map move
+        // ── LOAD SALES DATA ──
+        async function loadSalesData() {
+            try {
+                updateLoading('Loading 25,000+ sales records...', 40);
+                const resp = await fetch('md_sales.json');
+                if (!resp.ok) throw new Error('No sales data');
+                salesData = await resp.json();
+
+                updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 55);
+                const markers = [];
+
+                for (let i = 0; i < salesData.length; i++) {
+                    const [lat, lon, city, zip, date] = salesData[i];
+                    if (city) cityStats[city] = (cityStats[city] || 0) + 1;
+                    if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
+
+                    const m = L.circleMarker([lat, lon], {
+                        radius: 4, fillColor: '#ff8800', color: '#ff6600',
+                        weight: 1, opacity: 0.8, fillOpacity: 0.7
+                    });
+                    m.bindPopup(`<b>📍 Sale</b><br>${city || ''} ${zip || ''}<br>${date || ''}`);
+                    m.on('click', () => {
+                        showInfoPanel(`Sale — ${city || 'Unknown'}`, `
+                            <div class="info-row"><span class="info-label">Location:</span><span class="info-value">${city}${zip ? ' ' + zip : ''}</span></div>
+                            <div class="info-row"><span class="info-label">Date:</span><span class="info-value">${date || 'N/A'}</span></div>
+                            <div class="info-row"><span class="info-label">Coords:</span><span class="info-value">${lat.toFixed(5)}, ${lon.toFixed(5)}</span></div>
+                            <div class="info-section">
+                                <div class="info-section-title">Area Density</div>
+                                <div class="info-row"><span class="info-label">${city} total:</span><span class="info-value">${(cityStats[city]||0).toLocaleString()}</span></div>
+                                ${zip ? `<div class="info-row"><span class="info-label">${zip} total:</span><span class="info-value">${(zipStats[zip]||0).toLocaleString()}</span></div>` : ''}
+                            </div>
+                        `);
+                    });
+                    markers.push(m);
+                }
+
+                updateLoading('Clustering markers...', 70);
+                salesCluster.addLayers(markers);
+
+                document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
+                document.getElementById('statCities').textContent = Object.keys(cityStats).length;
+                document.getElementById('statVisible').textContent = salesData.length.toLocaleString();
+
+                console.log('Sales loaded:', salesData.length);
+                updateStatus(`${salesData.length.toLocaleString()} sales across ${Object.keys(cityStats).length} cities | ${Object.keys(zipStats).length} ZIPs`);
+            } catch (error) {
+                console.error('Sales load error:', error);
+            }
+        }
+
         map.on('moveend', () => {
-            if (!window._salesData) return;
-            const bounds = map.getBounds();
-            let visible = 0;
-            window._salesData.forEach(d => {
-                if (bounds.contains([d[0], d[1]])) visible++;
-            });
-            document.getElementById('statVisible').textContent = visible.toLocaleString();
+            if (!salesData.length) return;
+            const b = map.getBounds();
+            let v = 0;
+            salesData.forEach(d => { if (b.contains([d[0], d[1]])) v++; });
+            document.getElementById('statVisible').textContent = v.toLocaleString();
         });
 
-        // Pepco service area
+        // ── Utility territory outlines ──
         function loadPepcoArea() {
-            updateLoading('Loading Pepco service area...', 10);
-            const pepcoCoords = [
-                [39.35, -77.35], [39.35, -76.75], [39.15, -76.55],
-                [38.85, -76.55], [38.75, -76.75], [38.80, -76.95],
-                [38.79, -77.05], [38.82, -77.12], [38.88, -77.15],
-                [38.95, -77.25], [39.00, -77.30], [39.10, -77.35],
-                [39.20, -77.40], [39.35, -77.35]
-            ];
-            L.polygon(pepcoCoords, {
-                color: '#00aaff', weight: 3, opacity: 0.8,
-                fillColor: '#00aaff', fillOpacity: 0.06,
-                dashArray: '8, 4'
-            }).bindPopup('<b style="color:#00aaff">PEPCO Service Territory</b><br>DC Metro / Prince George\'s / Montgomery County<br>Parent: Exelon').addTo(featureGroups.pepcoArea);
-            L.marker([39.0, -76.95], {
-                icon: L.divIcon({ className: 'zone-label', html: '<span style="color:#00aaff;font-size:14px;">PEPCO</span>', iconSize: [80, 20], iconAnchor: [40, 10] })
-            }).addTo(featureGroups.pepcoArea);
+            const coords = [[39.35,-77.35],[39.35,-76.75],[39.15,-76.55],[38.85,-76.55],[38.75,-76.75],[38.80,-76.95],[38.79,-77.05],[38.82,-77.12],[38.88,-77.15],[38.95,-77.25],[39.00,-77.30],[39.10,-77.35],[39.20,-77.40],[39.35,-77.35]];
+            L.polygon(coords, { color: '#00aaff', weight: 3, opacity: 0.7, fillColor: '#00aaff', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#00aaff">PEPCO</b><br>DC Metro / PG County / Montgomery County<br>Parent: Exelon')
+            .addTo(fg.pepcoArea);
+            L.marker([39.0,-76.95], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#00aaff;font-size:15px;">PEPCO</span>', iconSize:[80,20], iconAnchor:[40,10] }) }).addTo(fg.pepcoArea);
         }
-
-        // Potomac Edison service area
         function loadPotomacArea() {
-            updateLoading('Loading Potomac Edison service area...', 15);
-            const potEdCoords = [
-                [39.72, -79.50], [39.72, -77.35], [39.35, -77.35],
-                [39.20, -77.40], [39.10, -77.50], [39.10, -77.70],
-                [39.20, -77.85], [39.30, -78.00], [39.25, -78.30],
-                [39.30, -78.60], [39.40, -78.80], [39.50, -79.10],
-                [39.60, -79.30], [39.65, -79.50], [39.72, -79.50]
+            const coords = [[39.72,-79.50],[39.72,-77.35],[39.35,-77.35],[39.20,-77.40],[39.10,-77.50],[39.10,-77.70],[39.20,-77.85],[39.30,-78.00],[39.25,-78.30],[39.30,-78.60],[39.40,-78.80],[39.50,-79.10],[39.60,-79.30],[39.65,-79.50],[39.72,-79.50]];
+            L.polygon(coords, { color: '#ff8800', weight: 3, opacity: 0.7, fillColor: '#ff8800', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#ff8800">POTOMAC EDISON</b><br>Western MD / Frederick / Hagerstown / Cumberland<br>Parent: FirstEnergy')
+            .addTo(fg.potomacArea);
+            L.marker([39.45,-78.30], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ff8800;font-size:15px;">POTOMAC EDISON</span>', iconSize:[150,20], iconAnchor:[75,10] }) }).addTo(fg.potomacArea);
+        }
+
+        // ── Housing pins ──
+        function loadHousingPins() {
+            updateLoading('Loading housing database...', 85);
+            const h = [
+                { n:'Boulevard at Capital Centre', la:38.8283, lo:-76.8736, t:'LIHTC', u:480, c:'Largo' },
+                { n:'Addison Road Station', la:38.8866, lo:-76.8930, t:'LIHTC', u:250, c:'Capitol Heights' },
+                { n:'Glenarden Hills', la:38.9282, lo:-76.8612, t:'Public Housing', u:340, c:'Glenarden' },
+                { n:'Suitland Manor', la:38.8481, lo:-76.9243, t:'Section 8', u:200, c:'Suitland' },
+                { n:'Langley Park Apts', la:38.9888, lo:-76.9814, t:'LIHTC', u:320, c:'Langley Park' },
+                { n:'Rollingcrest Village', la:38.9582, lo:-76.9567, t:'Section 8', u:180, c:'Hyattsville' },
+                { n:'Columbia Park', la:38.9451, lo:-76.9372, t:'Public Housing', u:275, c:'Bladensburg' },
+                { n:'Kentland Community', la:38.9210, lo:-76.9255, t:'Section 8', u:420, c:'Landover' },
+                { n:'Palmer Park Apts', la:38.8800, lo:-76.8856, t:'LIHTC', u:290, c:'Palmer Park' },
+                { n:'Marlow Heights Apts', la:38.8266, lo:-76.9461, t:'LIHTC', u:350, c:'Marlow Heights' },
+                { n:'Georgian Court Apts', la:39.0153, lo:-77.0131, t:'Section 8', u:240, c:'Silver Spring' },
+                { n:'Cinnamon Run', la:39.0783, lo:-77.0489, t:'LIHTC', u:180, c:'Wheaton' },
+                { n:'Westview Village', la:39.6356, lo:-77.7340, t:'Public Housing', u:150, c:'Hagerstown' },
+                { n:'Noland Village', la:39.6483, lo:-77.7189, t:'Section 8', u:200, c:'Hagerstown' },
+                { n:'Potomac Towers', la:39.6421, lo:-77.7151, t:'Senior Housing', u:120, c:'Hagerstown' },
+                { n:'Prospect Place', la:39.4093, lo:-77.4167, t:'LIHTC', u:160, c:'Frederick' },
+                { n:'Church Street Terrace', la:39.4161, lo:-77.4082, t:'Public Housing', u:100, c:'Frederick' },
+                { n:'Queen City Towers', la:39.6529, lo:-78.7647, t:'Senior Housing', u:140, c:'Cumberland' },
+                { n:'Fort Cumberland Homes', la:39.6478, lo:-78.7701, t:'Public Housing', u:180, c:'Cumberland' },
+                { n:'Whispering Pines MHP', la:39.5124, lo:-77.3875, t:'Mobile Home', u:85, c:'Frederick' },
+                { n:'Mountain View MHP', la:39.6281, lo:-78.7892, t:'Mobile Home', u:60, c:'Cumberland' },
+                { n:'Halfway MHP', la:39.6182, lo:-77.7565, t:'Mobile Home', u:95, c:'Hagerstown' },
             ];
-            L.polygon(potEdCoords, {
-                color: '#ff8800', weight: 3, opacity: 0.8,
-                fillColor: '#ff8800', fillOpacity: 0.06,
-                dashArray: '8, 4'
-            }).bindPopup('<b style="color:#ff8800">POTOMAC EDISON Service Territory</b><br>Western Maryland / Frederick / Hagerstown / Cumberland<br>Parent: FirstEnergy').addTo(featureGroups.potomacArea);
-            L.marker([39.45, -78.30], {
-                icon: L.divIcon({ className: 'zone-label', html: '<span style="color:#ff8800;font-size:14px;">POTOMAC EDISON</span>', iconSize: [140, 20], iconAnchor: [70, 10] })
-            }).addTo(featureGroups.potomacArea);
+            const tc = { 'LIHTC':'#aa66ff','Public Housing':'#ff6666','Section 8':'#66aaff','Senior Housing':'#ffcc66','Mobile Home':'#00ddff' };
+            const te = { 'LIHTC':'🏢','Public Housing':'🏘','Section 8':'🏠','Senior Housing':'👴','Mobile Home':'🏕' };
+
+            h.forEach(x => {
+                const col = tc[x.t] || '#888';
+                L.circleMarker([x.la, x.lo], {
+                    radius: Math.max(7, Math.min(16, Math.sqrt(x.u) / 1.5)),
+                    fillColor: col, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
+                }).bindPopup(`<b>${te[x.t]||'📍'} ${x.n}</b><br>${x.t} | ${x.c}<br>Units: ${x.u}`)
+                .on('click', () => {
+                    showInfoPanel(x.n, `
+                        <div class="info-row"><span class="info-label">Type:</span><span class="info-value">${x.t}</span></div>
+                        <div class="info-row"><span class="info-label">City:</span><span class="info-value">${x.c}</span></div>
+                        <div class="info-row"><span class="info-label">Units:</span><span class="info-value">${x.u}</span></div>
+                    `);
+                }).addTo(fg.housingPins);
+            });
         }
 
-        // LMI Zones
-        async function loadLMIZones() {
-            try {
-                updateLoading('Loading LMI zones...', 75);
-                const mdTargetZips = [
-                    { zip: '20743', city: 'Capitol Heights', lat: 38.8854, lng: -76.9119, lmi: 0.78, eh: 62, hh: 4200, utility: 'Pepco', income: 42500, type: 'Suburban Apt Dense' },
-                    { zip: '20785', city: 'Hyattsville', lat: 38.9554, lng: -76.9419, lmi: 0.72, eh: 58, hh: 5100, utility: 'Pepco', income: 48000, type: 'Mixed Residential' },
-                    { zip: '20737', city: 'Riverdale', lat: 38.9632, lng: -76.9314, lmi: 0.81, eh: 65, hh: 3800, utility: 'Pepco', income: 38500, type: 'Apt/Townhome Dense' },
-                    { zip: '20781', city: 'Hyattsville', lat: 38.9417, lng: -76.9453, lmi: 0.74, eh: 60, hh: 2900, utility: 'Pepco', income: 45200, type: 'Suburban Mixed' },
-                    { zip: '20710', city: 'Bladensburg', lat: 38.9393, lng: -76.9339, lmi: 0.79, eh: 64, hh: 2100, utility: 'Pepco', income: 41800, type: 'Urban Mixed' },
-                    { zip: '20746', city: 'Suitland', lat: 38.8487, lng: -76.9222, lmi: 0.76, eh: 61, hh: 5500, utility: 'Pepco', income: 43100, type: 'Suburban Apt' },
-                    { zip: '20748', city: 'Temple Hills', lat: 38.8126, lng: -76.9397, lmi: 0.70, eh: 55, hh: 4800, utility: 'Pepco', income: 52300, type: 'Suburban SFH/Apt' },
-                    { zip: '20774', city: 'Upper Marlboro', lat: 38.8159, lng: -76.7497, lmi: 0.55, eh: 48, hh: 8200, utility: 'Pepco', income: 68500, type: 'Suburban SFH' },
-                    { zip: '20783', city: 'Adelphi', lat: 39.0005, lng: -76.9711, lmi: 0.73, eh: 59, hh: 3400, utility: 'Pepco', income: 46700, type: 'Dense Apt/Townhome' },
-                    { zip: '20706', city: 'Lanham', lat: 38.9687, lng: -76.8636, lmi: 0.62, eh: 52, hh: 6100, utility: 'Pepco', income: 58200, type: 'Suburban Mixed' },
-                    { zip: '20770', city: 'Greenbelt', lat: 39.0046, lng: -76.8753, lmi: 0.65, eh: 54, hh: 3900, utility: 'Pepco', income: 55800, type: 'Planned Community' },
-                    { zip: '20712', city: 'Mt Rainier', lat: 38.9415, lng: -76.9647, lmi: 0.82, eh: 68, hh: 1800, utility: 'Pepco', income: 36200, type: 'Urban Dense' },
-                    { zip: '20906', city: 'Silver Spring', lat: 39.0810, lng: -77.0567, lmi: 0.58, eh: 45, hh: 9200, utility: 'Pepco', income: 62100, type: 'Suburban Dense' },
-                    { zip: '20904', city: 'Colesville', lat: 39.0652, lng: -76.9803, lmi: 0.52, eh: 42, hh: 7800, utility: 'Pepco', income: 71200, type: 'Suburban SFH' },
-                    { zip: '20902', city: 'Wheaton', lat: 39.0547, lng: -77.0486, lmi: 0.61, eh: 50, hh: 5500, utility: 'Pepco', income: 59800, type: 'Mixed Residential' },
-                    { zip: '21740', city: 'Hagerstown', lat: 39.6418, lng: -77.7200, lmi: 0.74, eh: 58, hh: 8900, utility: 'Potomac Edison', income: 38200, type: 'Urban/Suburban Mix' },
-                    { zip: '21742', city: 'Hagerstown W', lat: 39.6556, lng: -77.7793, lmi: 0.62, eh: 52, hh: 6200, utility: 'Potomac Edison', income: 48500, type: 'Suburban SFH' },
-                    { zip: '21701', city: 'Frederick', lat: 39.4143, lng: -77.4105, lmi: 0.58, eh: 48, hh: 12500, utility: 'Potomac Edison', income: 56800, type: 'Suburban Mixed' },
-                    { zip: '21702', city: 'Frederick N', lat: 39.4597, lng: -77.4428, lmi: 0.52, eh: 44, hh: 9800, utility: 'Potomac Edison', income: 64200, type: 'Suburban SFH' },
-                    { zip: '21502', city: 'Cumberland', lat: 39.6528, lng: -78.7625, lmi: 0.80, eh: 72, hh: 5200, utility: 'Potomac Edison', income: 32100, type: 'Rural/Urban Mix' },
-                    { zip: '21532', city: 'Frostburg', lat: 39.6581, lng: -78.9283, lmi: 0.76, eh: 68, hh: 2800, utility: 'Potomac Edison', income: 35400, type: 'Small Town' },
-                    { zip: '21795', city: 'Williamsport', lat: 39.6003, lng: -77.8203, lmi: 0.65, eh: 55, hh: 3100, utility: 'Potomac Edison', income: 47200, type: 'Small Town' },
-                    { zip: '21793', city: 'Walkersville', lat: 39.4863, lng: -77.3519, lmi: 0.45, eh: 40, hh: 4200, utility: 'Potomac Edison', income: 72500, type: 'Suburban SFH' },
-                    { zip: '21158', city: 'Westminster', lat: 39.5753, lng: -76.9958, lmi: 0.55, eh: 46, hh: 7200, utility: 'Potomac Edison', income: 58900, type: 'Suburban Mixed' },
-                    { zip: '21550', city: 'Oakland', lat: 39.4073, lng: -79.4086, lmi: 0.72, eh: 65, hh: 2400, utility: 'Potomac Edison', income: 37800, type: 'Rural' },
-                ];
-
-                const getLMIColor = (pct) => {
-                    if (pct >= 0.70) return '#00ff88';
-                    if (pct >= 0.50) return '#00bbff';
-                    if (pct >= 0.30) return '#ffaa00';
-                    return '#666666';
-                };
-
-                mdTargetZips.forEach(zone => {
-                    const color = getLMIColor(zone.lmi);
-                    const utilColor = zone.utility === 'Pepco' ? '#00aaff' : '#ff8800';
-
-                    // Check if we have actual sales in this ZIP
-                    const salesCount = window._zipStats ? (window._zipStats[zone.zip] || 0) : 0;
-
-                    L.circle([zone.lat, zone.lng], {
-                        radius: Math.max(800, zone.hh * 0.5),
-                        fillColor: color, fillOpacity: 0.15,
-                        color: color, weight: 2, opacity: 0.5
-                    }).bindPopup(`
-                        <b>${zone.city} (${zone.zip})</b><br>
-                        <span style="color:${utilColor};font-weight:bold;">${zone.utility}</span><br>
-                        LMI: ${(zone.lmi * 100).toFixed(0)}% | Electric Heat: ${zone.eh}%<br>
-                        Households: ${zone.hh.toLocaleString()} | Income: $${zone.income.toLocaleString()}<br>
-                        Housing: ${zone.type}<br>
-                        ${salesCount > 0 ? `<span style="color:#00ff88;">✅ ${salesCount} sales in this ZIP</span>` : '<span style="color:#ff4444;">❌ No sales data in this ZIP</span>'}
-                    `).on('click', () => {
-                        showInfoPanel(`${zone.city} (${zone.zip})`, `
-                            <div style="border-bottom:1px solid #333;padding-bottom:6px;margin-bottom:6px;">
-                                <span class="info-label" style="color:${utilColor}">${zone.utility}</span>
-                            </div>
-                            <div class="info-section-title">Demographics</div>
-                            <div><span class="info-label">LMI %:</span><span class="info-value">${(zone.lmi * 100).toFixed(0)}%</span></div>
-                            <div><span class="info-label">Electric Heat:</span><span class="info-value">${zone.eh}%</span></div>
-                            <div><span class="info-label">Households:</span><span class="info-value">${zone.hh.toLocaleString()}</span></div>
-                            <div><span class="info-label">Median Income:</span><span class="info-value">$${zone.income.toLocaleString()}</span></div>
-                            <div><span class="info-label">Housing Type:</span><span class="info-value">${zone.type}</span></div>
-                            <div class="info-section">
-                                <div class="info-section-title">Sales Performance</div>
-                                <div><span class="info-label">Total Sales:</span><span class="info-value" style="color:${salesCount > 0 ? '#00ff88' : '#ff4444'}">${salesCount.toLocaleString()}</span></div>
-                            </div>
-                            <div style="margin-top:8px;color:#aaa;font-size:11px;">⚠ Census ACS estimates. Verify with utility records.</div>
-                        `);
-                    }).addTo(featureGroups.lmiZones);
-
-                    L.marker([zone.lat, zone.lng], {
-                        icon: L.divIcon({ className: 'zone-label', html: `<span style="font-size:10px;">${zone.zip}</span>`, iconSize: [50, 14], iconAnchor: [25, 7] })
-                    }).addTo(featureGroups.lmiZones);
-                });
-
-                console.log('LMI Zones loaded:', mdTargetZips.length);
-            } catch (error) { console.error('Error loading LMI Zones:', error); }
-        }
-
-        // Housing pins
-        async function loadHousingPins() {
-            try {
-                updateLoading('Loading MD housing data...', 85);
-                const mdHousing = [
-                    { name: 'Boulevard at Capital Centre', lat: 38.8283, lng: -76.8736, type: 'LIHTC', units: 480, city: 'Largo' },
-                    { name: 'Addison Road Station', lat: 38.8866, lng: -76.8930, type: 'LIHTC', units: 250, city: 'Capitol Heights' },
-                    { name: 'Glenarden Hills', lat: 38.9282, lng: -76.8612, type: 'Public Housing', units: 340, city: 'Glenarden' },
-                    { name: 'Suitland Manor', lat: 38.8481, lng: -76.9243, type: 'Section 8', units: 200, city: 'Suitland' },
-                    { name: 'Langley Park Apts', lat: 38.9888, lng: -76.9814, type: 'LIHTC', units: 320, city: 'Langley Park' },
-                    { name: 'Rollingcrest Village', lat: 38.9582, lng: -76.9567, type: 'Section 8', units: 180, city: 'Hyattsville' },
-                    { name: 'Columbia Park', lat: 38.9451, lng: -76.9372, type: 'Public Housing', units: 275, city: 'Bladensburg' },
-                    { name: 'Kentland Community', lat: 38.9210, lng: -76.9255, type: 'Section 8', units: 420, city: 'Landover' },
-                    { name: 'Palmer Park Apts', lat: 38.8800, lng: -76.8856, type: 'LIHTC', units: 290, city: 'Palmer Park' },
-                    { name: 'Marlow Heights Apts', lat: 38.8266, lng: -76.9461, type: 'LIHTC', units: 350, city: 'Marlow Heights' },
-                    { name: 'Georgian Court Apts', lat: 39.0153, lng: -77.0131, type: 'Section 8', units: 240, city: 'Silver Spring' },
-                    { name: 'Cinnamon Run', lat: 39.0783, lng: -77.0489, type: 'LIHTC', units: 180, city: 'Wheaton' },
-                    { name: 'Westview Village', lat: 39.6356, lng: -77.7340, type: 'Public Housing', units: 150, city: 'Hagerstown' },
-                    { name: 'Noland Village', lat: 39.6483, lng: -77.7189, type: 'Section 8', units: 200, city: 'Hagerstown' },
-                    { name: 'Potomac Towers', lat: 39.6421, lng: -77.7151, type: 'Senior Housing', units: 120, city: 'Hagerstown' },
-                    { name: 'Prospect Place', lat: 39.4093, lng: -77.4167, type: 'LIHTC', units: 160, city: 'Frederick' },
-                    { name: 'Church Street Terrace', lat: 39.4161, lng: -77.4082, type: 'Public Housing', units: 100, city: 'Frederick' },
-                    { name: 'Queen City Towers', lat: 39.6529, lng: -78.7647, type: 'Senior Housing', units: 140, city: 'Cumberland' },
-                    { name: 'Fort Cumberland Homes', lat: 39.6478, lng: -78.7701, type: 'Public Housing', units: 180, city: 'Cumberland' },
-                    { name: 'Whispering Pines MHP', lat: 39.5124, lng: -77.3875, type: 'Mobile Home', units: 85, city: 'Frederick' },
-                    { name: 'Mountain View MHP', lat: 39.6281, lng: -78.7892, type: 'Mobile Home', units: 60, city: 'Cumberland' },
-                    { name: 'Halfway MHP', lat: 39.6182, lng: -77.7565, type: 'Mobile Home', units: 95, city: 'Hagerstown' },
-                ];
-
-                const typeColors = { 'LIHTC': '#aa66ff', 'Public Housing': '#ff6666', 'Section 8': '#66aaff', 'Senior Housing': '#ffcc66', 'Mobile Home': '#00ddff' };
-                const typeEmojis = { 'LIHTC': '🏢', 'Public Housing': '🏘', 'Section 8': '🏠', 'Senior Housing': '👴', 'Mobile Home': '🏕' };
-
-                mdHousing.forEach(h => {
-                    const color = typeColors[h.type] || '#888';
-                    const emoji = typeEmojis[h.type] || '📍';
-                    L.circleMarker([h.lat, h.lng], {
-                        radius: Math.max(6, Math.min(16, Math.sqrt(h.units) / 1.5)),
-                        fillColor: color, color: color, weight: 2, opacity: 0.9, fillOpacity: 0.8
-                    }).bindPopup(`<b>${emoji} ${h.name}</b><br>Type: ${h.type}<br>City: ${h.city}<br>Units: ${h.units}`)
-                    .on('click', () => {
-                        showInfoPanel(h.name, `
-                            <div><span class="info-label">Type:</span><span class="info-value">${h.type}</span></div>
-                            <div><span class="info-label">City:</span><span class="info-value">${h.city}</span></div>
-                            <div><span class="info-label">Units:</span><span class="info-value">${h.units}</span></div>
-                            <div style="margin-top:8px;color:#aaa;font-size:11px;">⚠ Verify unit counts with HUD database</div>
-                        `);
-                    }).addTo(featureGroups.housingPins);
-                });
-                console.log('MD Housing loaded:', mdHousing.length);
-            } catch (error) { console.error('Error loading housing:', error); }
-        }
-
-        // Target zones
+        // ── Target zone markers (priority cities) ──
         function loadTargetZones() {
-            updateLoading('Scoring target zones...', 90);
+            updateLoading('Loading target zones...', 92);
             const targets = [
-                { city: 'Capitol Heights', lat: 38.885, lng: -76.912, score: 0.88, utility: 'Pepco', reason: 'High LMI + apt density + electric heat' },
-                { city: 'Riverdale', lat: 38.963, lng: -76.931, score: 0.85, utility: 'Pepco', reason: 'Highest LMI in PG County + dense housing' },
-                { city: 'Mt Rainier', lat: 38.942, lng: -76.965, score: 0.84, utility: 'Pepco', reason: 'Very high LMI + compact walkable area' },
-                { city: 'Suitland', lat: 38.849, lng: -76.922, score: 0.82, utility: 'Pepco', reason: 'Large HH count + high LMI' },
-                { city: 'Bladensburg', lat: 38.939, lng: -76.934, score: 0.80, utility: 'Pepco', reason: 'High LMI + electric heat' },
-                { city: 'Hagerstown', lat: 39.642, lng: -77.720, score: 0.78, utility: 'Potomac Edison', reason: 'Large market + high LMI + public housing' },
-                { city: 'Cumberland', lat: 39.653, lng: -78.763, score: 0.82, utility: 'Potomac Edison', reason: 'Very high LMI + high electric heat' },
-                { city: 'Frostburg', lat: 39.658, lng: -78.928, score: 0.76, utility: 'Potomac Edison', reason: 'High LMI + rural electric heat' },
-                { city: 'Frederick', lat: 39.414, lng: -77.411, score: 0.65, utility: 'Potomac Edison', reason: 'Large market + moderate LMI' },
-                { city: 'Hyattsville', lat: 38.956, lng: -76.942, score: 0.79, utility: 'Pepco', reason: 'Dense apts + high LMI' },
-                { city: 'Langley Park', lat: 38.989, lng: -76.981, score: 0.83, utility: 'Pepco', reason: 'Very dense apt area + high LMI' },
-                { city: 'Temple Hills', lat: 38.813, lng: -76.940, score: 0.72, utility: 'Pepco', reason: 'Large market + decent LMI' },
-                { city: 'Oakland', lat: 39.407, lng: -79.409, score: 0.70, utility: 'Potomac Edison', reason: 'Rural high LMI + electric heat' },
+                { city:'Capitol Heights', la:38.885, lo:-76.912, score:0.88, util:'Pepco', why:'High LMI + apt density + electric heat' },
+                { city:'Riverdale', la:38.963, lo:-76.931, score:0.85, util:'Pepco', why:'Highest LMI in PG County + dense housing' },
+                { city:'Mt Rainier', la:38.942, lo:-76.965, score:0.84, util:'Pepco', why:'Very high LMI + compact walkable area' },
+                { city:'Suitland', la:38.849, lo:-76.922, score:0.82, util:'Pepco', why:'Large HH count + high LMI' },
+                { city:'Bladensburg', la:38.939, lo:-76.934, score:0.80, util:'Pepco', why:'High LMI + electric heat' },
+                { city:'Hagerstown', la:39.642, lo:-77.720, score:0.78, util:'Potomac Edison', why:'Large market + high LMI + public housing' },
+                { city:'Cumberland', la:39.653, lo:-78.763, score:0.82, util:'Potomac Edison', why:'Very high LMI + high electric heat' },
+                { city:'Frostburg', la:39.658, lo:-78.928, score:0.76, util:'Potomac Edison', why:'High LMI + rural electric heat' },
+                { city:'Frederick', la:39.414, lo:-77.411, score:0.65, util:'Potomac Edison', why:'Large market + moderate LMI' },
+                { city:'Hyattsville', la:38.956, lo:-76.942, score:0.79, util:'Pepco', why:'Dense apts + high LMI' },
+                { city:'Langley Park', la:38.989, lo:-76.981, score:0.83, util:'Pepco', why:'Very dense apt area + high LMI' },
+                { city:'Temple Hills', la:38.813, lo:-76.940, score:0.72, util:'Pepco', why:'Large market + decent LMI' },
+                { city:'Oakland', la:39.407, lo:-79.409, score:0.70, util:'Potomac Edison', why:'Rural high LMI + electric heat' },
             ];
-
-            const getScoreColor = (score) => score > 0.8 ? '#22aa22' : score > 0.65 ? '#ffaa22' : '#ff3333';
+            const scoreCol = s => s > 0.8 ? '#22aa22' : s > 0.65 ? '#ffaa22' : '#ff3333';
 
             targets.forEach(t => {
-                const color = getScoreColor(t.score);
-                const utilColor = t.utility === 'Pepco' ? '#00aaff' : '#ff8800';
-                L.circleMarker([t.lat, t.lng], {
-                    radius: 12, fillColor: color, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.8
-                }).bindPopup(`<b>${t.city}</b><br><span style="color:${utilColor};font-weight:bold;">${t.utility}</span><br>Target Score: ${t.score.toFixed(2)}<br>${t.reason}`)
-                .on('click', () => {
-                    showInfoPanel(`${t.city} Target Zone`, `
-                        <div><span class="info-label">Utility:</span><span class="info-value" style="color:${utilColor}">${t.utility}</span></div>
-                        <div><span class="info-label">Target Score:</span><span class="info-value">${t.score.toFixed(2)}</span></div>
-                        <div><span class="info-label">Reason:</span><span class="info-value">${t.reason}</span></div>
-                    `);
-                }).addTo(featureGroups.targetZones);
-                L.marker([t.lat, t.lng], {
-                    icon: L.divIcon({ className: 'zone-label', html: t.city, iconSize: [100, 16], iconAnchor: [50, -10] })
-                }).addTo(featureGroups.targetZones);
+                const col = scoreCol(t.score);
+                const ucol = t.util === 'Pepco' ? '#00aaff' : '#ff8800';
+                L.circleMarker([t.la, t.lo], { radius: 12, fillColor: col, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.85 })
+                .bindPopup(`<b>${t.city}</b> — <span style="color:${ucol}">${t.util}</span><br>Score: ${t.score.toFixed(2)}<br>${t.why}`)
+                .on('click', () => showInfoPanel(t.city + ' Target', `
+                    <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:${ucol}">${t.util}</span></div>
+                    <div class="info-row"><span class="info-label">Score:</span><span class="info-value">${t.score.toFixed(2)}</span></div>
+                    <div class="info-row"><span class="info-label">Reason:</span><span class="info-value">${t.why}</span></div>
+                `)).addTo(fg.targetZones);
+                L.marker([t.la, t.lo], { icon: L.divIcon({ className:'zone-label', html:t.city, iconSize:[100,16], iconAnchor:[50,-10] }) }).addTo(fg.targetZones);
             });
-            console.log('Target zones loaded:', targets.length);
         }
 
-        // Search
+        // ── Search ──
         function searchLocation() {
             const term = document.getElementById('searchInput').value.toLowerCase().trim();
             if (!term) return;
-
-            // First check sales data for city/ZIP match
-            if (window._salesData) {
-                for (const d of window._salesData) {
-                    const city = (d[2] || '').toLowerCase();
-                    const zip = (d[3] || '');
-                    if (city === term || zip === term) {
+            // Check sales data
+            if (salesData.length) {
+                for (const d of salesData) {
+                    if ((d[2]||'').toLowerCase() === term || (d[3]||'') === term) {
                         map.setView([d[0], d[1]], 14);
-                        updateStatus(`Found "${term}" — ${window._cityStats[d[2]] || window._zipStats[d[3]] || 0} sales records`);
+                        updateStatus(`Found "${term}"`);
                         return;
                     }
                 }
             }
-
             let found = false;
             map.eachLayer(layer => {
                 if (found) return;
                 if (layer.getPopup) {
-                    const popup = layer.getPopup();
-                    if (popup && popup.getContent().toLowerCase().includes(term)) {
+                    const p = layer.getPopup();
+                    if (p && p.getContent().toLowerCase().includes(term)) {
                         if (layer.getLatLng) { map.setView(layer.getLatLng(), 13); layer.openPopup(); found = true; }
                         else if (layer.getBounds) { map.fitBounds(layer.getBounds()); found = true; }
                     }
@@ -603,25 +574,24 @@
             if (!found) alert(`No results for "${term}"`);
         }
 
-        // Load all
+        // ── Init ──
         async function loadAllData() {
             try {
                 loadPepcoArea();
                 loadPotomacArea();
+                await loadZipBoundaries();
                 await loadSalesData();
-                await loadLMIZones();
-                await loadHousingPins();
+                loadHousingPins();
                 loadTargetZones();
                 updateLoading('Complete', 100);
-                setTimeout(() => hideLoading(), 500);
-            } catch (error) {
-                console.error('Load error:', error);
+                setTimeout(hideLoading, 500);
+            } catch (e) {
+                console.error('Load error:', e);
                 hideLoading();
             }
         }
-
         loadAllData();
-        document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') searchLocation(); });
+        document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
     </script>
 </body>
 </html>
