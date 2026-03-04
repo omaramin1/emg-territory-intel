@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EMG Targeting Map - Maryland Territory</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
@@ -30,17 +30,24 @@
 
         .zone-label { background: none !important; border: none !important; box-shadow: none !important; color: #fff; font-size: 11px; font-weight: 700; text-shadow: 0 0 4px #000, 0 0 8px #000, 1px 1px 2px #000; white-space: nowrap; }
 
-        .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 15px 20px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); }
-        .header h1 { font-size: 18px; color: #ff8800; font-weight: 600; }
-        .header .sub { font-size: 12px; color: #aaa; margin-top: 4px; }
-        .utility-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin: 2px; }
+        .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 12px 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); }
+        .header h1 { font-size: 16px; color: #ff8800; font-weight: 600; }
+        .header .sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+        .utility-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 10px; font-weight: 600; margin: 1px; }
         .badge-pepco { background: #00aaff; color: #000; }
         .badge-potomac { background: #ff8800; color: #000; }
         .badge-bge { background: #44cc44; color: #000; }
 
+        /* ── COLLAPSIBLE PANELS ── */
+        .panel-minimized .panel-body { display: none !important; }
+        .panel-minimized { width: auto !important; min-width: 0 !important; }
+
         /* ── CUSTOM TOGGLE PANEL ── */
-        .toggle-panel { position: absolute; top: 10px; right: 10px; z-index: 1200; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 230px; max-height: calc(100vh - 30px); overflow-y: auto; }
-        .toggle-panel h3 { color: #ff8800; font-size: 13px; margin-bottom: 10px; cursor: pointer; user-select: none; }
+        .toggle-panel { position: absolute; top: 10px; right: 10px; z-index: 1200; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 30px); overflow-y: auto; transition: width 0.2s; }
+        .toggle-panel h3 { color: #ff8800; font-size: 13px; margin-bottom: 10px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .toggle-panel h3 .arrow { transition: transform 0.2s; font-size: 10px; }
+        .toggle-panel.panel-minimized h3 .arrow { transform: rotate(-90deg); }
+        .toggle-panel.panel-minimized h3 { margin-bottom: 0; }
         .toggle-section { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
         .toggle-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .toggle-section-title { color: #888; font-size: 10px; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px; }
@@ -61,32 +68,48 @@
         .basemap-row input[type="radio"] { accent-color: #ff8800; margin-right: 6px; }
         .basemap-label { font-size: 11px; color: #ccc; }
 
-        .info-panel { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.98); padding: 20px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 360px; max-height: 550px; overflow-y: auto; display: none; }
+        .info-panel { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.98); padding: 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 340px; max-height: 500px; overflow-y: auto; display: none; }
         .info-panel.active { display: block; }
-        .info-panel h3 { color: #ff8800; font-size: 14px; margin-bottom: 12px; }
+        .info-panel h3 { color: #ff8800; font-size: 14px; margin-bottom: 12px; padding-right: 30px; }
         .info-label { color: #ff8800; font-weight: 600; }
         .info-value { color: #e0e0e0; margin-left: 5px; }
         .info-section { border-top: 1px solid #333; padding-top: 8px; margin-top: 8px; }
         .info-section-title { color: #ffaa44; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
         .info-row { margin-bottom: 5px; font-size: 12px; }
 
-        .search-panel { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 10px 15px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); display: flex; gap: 8px; align-items: center; }
-        .search-panel input { width: 200px; padding: 7px 10px; background: rgba(255,255,255,0.1); border: 1px solid #ff8800; border-radius: 4px; color: #e0e0e0; font-size: 12px; }
+        /* ── PRIORITY RANKING PANEL ── */
+        .priority-panel { position: absolute; left: 10px; bottom: 60px; z-index: 1100; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #00ff88; backdrop-filter: blur(10px); width: 260px; max-height: 360px; overflow-y: auto; transition: width 0.2s; }
+        .priority-panel h4 { color: #00ff88; font-size: 12px; cursor: pointer; user-select: none; margin: 0; display: flex; justify-content: space-between; align-items: center; }
+        .priority-panel h4 .arrow { transition: transform 0.2s; font-size: 10px; }
+        .priority-panel.panel-minimized h4 .arrow { transform: rotate(-90deg); }
+        .priority-panel .panel-body { margin-top: 8px; }
+        .priority-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 4px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; font-size: 11px; }
+        .priority-item:hover { background: rgba(0,255,136,0.1); }
+        .priority-rank { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px; flex-shrink: 0; color: #000; }
+        .priority-info { flex: 1; min-width: 0; }
+        .priority-zip { font-weight: 600; color: #fff; }
+        .priority-city { color: #aaa; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .priority-score { font-weight: 700; font-size: 10px; flex-shrink: 0; }
+        .priority-tier-header { color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; margin: 8px 0 4px 0; letter-spacing: 0.5px; padding-bottom: 3px; border-bottom: 1px solid #333; }
+        .priority-tier-header:first-child { margin-top: 0; }
+
+        .search-panel { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 8px 12px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); display: flex; gap: 6px; align-items: center; }
+        .search-panel input { width: 180px; padding: 7px 10px; background: rgba(255,255,255,0.1); border: 1px solid #ff8800; border-radius: 4px; color: #e0e0e0; font-size: 12px; }
         .search-panel input::placeholder { color: #666; }
         .search-panel input:focus { outline: none; border-color: #00ff88; }
-        .search-btn { padding: 7px 14px; background: #ff8800; border: none; border-radius: 4px; color: #0a0a12; font-weight: 600; cursor: pointer; font-size: 12px; }
+        .search-btn { padding: 7px 12px; background: #ff8800; border: none; border-radius: 4px; color: #0a0a12; font-weight: 600; cursor: pointer; font-size: 12px; }
         .search-btn:hover { background: #00ff88; }
-        .close-button { position: absolute; top: 10px; right: 10px; background: #ff8800; border: none; width: 24px; height: 24px; border-radius: 50%; color: #0a0a12; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .close-button { position: absolute; top: 8px; right: 8px; background: #ff8800; border: none; width: 22px; height: 22px; border-radius: 50%; color: #0a0a12; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
         .close-button:hover { background: #00ff88; }
 
-        .status-banner { position: absolute; top: 70px; left: 10px; z-index: 1000; background: rgba(255,136,0,0.15); padding: 8px 15px; border-radius: 6px; border: 1px solid rgba(255,136,0,0.4); font-size: 11px; color: #ffaa44; }
+        .status-banner { position: absolute; top: 65px; left: 10px; z-index: 1000; background: rgba(255,136,0,0.15); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,136,0,0.4); font-size: 11px; color: #ffaa44; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* ── MAP LEGEND ── */
-        .legend { position: absolute; bottom: 60px; left: 10px; z-index: 1000; background: rgba(10,10,18,0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 220px; max-height: 420px; overflow-y: auto; }
-        .legend.collapsed .legend-body { display: none; }
+        .legend { position: absolute; bottom: 60px; right: 10px; z-index: 1000; background: rgba(10,10,18,0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 210px; max-height: 400px; overflow-y: auto; transition: width 0.2s; }
+        .legend.panel-minimized .legend-body { display: none; }
         .legend h4 { color: #ff8800; font-size: 12px; cursor: pointer; user-select: none; margin: 0; display: flex; justify-content: space-between; align-items: center; }
-        .legend h4 .arrow { transition: transform 0.2s; }
-        .legend.collapsed h4 .arrow { transform: rotate(-90deg); }
+        .legend h4 .arrow { transition: transform 0.2s; font-size: 10px; }
+        .legend.panel-minimized h4 .arrow { transform: rotate(-90deg); }
         .legend-body { margin-top: 10px; }
         .legend-section { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #333; }
         .legend-section:last-child { border-bottom: none; margin-bottom: 0; }
@@ -95,6 +118,12 @@
         .legend-swatch { width: 18px; height: 10px; border-radius: 2px; flex-shrink: 0; }
         .legend-circle { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid #fff; }
         .legend-line { width: 18px; height: 0; border-top: 3px solid; flex-shrink: 0; }
+
+        /* ── PRIORITY DROP PINS ── */
+        .priority-pin { width: 28px; height: 36px; position: relative; }
+        .priority-pin .pin-head { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .priority-pin .pin-num { transform: rotate(45deg); font-weight: 700; font-size: 11px; color: #000; }
+        .priority-pin .pin-tail { width: 2px; height: 10px; background: #fff; position: absolute; bottom: 0; left: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
 
         .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 18, 0.98); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .loading-screen.hidden { display: none; }
@@ -106,6 +135,33 @@
 
         .eh-pulse { border-radius: 50%; animation: ehPulse 2s infinite; }
         @keyframes ehPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,60,60,0.5); } 50% { box-shadow: 0 0 0 8px rgba(255,60,60,0); } }
+
+        /* ── MOBILE RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .header { padding: 8px 12px; max-width: 200px; }
+            .header h1 { font-size: 13px; }
+            .header .sub { font-size: 9px; }
+            .utility-badge { font-size: 8px; padding: 1px 4px; }
+            .toggle-panel { width: 180px; padding: 10px; font-size: 10px; max-height: 50vh; }
+            .toggle-panel h3 { font-size: 11px; }
+            .toggle-label { font-size: 10px; }
+            .info-panel { max-width: 280px; max-height: 350px; padding: 12px; left: 5px; }
+            .info-panel h3 { font-size: 12px; }
+            .priority-panel { width: 220px; max-height: 280px; left: 5px; bottom: 50px; }
+            .legend { width: 180px; max-height: 300px; right: 5px; bottom: 50px; }
+            .search-panel { bottom: 5px; }
+            .search-panel input { width: 140px; font-size: 11px; padding: 6px 8px; }
+            .search-btn { padding: 6px 10px; font-size: 11px; }
+            .status-banner { font-size: 10px; max-width: 200px; top: 55px; }
+        }
+        @media (max-width: 480px) {
+            .header { max-width: 160px; padding: 6px 10px; }
+            .header h1 { font-size: 11px; }
+            .toggle-panel { width: 160px; top: 5px; right: 5px; }
+            .priority-panel { width: 190px; }
+            .legend { width: 160px; }
+            .search-panel input { width: 110px; }
+        }
     </style>
 </head>
 <body>
@@ -123,44 +179,46 @@
 
     <div class="status-banner" id="statusBanner">Loading data layers...</div>
 
-    <!-- ── CUSTOM TOGGLE PANEL ── -->
+    <!-- ── CUSTOM TOGGLE PANEL (collapsible) ── -->
     <div class="toggle-panel" id="togglePanel">
-        <h3>⚙ Layers & Overlays</h3>
+        <h3 onclick="document.getElementById('togglePanel').classList.toggle('panel-minimized')">⚙ Layers & Overlays <span class="arrow">▼</span></h3>
+        <div class="panel-body">
+            <div class="toggle-section">
+                <div class="toggle-section-title">Base Map</div>
+                <label class="basemap-row"><input type="radio" name="basemap" value="streets" checked onchange="switchBasemap('streets')"><span class="basemap-label">Streets</span></label>
+                <label class="basemap-row"><input type="radio" name="basemap" value="satellite" onchange="switchBasemap('satellite')"><span class="basemap-label">Satellite</span></label>
+                <label class="basemap-row"><input type="radio" name="basemap" value="dark" onchange="switchBasemap('dark')"><span class="basemap-label">Dark</span></label>
+            </div>
 
-        <div class="toggle-section">
-            <div class="toggle-section-title">Base Map</div>
-            <label class="basemap-row"><input type="radio" name="basemap" value="streets" checked onchange="switchBasemap('streets')"><span class="basemap-label">Streets</span></label>
-            <label class="basemap-row"><input type="radio" name="basemap" value="satellite" onchange="switchBasemap('satellite')"><span class="basemap-label">Satellite</span></label>
-            <label class="basemap-row"><input type="radio" name="basemap" value="dark" onchange="switchBasemap('dark')"><span class="basemap-label">Dark</span></label>
-        </div>
+            <div class="toggle-section">
+                <div class="toggle-section-title">Zone Overlays</div>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
+            </div>
 
-        <div class="toggle-section">
-            <div class="toggle-section-title">Zone Overlays</div>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
-        </div>
+            <div class="toggle-section">
+                <div class="toggle-section-title">Pins & Markers</div>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (25K+)</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housing',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#aa66ff;"></div><span class="toggle-label">🏢 Housing / Apts</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">📌 Priority Targets</span></label>
+            </div>
 
-        <div class="toggle-section">
-            <div class="toggle-section-title">Pins & Markers</div>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (25K+)</span></label>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housing',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#aa66ff;"></div><span class="toggle-label">🏢 Housing / Apts</span></label>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">🎯 Target Zones</span></label>
-        </div>
+            <div class="toggle-section">
+                <div class="toggle-section-title">Utility Territories</div>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('pepco',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00aaff;"></div><span class="toggle-label">⚡ Pepco</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('potomac',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff8800;"></div><span class="toggle-label">⚡ Potomac Edison</span></label>
+            </div>
 
-        <div class="toggle-section">
-            <div class="toggle-section-title">Utility Territories</div>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('pepco',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00aaff;"></div><span class="toggle-label">⚡ Pepco</span></label>
-            <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('potomac',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff8800;"></div><span class="toggle-label">⚡ Potomac Edison</span></label>
-        </div>
-
-        <div class="toggle-section" style="border-bottom:none;">
-            <div class="toggle-section-title">Stats</div>
-            <div style="font-size:11px;">Total Sales: <span style="color:#ff8800;font-weight:700;" id="statTotal">—</span></div>
-            <div style="font-size:11px;">ZIP Zones: <span style="color:#ff8800;font-weight:700;" id="statZips">—</span></div>
-            <div style="font-size:11px;">Cities: <span style="color:#ff8800;font-weight:700;" id="statCities">—</span></div>
-            <div style="font-size:11px;">Targets: <span style="color:#00ff44;font-weight:700;" id="statTargets">—</span></div>
-            <div style="font-size:11px;">In View: <span style="color:#ff8800;font-weight:700;" id="statVisible">—</span></div>
+            <div class="toggle-section" style="border-bottom:none;">
+                <div class="toggle-section-title">Stats</div>
+                <div style="font-size:11px;">Total Sales: <span style="color:#ff8800;font-weight:700;" id="statTotal">—</span></div>
+                <div style="font-size:11px;">ZIP Zones: <span style="color:#ff8800;font-weight:700;" id="statZips">—</span></div>
+                <div style="font-size:11px;">Cities: <span style="color:#ff8800;font-weight:700;" id="statCities">—</span></div>
+                <div style="font-size:11px;">Priorities: <span style="color:#00ff44;font-weight:700;" id="statTargets">—</span></div>
+                <div style="font-size:11px;">In View: <span style="color:#ff8800;font-weight:700;" id="statVisible">—</span></div>
+            </div>
         </div>
     </div>
 
@@ -175,9 +233,15 @@
         <div id="infoPanelContent"></div>
     </div>
 
-    <!-- ── MAP LEGEND ── -->
+    <!-- ── PRIORITY RANKING PANEL (collapsible) ── -->
+    <div class="priority-panel" id="priorityPanel" style="display:none;">
+        <h4 onclick="document.getElementById('priorityPanel').classList.toggle('panel-minimized')">📌 Priority Rankings <span class="arrow">▼</span></h4>
+        <div class="panel-body" id="priorityList"></div>
+    </div>
+
+    <!-- ── MAP LEGEND (collapsible) ── -->
     <div class="legend" id="mapLegend">
-        <h4 onclick="document.getElementById('mapLegend').classList.toggle('collapsed')">🗺 Map Key <span class="arrow">▼</span></h4>
+        <h4 onclick="document.getElementById('mapLegend').classList.toggle('panel-minimized')">🗺 Map Key <span class="arrow">▼</span></h4>
         <div class="legend-body">
             <div class="legend-section">
                 <div class="legend-section-title">Sales Density (ZIP Fill)</div>
@@ -189,21 +253,18 @@
                 <div class="legend-item"><div class="legend-swatch" style="background:#444;"></div> 0 sales</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">LMI Target Outlines</div>
+                <div class="legend-section-title">Priority Drop Pins</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00ff44;"></div> Tier 1 — LMI + Low Sat + High kWh</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00ccff;"></div> Tier 2 — ~80% Median + Partial Sat</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ffcc00;"></div> Tier 3 — Moderate Opportunity</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Zone Overlays</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#00ff88;"></div> LMI ≥ 70% (solid)</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#00bbff;border-style:dashed;"></div> LMI < 70% (dashed)</div>
-            </div>
-            <div class="legend-section">
-                <div class="legend-section-title">Electric Heat Zones</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ff2222;border-width:4px;border-style:dashed;"></div> EH ≥ 65% — Critical</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ff6644;border-style:dashed;"></div> EH 55–64% — High</div>
-            </div>
-            <div class="legend-section">
-                <div class="legend-section-title">Target Pins (Census Scored)</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#00ff44;"></div> Tier 1 (score ≥ 75)</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ffcc00;"></div> Tier 2 (55–74)</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 3 (40–54)</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ff4444;"></div> Tier 4 (< 40)</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">Housing Pins</div>
@@ -252,11 +313,12 @@
         const fg = {
             zipZones: L.featureGroup(),
             lmiOutlines: L.featureGroup(),
-            ehZones: L.featureGroup(),       // NEW: Electric Heat zones
+            ehZones: L.featureGroup(),
             pepcoArea: L.featureGroup(),
             potomacArea: L.featureGroup(),
             housingPins: L.featureGroup(),
-            targetZones: L.featureGroup()
+            targetZones: L.featureGroup(),
+            priorityHighlight: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -287,6 +349,7 @@
             sales: salesCluster,
             housing: fg.housingPins,
             targets: fg.targetZones,
+            priorityHighlight: fg.priorityHighlight,
             pepco: fg.pepcoArea,
             potomac: fg.potomacArea
         };
@@ -304,6 +367,7 @@
         let cityStats = {};
         let zipStats = {};
         let demoData = {};  // Census ACS demographics by ZIP
+        let priorityTargets = [];  // Populated by loadTargetZones
 
         // ── Helpers ──
         function updateLoading(s, p) { document.getElementById('loadingStatus').textContent = s; document.getElementById('loadingBar').style.width = p + '%'; }
@@ -367,6 +431,7 @@
         };
 
         const zipCentroids = {};  // Global: ZIP → [lat, lng] for target pin placement
+        const zipGeoFeatures = {};  // ZIP → GeoJSON feature for priority highlighting
 
         // ── LOAD ZIP BOUNDARIES ──
         async function loadZipBoundaries() {
@@ -393,6 +458,9 @@
                     const isTarget = !!lmi;
                     const color = getDensityColor(count);
                     const opacity = getDensityOpacity(count);
+
+                    // Store feature for priority highlighting
+                    zipGeoFeatures[zip] = feature;
 
                     // Choropleth polygon
                     L.geoJSON(feature, {
@@ -424,7 +492,6 @@
                                     <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
                                     ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
                                 if (demo) {
-                                    // Race mix bar
                                     const raceBar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;margin:4px 0;">
                                         <div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>
                                         <div style="width:${demo.rb}%;background:#4a90d9;" title="Black ${demo.rb}%"></div>
@@ -506,7 +573,6 @@
                                 style: { fillColor: '#ff3333', fillOpacity: lmi.eh >= 65 ? 0.12 : 0.06, color: ehColor, weight: ehWeight, opacity: 0.8, dashArray: '4, 3' }
                             }).addTo(fg.ehZones);
 
-                            // EH label
                             L.marker(center, {
                                 icon: L.divIcon({ className: 'zone-label', html: `<span style="color:#ff4444;font-size:10px;">🔥${lmi.eh}% EH</span>`, iconSize: [80, 14], iconAnchor: [40, -8] })
                             }).addTo(fg.ehZones);
@@ -630,7 +696,6 @@
                 const lmi = lmiData[x.z];
                 const ehPct = lmi ? lmi.eh : 0;
 
-                // Outer ring for electric heat indicator
                 if (x.eh && ehPct >= 55) {
                     L.circleMarker([x.la, x.lo], {
                         radius: Math.max(10, Math.min(20, Math.sqrt(x.u) / 1.5)) + 4,
@@ -666,109 +731,272 @@
             });
         }
 
-        // ── SMART TARGET IDENTIFICATION ──
-        // Scores every ZIP with Census data using: EH households, low income, high population, sales saturation
+        // ══════════════════════════════════════════════════
+        // ██  PRIORITY SCORING ENGINE v2                  ██
+        // ██  Income-relative + Saturation + kWh + Demo   ██
+        // ══════════════════════════════════════════════════
         function loadTargetZones() {
-            updateLoading('Analyzing high-potential targets...', 92);
-            const scored = [];
-            // Use pre-computed zipCentroids from loadZipBoundaries()
+            updateLoading('Running priority scoring engine...', 92);
 
-            // Score every ZIP that has demographic data
+            // ── Step 1: Compute MD state median per-capita income ──
+            // Population-weighted median: sort ZIPs by income, walk pop until 50%
+            const incomeEntries = [];
+            let totalPop = 0;
             for (const [zip, d] of Object.entries(demoData)) {
-                if (d.pop < 500) continue;  // skip tiny ZIPs
-                const sales = zipSalesData[zip] ? zipSalesData[zip].n : 0;
-                const city = zipSalesData[zip] ? zipSalesData[zip].c : '';
+                if (d.pop >= 200 && d.inc > 0) {
+                    incomeEntries.push({ inc: d.inc, pop: d.pop });
+                    totalPop += d.pop;
+                }
+            }
+            incomeEntries.sort((a, b) => a.inc - b.inc);
+            let cumPop = 0;
+            let stateMedianIncome = 40000; // fallback
+            for (const e of incomeEntries) {
+                cumPop += e.pop;
+                if (cumPop >= totalPop / 2) { stateMedianIncome = e.inc; break; }
+            }
+            const lmiThreshold = stateMedianIncome * 0.80; // 80% of state median
+            console.log(`State median per-capita income: $${stateMedianIncome.toLocaleString()} | LMI threshold (80%): $${lmiThreshold.toLocaleString()}`);
 
-                // Scoring algorithm (0-100):
-                // 1. Electric heat households (raw count matters for revenue): 0-25 pts
-                const ehScore = Math.min(25, (d.ehe / 200) * 25);
-                // 2. Electric heat rate (high % = easier targeting): 0-15 pts
-                const ehRateScore = Math.min(15, (d.ehp / 60) * 15);
-                // 3. Lower income = higher LMI eligibility: 0-20 pts
-                const incScore = d.inc < 35000 ? 20 : d.inc < 45000 ? 16 : d.inc < 55000 ? 12 : d.inc < 65000 ? 8 : d.inc < 80000 ? 4 : 0;
-                // 4. Population density (more doors to knock): 0-15 pts
-                const popScore = Math.min(15, (d.pop / 30000) * 15);
-                // 5. Proven sales (validates market): 0-15 pts
-                const salesScore = Math.min(15, (sales / 100) * 15);
-                // 6. Larger households = more decision makers home: 0-10 pts
-                const hhScore = Math.min(10, ((d.hhs - 1.5) / 2) * 10);
-
-                const total = ehScore + ehRateScore + incScore + popScore + salesScore + hhScore;
-                const normalized = Math.min(1.0, total / 80);  // normalize to 0-1
-
-                // Build reason string
-                const reasons = [];
-                if (d.ehp >= 50) reasons.push(`${d.ehp}% electric heat`);
-                else if (d.ehp >= 30) reasons.push(`${d.ehp}% EH`);
-                if (d.ehe >= 3000) reasons.push(`${d.ehe.toLocaleString()} EH households`);
-                if (d.inc < 45000) reasons.push(`Low income ($${(d.inc/1000).toFixed(0)}K)`);
-                if (d.pop >= 30000) reasons.push(`Large pop (${(d.pop/1000).toFixed(0)}K)`);
-                if (sales >= 50) reasons.push(`${sales} proven sales`);
-                if (d.hhs >= 3) reasons.push(`Large HH (${d.hhs})`);
-
+            // ── Step 2: Score every ZIP ──
+            const scored = [];
+            for (const [zip, d] of Object.entries(demoData)) {
+                if (d.pop < 500) continue;
                 const coords = zipCentroids[zip];
                 if (!coords) continue;
 
+                const sales = zipSalesData[zip] ? zipSalesData[zip].n : 0;
+                const city = zipSalesData[zip] ? zipSalesData[zip].c : '';
+
+                // ── Saturation: sales per 1000 residents ──
+                const satRate = (sales / d.pop) * 1000;
+                let satLevel, satLabel;
+                if (satRate < 2) { satLevel = 'low'; satLabel = 'Low Saturation'; }
+                else if (satRate < 8) { satLevel = 'partial'; satLabel = 'Partial Saturation'; }
+                else { satLevel = 'high'; satLabel = 'Saturated'; }
+
+                // ── Income relative to state median ──
+                const incomeRatio = d.inc / stateMedianIncome;
+                const isLMI = d.inc < lmiThreshold;                    // < 80% of median
+                const isNearLMI = d.inc >= lmiThreshold && d.inc < stateMedianIncome; // 80-100% of median
+
+                // ── Electric heating intensity ──
+                const ehHigh = d.ehp >= 30;  // 30%+ EH rate = high kWh expected
+                const ehVeryHigh = d.ehp >= 50;
+
+                // ── TIER ASSIGNMENT (strict criteria) ──
+                let tier, tierColor, tierLabel;
+
+                if (isLMI && satLevel === 'low' && ehHigh) {
+                    // TIER 1: Income < 80% median + low saturation + high kWh
+                    tier = 1;
+                    tierColor = '#00ff44';
+                    tierLabel = '🔥 TIER 1 — TOP PRIORITY';
+                } else if (isLMI && satLevel === 'low' && d.ehp >= 20) {
+                    // TIER 1B: LMI + low sat + moderate EH (still very good)
+                    tier = 1;
+                    tierColor = '#00ff44';
+                    tierLabel = '🔥 TIER 1 — TOP PRIORITY';
+                } else if ((isLMI || isNearLMI) && satLevel === 'partial' && ehHigh) {
+                    // TIER 2: Near 80% median + partial saturation + high EH
+                    tier = 2;
+                    tierColor = '#00ccff';
+                    tierLabel = '⬆ TIER 2 — HIGH VALUE';
+                } else if (isNearLMI && satLevel === 'low') {
+                    // TIER 2B: Near-LMI + unsaturated (demographic-similar to T1)
+                    tier = 2;
+                    tierColor = '#00ccff';
+                    tierLabel = '⬆ TIER 2 — HIGH VALUE';
+                } else if (isLMI && satLevel === 'partial') {
+                    // TIER 2C: LMI but partially saturated
+                    tier = 2;
+                    tierColor = '#00ccff';
+                    tierLabel = '⬆ TIER 2 — HIGH VALUE';
+                } else if ((isLMI || isNearLMI) && ehHigh) {
+                    // TIER 3: Has either income or EH advantage
+                    tier = 3;
+                    tierColor = '#ffcc00';
+                    tierLabel = '📊 TIER 3 — MODERATE';
+                } else if (satLevel === 'low' && d.ehp >= 20 && d.pop >= 5000) {
+                    // TIER 3B: Unsaturated with some EH and decent population
+                    tier = 3;
+                    tierColor = '#ffcc00';
+                    tierLabel = '📊 TIER 3 — MODERATE';
+                } else if (satLevel !== 'high' && (ehHigh || isLMI) && d.pop >= 3000) {
+                    // TIER 4: Some potential
+                    tier = 4;
+                    tierColor = '#ff8800';
+                    tierLabel = '🔹 TIER 4 — GROWTH';
+                } else {
+                    continue; // skip — doesn't meet any priority criteria
+                }
+
+                // ── Composite score within tier (for ordering) ──
+                // Weight: income gap (30), saturation gap (25), EH intensity (25), population (10), proven sales (10)
+                const incGapScore = Math.max(0, Math.min(30, ((lmiThreshold - d.inc) / lmiThreshold) * 40));
+                const satGapScore = satLevel === 'low' ? 25 : satLevel === 'partial' ? 12 : 0;
+                const ehIntensityScore = Math.min(25, (d.ehp / 60) * 25);
+                const popScore = Math.min(10, (d.pop / 30000) * 10);
+                const provenScore = Math.min(10, (sales / 50) * 10); // some sales = proven market
+                const compositeScore = incGapScore + satGapScore + ehIntensityScore + popScore + provenScore;
+
+                // Build reason string
+                const reasons = [];
+                if (isLMI) reasons.push(`Income $${(d.inc/1000).toFixed(0)}K (<80% median)`);
+                else if (isNearLMI) reasons.push(`Income $${(d.inc/1000).toFixed(0)}K (~80% median)`);
+                if (satLevel === 'low') reasons.push('Low saturation');
+                else if (satLevel === 'partial') reasons.push(`Partial sat (${satRate.toFixed(1)}/1K)`);
+                if (ehVeryHigh) reasons.push(`${d.ehp}% EH (very high)`);
+                else if (ehHigh) reasons.push(`${d.ehp}% electric heat`);
+                if (d.ehe >= 2000) reasons.push(`${d.ehe.toLocaleString()} EH units`);
+                if (d.pop >= 20000) reasons.push(`Pop ${(d.pop/1000).toFixed(0)}K`);
+                if (sales > 0 && sales < 50) reasons.push(`${sales} early sales`);
+                else if (sales >= 50) reasons.push(`${sales} proven sales`);
+
                 scored.push({
-                    zip, city: city || '',
-                    la: coords[0], lo: coords[1],
-                    score: normalized,
+                    zip, city: city || '', la: coords[0], lo: coords[1],
+                    tier, tierColor, tierLabel,
+                    score: compositeScore,
                     pop: d.pop, inc: d.inc, ehp: d.ehp, ehe: d.ehe,
-                    sales, age: d.age, fam: d.fam || d.hhs,
-                    why: reasons.slice(0, 4).join(' + ') || 'General opportunity'
+                    sales, age: d.age, fam: d.fam || d.hhs, hhs: d.hhs,
+                    satRate: satRate.toFixed(1), satLevel, satLabel,
+                    incomeRatio: (incomeRatio * 100).toFixed(0),
+                    why: reasons.slice(0, 4).join(' · ') || 'General opportunity',
+                    rw: d.rw, rb: d.rb, rh: d.rh, ra: d.ra, ro: d.ro
                 });
             }
 
-            // Sort by score descending, take top 40
-            scored.sort((a, b) => b.score - a.score);
-            const topTargets = scored.slice(0, 40);
+            // ── Step 3: Sort by tier first, then composite score ──
+            scored.sort((a, b) => {
+                if (a.tier !== b.tier) return a.tier - b.tier;
+                return b.score - a.score;
+            });
 
-            const scoreCol = s => s >= 0.75 ? '#00ff44' : s >= 0.55 ? '#ffcc00' : s >= 0.40 ? '#ff8800' : '#ff4444';
-            const tierLabel = s => s >= 0.75 ? '🔥 TIER 1' : s >= 0.55 ? '⬆ TIER 2' : s >= 0.40 ? '📊 TIER 3' : '🔹 TIER 4';
+            // Take top 50 priorities
+            priorityTargets = scored.slice(0, 50);
 
-            topTargets.forEach((t, i) => {
-                const col = scoreCol(t.score);
-                const tier = tierLabel(t.score);
-                const radius = t.score >= 0.75 ? 14 : t.score >= 0.55 ? 11 : 9;
+            // ── Step 4: Render priority drop pins + polygon highlights ──
+            priorityTargets.forEach((t, i) => {
+                const rank = i + 1;
 
-                // Pulsing outer ring for Tier 1
-                if (t.score >= 0.75) {
-                    L.circleMarker([t.la, t.lo], {
-                        radius: radius + 5, fillColor: 'transparent', color: col,
-                        weight: 2, opacity: 0.6, fillOpacity: 0, className: 'eh-pulse'
-                    }).addTo(fg.targetZones);
+                // Polygon highlight for priority ZIPs
+                if (zipGeoFeatures[t.zip]) {
+                    L.geoJSON(zipGeoFeatures[t.zip], {
+                        interactive: false,
+                        style: {
+                            fillColor: t.tierColor,
+                            fillOpacity: t.tier === 1 ? 0.20 : t.tier === 2 ? 0.12 : 0.06,
+                            color: t.tierColor,
+                            weight: t.tier <= 2 ? 3 : 2,
+                            opacity: 0.8
+                        }
+                    }).addTo(fg.priorityHighlight);
                 }
 
-                L.circleMarker([t.la, t.lo], {
-                    radius, fillColor: col, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.90
-                })
-                .bindPopup(`<b>🎯 ${t.zip} ${t.city}</b><br>${tier} — Score: <b>${(t.score*100).toFixed(0)}</b><br>${t.why}<br>EH: ${t.ehe.toLocaleString()} units (${t.ehp}%)<br>Pop: ${t.pop.toLocaleString()} | Income: $${t.inc.toLocaleString()}<br>Sales: ${t.sales.toLocaleString()}`)
-                .on('click', () => showInfoPanel(`🎯 ${t.zip} — ${t.city || 'Target'}`, `
-                    <div class="info-row"><span class="info-label">Tier:</span><span class="info-value" style="color:${col};font-weight:700;">${tier}</span></div>
-                    <div class="info-row"><span class="info-label">Score:</span><span class="info-value" style="color:${col};font-weight:700;">${(t.score*100).toFixed(0)} / 100</span></div>
+                // Priority drop pin
+                const pinHtml = `<div class="priority-pin">
+                    <div class="pin-head" style="background:${t.tierColor};">
+                        <span class="pin-num">${rank}</span>
+                    </div>
+                    <div class="pin-tail"></div>
+                </div>`;
+
+                const pinIcon = L.divIcon({
+                    className: '',
+                    html: pinHtml,
+                    iconSize: [28, 36],
+                    iconAnchor: [14, 36],
+                    popupAnchor: [0, -36]
+                });
+
+                const marker = L.marker([t.la, t.lo], { icon: pinIcon, zIndexOffset: 1000 - rank });
+
+                marker.bindPopup(`<b>📌 #${rank} — ${t.zip} ${t.city}</b><br>
+                    <span style="color:${t.tierColor};font-weight:700;">${t.tierLabel}</span><br>
+                    ${t.why}<br>
+                    <small>Income: $${t.inc.toLocaleString()} (${t.incomeRatio}% of median) | EH: ${t.ehp}% | Sat: ${t.satRate}/1K</small>`);
+
+                marker.on('click', () => showInfoPanel(`#${rank} — ${t.zip} ${t.city || ''}`, `
+                    <div class="info-row"><span class="info-label">Priority:</span><span class="info-value" style="color:${t.tierColor};font-weight:700;">#${rank}</span></div>
+                    <div class="info-row"><span class="info-label">Tier:</span><span class="info-value" style="color:${t.tierColor};font-weight:700;">${t.tierLabel}</span></div>
+                    <div class="info-row"><span class="info-label">Score:</span><span class="info-value">${t.score.toFixed(1)}</span></div>
                     <div class="info-section">
-                        <div class="info-section-title">Why This Target</div>
+                        <div class="info-section-title">Why This Priority</div>
                         <div class="info-row"><span class="info-value">${t.why}</span></div>
                     </div>
                     <div class="info-section">
-                        <div class="info-section-title">Key Metrics</div>
-                        <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value" style="color:#ff3333;font-weight:700;">${t.ehe.toLocaleString()}</span></div>
-                        <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value">${t.ehp}%</span></div>
-                        <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${t.pop.toLocaleString()}</span></div>
+                        <div class="info-section-title">Income Analysis</div>
                         <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value">$${t.inc.toLocaleString()}</span></div>
-                        <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${t.age}</span></div>
-                        <div class="info-row"><span class="info-label">Avg Family Size:</span><span class="info-value">${t.fam}</span></div>
-                        <div class="info-row"><span class="info-label">Proven Sales:</span><span class="info-value" style="color:#ff8800;">${t.sales.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">% of State Median:</span><span class="info-value" style="color:${t.inc < lmiThreshold ? '#00ff88' : '#ffaa44'};">${t.incomeRatio}%</span></div>
+                        <div class="info-row"><span class="info-label">LMI Threshold:</span><span class="info-value">$${lmiThreshold.toLocaleString()}</span></div>
+                        <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
+                            <div style="width:${Math.min(parseFloat(t.incomeRatio),150)/1.5}%;height:100%;background:${t.inc < lmiThreshold ? '#00ff88' : '#ffaa44'};"></div>
+                        </div>
                     </div>
-                `)).addTo(fg.targetZones);
+                    <div class="info-section">
+                        <div class="info-section-title">Saturation</div>
+                        <div class="info-row"><span class="info-label">Sales per 1K pop:</span><span class="info-value">${t.satRate}</span></div>
+                        <div class="info-row"><span class="info-label">Level:</span><span class="info-value" style="color:${t.satLevel === 'low' ? '#00ff88' : t.satLevel === 'partial' ? '#ffcc00' : '#ff4444'};">${t.satLabel}</span></div>
+                        <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value">${t.sales.toLocaleString()}</span></div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-section-title">Electric Heating (kWh Potential)</div>
+                        <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${t.ehp >= 50 ? '#ff3333' : t.ehp >= 30 ? '#ffaa44' : '#aaa'};font-weight:700;">${t.ehp}%</span></div>
+                        <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value">${t.ehe.toLocaleString()}</span></div>
+                        <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
+                            <div style="width:${Math.min(t.ehp,100)}%;height:100%;background:${t.ehp >= 50 ? '#ff3333' : t.ehp >= 30 ? '#ffaa44' : '#666'};"></div>
+                        </div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-section-title">Demographics</div>
+                        <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${t.pop.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${t.age}</span></div>
+                        <div class="info-row"><span class="info-label">Avg HH Size:</span><span class="info-value">${t.hhs}</span></div>
+                    </div>
+                `));
 
-                // Label for top 20 only
-                if (i < 20) {
-                    L.marker([t.la, t.lo], { icon: L.divIcon({ className:'zone-label', html:`<span style="color:${col};font-size:10px;">🎯${t.zip}</span>`, iconSize:[70,14], iconAnchor:[35,-10] }) }).addTo(fg.targetZones);
+                marker.addTo(fg.targetZones);
+
+                // Rank label below pin for top 25
+                if (rank <= 25) {
+                    L.marker([t.la, t.lo], {
+                        icon: L.divIcon({
+                            className: 'zone-label',
+                            html: `<span style="color:${t.tierColor};font-size:9px;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:3px;">#${rank} ${t.zip}</span>`,
+                            iconSize: [70, 14], iconAnchor: [35, -20]
+                        })
+                    }).addTo(fg.targetZones);
                 }
             });
 
-            document.getElementById('statTargets').textContent = topTargets.length;
+            // ── Step 5: Build priority ranking panel ──
+            let panelHtml = '';
+            let currentTier = 0;
+            const tierNames = { 1: '🔥 Tier 1 — Top Priority (LMI + Low Sat + High kWh)', 2: '⬆ Tier 2 — High Value', 3: '📊 Tier 3 — Moderate Opportunity', 4: '🔹 Tier 4 — Growth Potential' };
+
+            priorityTargets.forEach((t, i) => {
+                if (t.tier !== currentTier) {
+                    currentTier = t.tier;
+                    panelHtml += `<div class="priority-tier-header">${tierNames[t.tier] || 'Other'}</div>`;
+                }
+                panelHtml += `<div class="priority-item" onclick="map.setView([${t.la},${t.lo}],13)">
+                    <div class="priority-rank" style="background:${t.tierColor};">${i + 1}</div>
+                    <div class="priority-info">
+                        <div class="priority-zip">${t.zip} <span style="color:#aaa;font-weight:400;">${t.city}</span></div>
+                        <div class="priority-city">${t.why}</div>
+                    </div>
+                    <div class="priority-score" style="color:${t.tierColor};">${t.score.toFixed(0)}</div>
+                </div>`;
+            });
+
+            document.getElementById('priorityList').innerHTML = panelHtml;
+            document.getElementById('priorityPanel').style.display = 'block';
+
+            const tierCounts = {};
+            priorityTargets.forEach(t => { tierCounts[t.tier] = (tierCounts[t.tier] || 0) + 1; });
+            document.getElementById('statTargets').textContent = `${priorityTargets.length} (T1:${tierCounts[1]||0} T2:${tierCounts[2]||0} T3:${tierCounts[3]||0} T4:${tierCounts[4]||0})`;
+
+            console.log('Priority scoring complete:', { stateMedianIncome, lmiThreshold, total: priorityTargets.length, tierCounts });
         }
 
         // ── Search ──
@@ -785,7 +1013,16 @@
                 return;
             }
 
-            // 2. City name match from zipSalesData (partial, case-insensitive)
+            // 2. Priority target match
+            for (const t of priorityTargets) {
+                if (t.zip === term || (t.city && t.city.toLowerCase().includes(lower))) {
+                    map.setView([t.la, t.lo], 13);
+                    updateStatus(`Priority #${priorityTargets.indexOf(t)+1} — ${t.zip} ${t.city}`);
+                    return;
+                }
+            }
+
+            // 3. City name match from zipSalesData
             for (const [zip, info] of Object.entries(zipSalesData)) {
                 if (info.c && info.c.toLowerCase().includes(lower) && zipCentroids[zip]) {
                     map.setView(zipCentroids[zip], 13);
@@ -794,7 +1031,7 @@
                 }
             }
 
-            // 3. City match from LMI data
+            // 4. City match from LMI data
             for (const [zip, lmi] of Object.entries(lmiData)) {
                 if (lmi.city.toLowerCase().includes(lower) && zipCentroids[zip]) {
                     map.setView(zipCentroids[zip], 13);
@@ -803,7 +1040,7 @@
                 }
             }
 
-            // 4. Scan sales records for partial city/ZIP match
+            // 5. Scan sales records
             if (salesData.length) {
                 for (const d of salesData) {
                     if ((d[2]||'').toLowerCase().includes(lower) || (d[3]||'') === term) {
@@ -814,7 +1051,7 @@
                 }
             }
 
-            // 5. Search housing pins and other popup layers
+            // 6. Search all layers
             let found = false;
             map.eachLayer(layer => {
                 if (found) return;
