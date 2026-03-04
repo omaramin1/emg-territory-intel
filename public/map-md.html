@@ -305,6 +305,8 @@
             '21550': { city: 'Oakland', lmi: 72, eh: 65, hh: 2400, income: 37800, type: 'Rural', util: 'Potomac Edison' },
         };
 
+        const zipCentroids = {};  // Global: ZIP → [lat, lng] for target pin placement
+
         // ── LOAD ZIP BOUNDARIES ──
         async function loadZipBoundaries() {
             try {
@@ -351,7 +353,7 @@
                                 popup += `<br><span style="color:${uc};font-weight:bold;">${lmi.util}</span>`;
                                 popup += `<br>LMI: ${lmi.lmi}% | EH: ${lmi.eh}% | Income: $${lmi.income.toLocaleString()}`;
                             }
-                            layer.bindPopup(popup);
+                            layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
 
                             layer.on('click', () => {
                                 const demo = demoData[zip];
@@ -414,10 +416,17 @@
                         }
                     }).addTo(fg.zipZones);
 
+                    // Store centroid for target scoring
+                    try {
+                        const b = L.geoJSON(feature).getBounds();
+                        zipCentroids[zip] = [b.getCenter().lat, b.getCenter().lng];
+                    } catch(e) {}
+
                     // LMI outline
                     if (isTarget) {
                         const lmiColor = lmi.lmi >= 70 ? '#00ff88' : '#00bbff';
                         L.geoJSON(feature, {
+                            interactive: false,
                             style: { fillColor: 'transparent', fillOpacity: 0, color: lmiColor, weight: 3, opacity: 0.9, dashArray: lmi.lmi >= 70 ? null : '6, 4' }
                         }).addTo(fg.lmiOutlines);
 
@@ -432,6 +441,7 @@
                             const ehColor = lmi.eh >= 65 ? '#ff2222' : '#ff6644';
                             const ehWeight = lmi.eh >= 65 ? 4 : 2.5;
                             L.geoJSON(feature, {
+                                interactive: false,
                                 style: { fillColor: '#ff3333', fillOpacity: lmi.eh >= 65 ? 0.12 : 0.06, color: ehColor, weight: ehWeight, opacity: 0.8, dashArray: '4, 3' }
                             }).addTo(fg.ehZones);
 
@@ -600,22 +610,7 @@
         function loadTargetZones() {
             updateLoading('Analyzing high-potential targets...', 92);
             const scored = [];
-            const zipBounds = {};  // store centroids from boundaries for pin placement
-
-            // Compute centroids from zipZones layer
-            fg.zipZones.eachLayer(layer => {
-                if (layer.getBounds) {
-                    try {
-                        const c = layer.getBounds().getCenter();
-                        // Try to get zip from popup content
-                        const p = layer.getPopup();
-                        if (p) {
-                            const m = p.getContent().match(/ZIP (\d{5})/);
-                            if (m) zipBounds[m[1]] = [c.lat, c.lng];
-                        }
-                    } catch(e) {}
-                }
-            });
+            // Use pre-computed zipCentroids from loadZipBoundaries()
 
             // Score every ZIP that has demographic data
             for (const [zip, d] of Object.entries(demoData)) {
@@ -650,7 +645,7 @@
                 if (sales >= 50) reasons.push(`${sales} proven sales`);
                 if (d.hhs >= 3) reasons.push(`Large HH (${d.hhs})`);
 
-                const coords = zipBounds[zip];
+                const coords = zipCentroids[zip];
                 if (!coords) continue;
 
                 scored.push({
