@@ -144,6 +144,7 @@
             <div style="font-size:11px;">Total Sales: <span style="color:#ff8800;font-weight:700;" id="statTotal">—</span></div>
             <div style="font-size:11px;">ZIP Zones: <span style="color:#ff8800;font-weight:700;" id="statZips">—</span></div>
             <div style="font-size:11px;">Cities: <span style="color:#ff8800;font-weight:700;" id="statCities">—</span></div>
+            <div style="font-size:11px;">Targets: <span style="color:#00ff44;font-weight:700;" id="statTargets">—</span></div>
             <div style="font-size:11px;">In View: <span style="color:#ff8800;font-weight:700;" id="statVisible">—</span></div>
         </div>
     </div>
@@ -241,6 +242,7 @@
         let salesData = [];
         let cityStats = {};
         let zipStats = {};
+        let demoData = {};  // Census ACS demographics by ZIP
 
         // ── Helpers ──
         function updateLoading(s, p) { document.getElementById('loadingStatus').textContent = s; document.getElementById('loadingBar').style.width = p + '%'; }
@@ -307,13 +309,15 @@
         async function loadZipBoundaries() {
             try {
                 updateLoading('Loading ZIP code boundaries...', 10);
-                const [geoResp, dataResp] = await Promise.all([
+                const [geoResp, dataResp, demoResp] = await Promise.all([
                     fetch('md_zip_boundaries.geojson'),
-                    fetch('md_zip_data.json')
+                    fetch('md_zip_data.json'),
+                    fetch('md_demographics.json')
                 ]);
                 if (!geoResp.ok) throw new Error('Failed to load boundaries');
                 const boundaries = await geoResp.json();
                 zipSalesData = dataResp.ok ? await dataResp.json() : {};
+                demoData = demoResp.ok ? await demoResp.json() : {};
 
                 updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
 
@@ -350,21 +354,58 @@
                             layer.bindPopup(popup);
 
                             layer.on('click', () => {
+                                const demo = demoData[zip];
                                 let html = `
                                     <div class="info-section-title">Sales Activity</div>
                                     <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
                                     <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
                                     ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
+                                if (demo) {
+                                    // Race mix bar
+                                    const raceBar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;margin:4px 0;">
+                                        <div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>
+                                        <div style="width:${demo.rb}%;background:#4a90d9;" title="Black ${demo.rb}%"></div>
+                                        <div style="width:${demo.rh}%;background:#e67e22;" title="Hispanic ${demo.rh}%"></div>
+                                        <div style="width:${demo.ra}%;background:#27ae60;" title="Asian ${demo.ra}%"></div>
+                                        <div style="width:${demo.ro}%;background:#95a5a6;" title="Other ${demo.ro}%"></div>
+                                    </div>`;
+                                    html += `
+                                        <div class="info-section">
+                                            <div class="info-section-title">Race / Ethnicity (Census ACS)</div>
+                                            ${raceBar}
+                                            <div style="display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;margin-top:4px;">
+                                                <span><span style="color:#e8d4a8;">●</span> White <b>${demo.rw}%</b></span>
+                                                <span><span style="color:#4a90d9;">●</span> Black <b>${demo.rb}%</b></span>
+                                                <span><span style="color:#e67e22;">●</span> Hispanic <b>${demo.rh}%</b></span>
+                                                <span><span style="color:#27ae60;">●</span> Asian <b>${demo.ra}%</b></span>
+                                                <span><span style="color:#95a5a6;">●</span> Other <b>${demo.ro}%</b></span>
+                                            </div>
+                                        </div>
+                                        <div class="info-section">
+                                            <div class="info-section-title">Demographics</div>
+                                            <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${demo.pop.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value" style="color:#00ff88;">$${demo.inc.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${demo.age}</span></div>
+                                            <div class="info-row"><span class="info-label">Avg Family Size:</span><span class="info-value">${demo.fam || 'N/A'}</span></div>
+                                            <div class="info-row"><span class="info-label">Avg Household Size:</span><span class="info-value">${demo.hhs}</span></div>
+                                        </div>
+                                        <div class="info-section">
+                                            <div class="info-section-title">Electric Heating</div>
+                                            <div class="info-row"><span class="info-label">Electric Heat HH:</span><span class="info-value" style="color:#ff3333;font-weight:700;">${demo.ehe.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Total Housing Units:</span><span class="info-value">${demo.eht.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#aaa'};">${demo.ehp}%</span></div>
+                                            <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
+                                                <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#666'};"></div>
+                                            </div>
+                                        </div>`;
+                                }
                                 if (isTarget) {
                                     const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
                                     html += `
                                         <div class="info-section">
-                                            <div class="info-section-title">Demographics (Census ACS)</div>
+                                            <div class="info-section-title">LMI Target Intel</div>
                                             <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:${uc}">${lmi.util}</span></div>
                                             <div class="info-row"><span class="info-label">LMI %:</span><span class="info-value">${lmi.lmi}%</span></div>
-                                            <div class="info-row"><span class="info-label">Electric Heat:</span><span class="info-value" style="color:#ff3333">${lmi.eh}%</span></div>
-                                            <div class="info-row"><span class="info-label">Households:</span><span class="info-value">${lmi.hh.toLocaleString()}</span></div>
-                                            <div class="info-row"><span class="info-label">Median Income:</span><span class="info-value">$${lmi.income.toLocaleString()}</span></div>
                                             <div class="info-row"><span class="info-label">Housing Type:</span><span class="info-value">${lmi.type}</span></div>
                                         </div>`;
                                 }
@@ -554,38 +595,124 @@
             });
         }
 
-        // ── Target zone markers ──
+        // ── SMART TARGET IDENTIFICATION ──
+        // Scores every ZIP with Census data using: EH households, low income, high population, sales saturation
         function loadTargetZones() {
-            updateLoading('Loading target zones...', 92);
-            const targets = [
-                { city:'Capitol Heights', la:38.885, lo:-76.912, score:0.88, util:'Pepco', why:'High LMI + apt density + electric heat' },
-                { city:'Riverdale', la:38.963, lo:-76.931, score:0.85, util:'Pepco', why:'Highest LMI in PG County + dense housing' },
-                { city:'Mt Rainier', la:38.942, lo:-76.965, score:0.84, util:'Pepco', why:'Very high LMI + compact walkable area' },
-                { city:'Suitland', la:38.849, lo:-76.922, score:0.82, util:'Pepco', why:'Large HH count + high LMI' },
-                { city:'Bladensburg', la:38.939, lo:-76.934, score:0.80, util:'Pepco', why:'High LMI + electric heat' },
-                { city:'Hagerstown', la:39.642, lo:-77.720, score:0.78, util:'Potomac Edison', why:'Large market + high LMI + public housing' },
-                { city:'Cumberland', la:39.653, lo:-78.763, score:0.82, util:'Potomac Edison', why:'Very high LMI + high electric heat' },
-                { city:'Frostburg', la:39.658, lo:-78.928, score:0.76, util:'Potomac Edison', why:'High LMI + rural electric heat' },
-                { city:'Frederick', la:39.414, lo:-77.411, score:0.65, util:'Potomac Edison', why:'Large market + moderate LMI' },
-                { city:'Hyattsville', la:38.956, lo:-76.942, score:0.79, util:'Pepco', why:'Dense apts + high LMI' },
-                { city:'Langley Park', la:38.989, lo:-76.981, score:0.83, util:'Pepco', why:'Very dense apt area + high LMI' },
-                { city:'Temple Hills', la:38.813, lo:-76.940, score:0.72, util:'Pepco', why:'Large market + decent LMI' },
-                { city:'Oakland', la:39.407, lo:-79.409, score:0.70, util:'Potomac Edison', why:'Rural high LMI + electric heat' },
-            ];
-            const scoreCol = s => s > 0.8 ? '#22aa22' : s > 0.65 ? '#ffaa22' : '#ff3333';
+            updateLoading('Analyzing high-potential targets...', 92);
+            const scored = [];
+            const zipBounds = {};  // store centroids from boundaries for pin placement
 
-            targets.forEach(t => {
-                const col = scoreCol(t.score);
-                const ucol = t.util === 'Pepco' ? '#00aaff' : '#ff8800';
-                L.circleMarker([t.la, t.lo], { radius: 12, fillColor: col, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.85 })
-                .bindPopup(`<b>${t.city}</b> — <span style="color:${ucol}">${t.util}</span><br>Score: ${t.score.toFixed(2)}<br>${t.why}`)
-                .on('click', () => showInfoPanel(t.city + ' Target', `
-                    <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:${ucol}">${t.util}</span></div>
-                    <div class="info-row"><span class="info-label">Score:</span><span class="info-value">${t.score.toFixed(2)}</span></div>
-                    <div class="info-row"><span class="info-label">Reason:</span><span class="info-value">${t.why}</span></div>
-                `)).addTo(fg.targetZones);
-                L.marker([t.la, t.lo], { icon: L.divIcon({ className:'zone-label', html:t.city, iconSize:[100,16], iconAnchor:[50,-10] }) }).addTo(fg.targetZones);
+            // Compute centroids from zipZones layer
+            fg.zipZones.eachLayer(layer => {
+                if (layer.getBounds) {
+                    try {
+                        const c = layer.getBounds().getCenter();
+                        // Try to get zip from popup content
+                        const p = layer.getPopup();
+                        if (p) {
+                            const m = p.getContent().match(/ZIP (\d{5})/);
+                            if (m) zipBounds[m[1]] = [c.lat, c.lng];
+                        }
+                    } catch(e) {}
+                }
             });
+
+            // Score every ZIP that has demographic data
+            for (const [zip, d] of Object.entries(demoData)) {
+                if (d.pop < 500) continue;  // skip tiny ZIPs
+                const sales = zipSalesData[zip] ? zipSalesData[zip].n : 0;
+                const city = zipSalesData[zip] ? zipSalesData[zip].c : '';
+
+                // Scoring algorithm (0-100):
+                // 1. Electric heat households (raw count matters for revenue): 0-25 pts
+                const ehScore = Math.min(25, (d.ehe / 200) * 25);
+                // 2. Electric heat rate (high % = easier targeting): 0-15 pts
+                const ehRateScore = Math.min(15, (d.ehp / 60) * 15);
+                // 3. Lower income = higher LMI eligibility: 0-20 pts
+                const incScore = d.inc < 35000 ? 20 : d.inc < 45000 ? 16 : d.inc < 55000 ? 12 : d.inc < 65000 ? 8 : d.inc < 80000 ? 4 : 0;
+                // 4. Population density (more doors to knock): 0-15 pts
+                const popScore = Math.min(15, (d.pop / 30000) * 15);
+                // 5. Proven sales (validates market): 0-15 pts
+                const salesScore = Math.min(15, (sales / 100) * 15);
+                // 6. Larger households = more decision makers home: 0-10 pts
+                const hhScore = Math.min(10, ((d.hhs - 1.5) / 2) * 10);
+
+                const total = ehScore + ehRateScore + incScore + popScore + salesScore + hhScore;
+                const normalized = Math.min(1.0, total / 80);  // normalize to 0-1
+
+                // Build reason string
+                const reasons = [];
+                if (d.ehp >= 50) reasons.push(`${d.ehp}% electric heat`);
+                else if (d.ehp >= 30) reasons.push(`${d.ehp}% EH`);
+                if (d.ehe >= 3000) reasons.push(`${d.ehe.toLocaleString()} EH households`);
+                if (d.inc < 45000) reasons.push(`Low income ($${(d.inc/1000).toFixed(0)}K)`);
+                if (d.pop >= 30000) reasons.push(`Large pop (${(d.pop/1000).toFixed(0)}K)`);
+                if (sales >= 50) reasons.push(`${sales} proven sales`);
+                if (d.hhs >= 3) reasons.push(`Large HH (${d.hhs})`);
+
+                const coords = zipBounds[zip];
+                if (!coords) continue;
+
+                scored.push({
+                    zip, city: city || '',
+                    la: coords[0], lo: coords[1],
+                    score: normalized,
+                    pop: d.pop, inc: d.inc, ehp: d.ehp, ehe: d.ehe,
+                    sales, age: d.age, fam: d.fam || d.hhs,
+                    why: reasons.slice(0, 4).join(' + ') || 'General opportunity'
+                });
+            }
+
+            // Sort by score descending, take top 40
+            scored.sort((a, b) => b.score - a.score);
+            const topTargets = scored.slice(0, 40);
+
+            const scoreCol = s => s >= 0.75 ? '#00ff44' : s >= 0.55 ? '#ffcc00' : s >= 0.40 ? '#ff8800' : '#ff4444';
+            const tierLabel = s => s >= 0.75 ? '🔥 TIER 1' : s >= 0.55 ? '⬆ TIER 2' : s >= 0.40 ? '📊 TIER 3' : '🔹 TIER 4';
+
+            topTargets.forEach((t, i) => {
+                const col = scoreCol(t.score);
+                const tier = tierLabel(t.score);
+                const radius = t.score >= 0.75 ? 14 : t.score >= 0.55 ? 11 : 9;
+
+                // Pulsing outer ring for Tier 1
+                if (t.score >= 0.75) {
+                    L.circleMarker([t.la, t.lo], {
+                        radius: radius + 5, fillColor: 'transparent', color: col,
+                        weight: 2, opacity: 0.6, fillOpacity: 0, className: 'eh-pulse'
+                    }).addTo(fg.targetZones);
+                }
+
+                L.circleMarker([t.la, t.lo], {
+                    radius, fillColor: col, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.90
+                })
+                .bindPopup(`<b>🎯 ${t.zip} ${t.city}</b><br>${tier} — Score: <b>${(t.score*100).toFixed(0)}</b><br>${t.why}<br>EH: ${t.ehe.toLocaleString()} units (${t.ehp}%)<br>Pop: ${t.pop.toLocaleString()} | Income: $${t.inc.toLocaleString()}<br>Sales: ${t.sales.toLocaleString()}`)
+                .on('click', () => showInfoPanel(`🎯 ${t.zip} — ${t.city || 'Target'}`, `
+                    <div class="info-row"><span class="info-label">Tier:</span><span class="info-value" style="color:${col};font-weight:700;">${tier}</span></div>
+                    <div class="info-row"><span class="info-label">Score:</span><span class="info-value" style="color:${col};font-weight:700;">${(t.score*100).toFixed(0)} / 100</span></div>
+                    <div class="info-section">
+                        <div class="info-section-title">Why This Target</div>
+                        <div class="info-row"><span class="info-value">${t.why}</span></div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-section-title">Key Metrics</div>
+                        <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value" style="color:#ff3333;font-weight:700;">${t.ehe.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value">${t.ehp}%</span></div>
+                        <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${t.pop.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value">$${t.inc.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${t.age}</span></div>
+                        <div class="info-row"><span class="info-label">Avg Family Size:</span><span class="info-value">${t.fam}</span></div>
+                        <div class="info-row"><span class="info-label">Proven Sales:</span><span class="info-value" style="color:#ff8800;">${t.sales.toLocaleString()}</span></div>
+                    </div>
+                `)).addTo(fg.targetZones);
+
+                // Label for top 20 only
+                if (i < 20) {
+                    L.marker([t.la, t.lo], { icon: L.divIcon({ className:'zone-label', html:`<span style="color:${col};font-size:10px;">🎯${t.zip}</span>`, iconSize:[70,14], iconAnchor:[35,-10] }) }).addTo(fg.targetZones);
+                }
+            });
+
+            document.getElementById('statTargets').textContent = topTargets.length;
         }
 
         // ── Search ──
