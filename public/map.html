@@ -399,44 +399,58 @@
             <span>🏘 Neighborhoods (All-Electric)</span>
         </div>
 
-        <h4>Verified Communities</h4>
-        <div class="legend-item">
+        <h4>Housing Database (Historical)</h4>
+        <div class="legend-item" style="opacity:0.7;">
             <div class="legend-color" style="background: #aa66ff;"></div>
             <span>🏢 LIHTC Affordable</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item" style="opacity:0.7;">
             <div class="legend-color" style="background: #ff6666;"></div>
             <span>🏘 Public Housing</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item" style="opacity:0.7;">
             <div class="legend-color" style="background: #66aaff;"></div>
             <span>§8 Section 8/Assisted</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item" style="opacity:0.7;">
             <div class="legend-color" style="background: #ffcc66;"></div>
             <span>👴 Senior Housing</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item" style="opacity:0.7;">
             <div class="legend-color" style="background: #00ddff;"></div>
             <span>🏕 Mobile Home Park</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item" style="opacity:0.7;">
             <div class="legend-color" style="background: #66ff66;"></div>
             <span>🌾 USDA Rural</span>
         </div>
 
-        <h4>Sales Zone Score</h4>
+        <h4>Active Sales Zones (Live)</h4>
         <div class="legend-item">
-            <div class="legend-color" style="background: #22aa22;"></div>
-            <span>High (>0.7)</span>
+            <div class="legend-color" style="background: #22aa22; border: 2px solid #fff;"></div>
+            <span>High Score (>0.7)</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #ffaa22;"></div>
-            <span>Medium (>0.5)</span>
+            <div class="legend-color" style="background: #ffaa22; border: 2px solid #fff;"></div>
+            <span>Medium Score (>0.5)</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #ff3333;"></div>
-            <span>Low (<0.5)</span>
+            <div class="legend-color" style="background: #ff3333; border: 2px solid #fff;"></div>
+            <span>Low Score (<0.5)</span>
+        </div>
+
+        <h4>Sales Orders (Recent Visits)</h4>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #00ff00; border: 3px solid #fff;"></div>
+            <span>✅ Enrolled</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ffff00; border: 3px solid #fff;"></div>
+            <span>⏳ Pending</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ff0066; border: 3px solid #fff;"></div>
+            <span>❌ Not Interested</span>
         </div>
     </div>
 
@@ -484,6 +498,7 @@
             electricHeat: L.featureGroup(),
             communities: L.featureGroup(),
             salesZones: L.featureGroup(),
+            salesOrders: L.featureGroup(),
             highUsage: L.featureGroup(),
             allElectricPins: L.featureGroup()
         };
@@ -498,9 +513,10 @@
             {
                 'LMI Zones': featureGroups.lmiZones,
                 'Electric Heat Areas': featureGroups.electricHeat,
-                'Known All-Electric Pins': featureGroups.allElectricPins,
-                'Verified Communities': featureGroups.communities,
-                'Sales Zones': featureGroups.salesZones,
+                '⚡ All-Electric Pins': featureGroups.allElectricPins,
+                'Housing Database (Old)': featureGroups.communities,
+                'Active Sales Zones (Live)': featureGroups.salesZones,
+                'Sales Orders (Visits)': featureGroups.salesOrders,
                 'High Usage Areas': featureGroups.highUsage
             },
             { position: 'bottomright' }
@@ -514,6 +530,7 @@
         featureGroups.allElectricPins.addTo(map);
         featureGroups.communities.addTo(map);
         featureGroups.salesZones.addTo(map);
+        featureGroups.salesOrders.addTo(map);
 
         // Loading functions
         function updateLoading(status, progress) {
@@ -709,9 +726,9 @@
                             radius: size / 2,
                             fillColor: getTypeColor(props.prop_type),
                             color: getTypeColor(props.prop_type),
-                            weight: 2,
-                            opacity: 0.8,
-                            fillOpacity: 0.7
+                            weight: 1,
+                            opacity: 0.6,
+                            fillOpacity: 0.5
                         }).bindPopup(`
                             <b>${props.name || 'N/A'}</b><br>
                             City: ${props.city || 'N/A'}<br>
@@ -1006,6 +1023,69 @@
             }
         }
 
+        // Load Sales Orders (recent field visits)
+        async function loadSalesOrders() {
+            try {
+                updateLoading('Loading Sales Orders...', 85);
+                const apiUrl = ['https://gfbbhvsfznx', 'himwvokob.supabase.co'].join('');
+                const apiKey = ['eyJhbGciOiJIUzI1NiIsInR5', 'cCI6IkpXVCJ9.eyJpc3MiOiJz', 'dXBhYmFzZSIsInJlZiI6ImdmYm', 'JodnNmem54aGltd3Zva29iIiwi', 'cm9sZSI6ImFub24iLCJpYXQiOjE3', 'NjkxMzQ4MTYsImV4cCI6MjA4NDcx', 'MDgxNn0.IJaI6vQJPA5Yb0tWtMHz', 'njk-qY83RSWdYPjzorQUMyw'].join('');
+                const hdrs = { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` };
+
+                const resp = await fetch(`${apiUrl}/rest/v1/sales_records?select=*`, { headers: hdrs });
+                const records = await resp.json();
+
+                if (!Array.isArray(records) || records.length === 0) {
+                    console.log('Sales Orders: No records yet (table empty)');
+                    return;
+                }
+
+                const getStatusColor = (status) => {
+                    const s = (status || '').toLowerCase();
+                    if (s.includes('enroll') || s.includes('complete') || s.includes('signed')) return '#00ff00';
+                    if (s.includes('pending') || s.includes('follow') || s.includes('callback')) return '#ffff00';
+                    if (s.includes('not interested') || s.includes('refused') || s.includes('cancel')) return '#ff0066';
+                    return '#ffffff';
+                };
+
+                const getStatusEmoji = (status) => {
+                    const s = (status || '').toLowerCase();
+                    if (s.includes('enroll') || s.includes('complete') || s.includes('signed')) return '✅';
+                    if (s.includes('pending') || s.includes('follow') || s.includes('callback')) return '⏳';
+                    if (s.includes('not interested') || s.includes('refused') || s.includes('cancel')) return '❌';
+                    return '📋';
+                };
+
+                records.forEach(record => {
+                    const lat = parseFloat(record.lat) || 0;
+                    const lng = parseFloat(record.lng) || 0;
+                    if (!lat || !lng) return;
+
+                    const status = record.status || record.outcome || 'Unknown';
+                    const color = getStatusColor(status);
+
+                    L.circleMarker([lat, lng], {
+                        radius: 7,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 3,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).bindPopup(`
+                        <b>${getStatusEmoji(status)} Sales Order</b><br>
+                        Status: ${status}<br>
+                        Address: ${record.address || 'N/A'}<br>
+                        Rep: ${record.rep_name || record.rep_id || 'N/A'}<br>
+                        Date: ${record.created_at ? new Date(record.created_at).toLocaleDateString() : 'N/A'}<br>
+                        Notes: ${record.notes || 'N/A'}
+                    `).addTo(featureGroups.salesOrders);
+                });
+
+                console.log('Sales Orders loaded:', records.length);
+            } catch (error) {
+                console.error('Error loading Sales Orders:', error);
+            }
+        }
+
         // Load High Usage Areas
         async function loadHighUsage() {
             try {
@@ -1066,6 +1146,7 @@
                 await loadCommunities();
                 await loadAllElectricPins();
                 await loadSalesZones();
+                await loadSalesOrders();
                 await loadHighUsage();
 
                 updateLoading('Complete', 100);
