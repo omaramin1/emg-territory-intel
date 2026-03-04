@@ -81,6 +81,21 @@
 
         .status-banner { position: absolute; top: 70px; left: 10px; z-index: 1000; background: rgba(255,136,0,0.15); padding: 8px 15px; border-radius: 6px; border: 1px solid rgba(255,136,0,0.4); font-size: 11px; color: #ffaa44; }
 
+        /* ── MAP LEGEND ── */
+        .legend { position: absolute; bottom: 60px; left: 10px; z-index: 1000; background: rgba(10,10,18,0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 220px; max-height: 420px; overflow-y: auto; }
+        .legend.collapsed .legend-body { display: none; }
+        .legend h4 { color: #ff8800; font-size: 12px; cursor: pointer; user-select: none; margin: 0; display: flex; justify-content: space-between; align-items: center; }
+        .legend h4 .arrow { transition: transform 0.2s; }
+        .legend.collapsed h4 .arrow { transform: rotate(-90deg); }
+        .legend-body { margin-top: 10px; }
+        .legend-section { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #333; }
+        .legend-section:last-child { border-bottom: none; margin-bottom: 0; }
+        .legend-section-title { color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; margin-bottom: 5px; letter-spacing: 0.5px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 10px; color: #ccc; }
+        .legend-swatch { width: 18px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+        .legend-circle { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid #fff; }
+        .legend-line { width: 18px; height: 0; border-top: 3px solid; flex-shrink: 0; }
+
         .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 18, 0.98); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .loading-screen.hidden { display: none; }
         .spinner { width: 50px; height: 50px; border: 3px solid #ff8800; border-top: 3px solid #00ff88; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
@@ -158,6 +173,52 @@
         <button class="close-button" onclick="closeInfoPanel()">×</button>
         <h3 id="infoPanelTitle">Details</h3>
         <div id="infoPanelContent"></div>
+    </div>
+
+    <!-- ── MAP LEGEND ── -->
+    <div class="legend" id="mapLegend">
+        <h4 onclick="document.getElementById('mapLegend').classList.toggle('collapsed')">🗺 Map Key <span class="arrow">▼</span></h4>
+        <div class="legend-body">
+            <div class="legend-section">
+                <div class="legend-section-title">Sales Density (ZIP Fill)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff2200;"></div> 200+ sales — HOT ZONE</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff6600;"></div> 100–199 — High</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff9900;"></div> 50–99 — Moderate</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffcc44;"></div> 10–49 — Low</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffe888;"></div> 1–9 — Minimal</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#444;"></div> 0 sales</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">LMI Target Outlines</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#00ff88;"></div> LMI ≥ 70% (solid)</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#00bbff;border-style:dashed;"></div> LMI < 70% (dashed)</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Electric Heat Zones</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ff2222;border-width:4px;border-style:dashed;"></div> EH ≥ 65% — Critical</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ff6644;border-style:dashed;"></div> EH 55–64% — High</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Target Pins (Census Scored)</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00ff44;"></div> Tier 1 (score ≥ 75)</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ffcc00;"></div> Tier 2 (55–74)</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 3 (40–54)</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff4444;"></div> Tier 4 (< 40)</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Housing Pins</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#aa66ff;"></div> LIHTC</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff6666;"></div> Public Housing</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#66aaff;"></div> Section 8</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ffcc66;"></div> Senior Housing</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00ddff;"></div> Mobile Home</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Utility Territories</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#00aaff;border-style:dashed;"></div> Pepco (Exelon)</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ff8800;border-style:dashed;"></div> Potomac Edison (FirstEnergy)</div>
+            </div>
+        </div>
     </div>
 
     <div class="loading-screen" id="loadingScreen">
