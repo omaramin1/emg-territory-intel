@@ -193,6 +193,8 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffa726;"></div><span class="toggle-label">💰 Income Per Capita</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
@@ -260,6 +262,22 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
             </div>
             <div class="legend-section">
+                <div class="legend-section-title">💰 Income Per Capita (toggle on)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f;"></div> &lt;$20K — Critical</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#f57c00;"></div> $28-35K — Low</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffcc02;"></div> $42-50K — Near Avg</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#66bb6a;"></div> $60-75K — Above Avg</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#1b5e20;"></div> $100K+ — Very High</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e8d4a8;"></div> Majority White</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#4a90d9;"></div> Majority Black</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e67e22;"></div> Majority Hispanic</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#27ae60;"></div> Majority Asian</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#9b59b6;"></div> Diverse (no majority)</div>
+            </div>
+            <div class="legend-section">
                 <div class="legend-section-title">Zone Overlays</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#00ff88;"></div> LMI ≥ 70% (solid)</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#00bbff;border-style:dashed;"></div> LMI < 70% (dashed)</div>
@@ -312,6 +330,8 @@
         // Feature groups
         const fg = {
             zipZones: L.featureGroup(),
+            incomeOverlay: L.featureGroup(),
+            raceOverlay: L.featureGroup(),
             lmiOutlines: L.featureGroup(),
             ehZones: L.featureGroup(),
             pepcoArea: L.featureGroup(),
@@ -337,13 +357,18 @@
             }
         });
 
-        // All on by default
-        Object.values(fg).forEach(g => g.addTo(map));
+        // All on by default EXCEPT data overlays (income, race) — user toggles these
+        const defaultOffLayers = ['incomeOverlay', 'raceOverlay'];
+        Object.entries(fg).forEach(([name, g]) => {
+            if (!defaultOffLayers.includes(name)) g.addTo(map);
+        });
         salesCluster.addTo(map);
 
         // Layer name -> actual layer mapping
         const layerMap = {
             zipZones: fg.zipZones,
+            incomeOverlay: fg.incomeOverlay,
+            raceOverlay: fg.raceOverlay,
             lmiOutlines: fg.lmiOutlines,
             ehZones: fg.ehZones,
             sales: salesCluster,
@@ -375,6 +400,62 @@
         function showInfoPanel(title, html) { document.getElementById('infoPanelTitle').textContent = title; document.getElementById('infoPanelContent').innerHTML = html; document.getElementById('infoPanel').classList.add('active'); }
         function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('active'); }
         function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
+
+        // ── Income Per Capita Color Ramp ──
+        // Sequential ramp: deep red (very low) → orange → yellow → green → bright green (high)
+        function getIncomeColor(inc) {
+            if (inc <= 0) return '#555';
+            if (inc < 20000) return '#d32f2f';     // < $20K — critical poverty
+            if (inc < 28000) return '#e64a19';     // $20-28K — very low
+            if (inc < 35000) return '#f57c00';     // $28-35K — low
+            if (inc < 42000) return '#ffa726';     // $35-42K — below average
+            if (inc < 50000) return '#ffcc02';     // $42-50K — approaching average
+            if (inc < 60000) return '#c0ca33';     // $50-60K — moderate
+            if (inc < 75000) return '#66bb6a';     // $60-75K — above average
+            if (inc < 100000) return '#2e7d32';    // $75-100K — high
+            return '#1b5e20';                       // $100K+ — very high
+        }
+        function getIncomeOpacity(inc) {
+            if (inc <= 0) return 0.05;
+            return 0.45;
+        }
+        function getIncomeLabel(inc) {
+            if (inc <= 0) return 'No data';
+            if (inc < 20000) return '🔴 Critical (<$20K)';
+            if (inc < 28000) return '🟠 Very Low ($20-28K)';
+            if (inc < 35000) return '🟠 Low ($28-35K)';
+            if (inc < 42000) return '🟡 Below Avg ($35-42K)';
+            if (inc < 50000) return '🟡 Near Avg ($42-50K)';
+            if (inc < 60000) return '🟢 Moderate ($50-60K)';
+            if (inc < 75000) return '🟢 Above Avg ($60-75K)';
+            if (inc < 100000) return '💚 High ($75-100K)';
+            return '💎 Very High ($100K+)';
+        }
+
+        // ── Race/Ethnicity Dominant Group ──
+        // Returns { color, label, group, pct } for the largest racial group in a ZIP
+        function getRaceDominant(d) {
+            const groups = [
+                { key: 'rw', pct: d.rw, color: '#e8d4a8', label: 'White', darkColor: '#c9a96e' },
+                { key: 'rb', pct: d.rb, color: '#4a90d9', label: 'Black', darkColor: '#2d6cb5' },
+                { key: 'rh', pct: d.rh, color: '#e67e22', label: 'Hispanic', darkColor: '#c0650f' },
+                { key: 'ra', pct: d.ra, color: '#27ae60', label: 'Asian', darkColor: '#1e8c4d' },
+                { key: 'ro', pct: d.ro, color: '#95a5a6', label: 'Other', darkColor: '#728485' }
+            ];
+            groups.sort((a, b) => b.pct - a.pct);
+            const top = groups[0];
+            // Determine if area is diverse (no group > 50%) or dominant
+            const isDiverse = top.pct < 50;
+            return {
+                color: isDiverse ? '#9b59b6' : top.color,        // purple for diverse
+                borderColor: isDiverse ? '#7d3c98' : top.darkColor,
+                label: isDiverse ? `Diverse (${top.label} ${top.pct}%)` : `${top.label} ${top.pct}%`,
+                group: isDiverse ? 'Diverse' : top.label,
+                pct: top.pct,
+                isDiverse,
+                top3: groups.slice(0, 3).map(g => `${g.label} ${g.pct}%`).join(' · ')
+            };
+        }
 
         function getDensityColor(count) {
             if (count >= 200) return '#ff2200';
@@ -474,13 +555,19 @@
                             layer.on('mouseover', function() { this.setStyle({ weight: 3, opacity: 1, fillOpacity: opacity + 0.15 }); this.bringToFront(); });
                             layer.on('mouseout', function() { this.setStyle({ weight: count >= 50 ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3, fillOpacity: opacity }); });
 
+                            const dTip = demoData[zip];
                             let popup = `<b>ZIP ${zip}</b>`;
                             if (cities) popup += `<br>${cities}`;
                             popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+                            if (dTip && dTip.inc > 0) {
+                                const incCol = getIncomeColor(dTip.inc);
+                                popup += `<br>Income/capita: <b style="color:${incCol};">$${dTip.inc.toLocaleString()}</b>`;
+                                const rDom = getRaceDominant(dTip);
+                                popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
+                            }
                             if (isTarget) {
                                 const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
                                 popup += `<br><span style="color:${uc};font-weight:bold;">${lmi.util}</span>`;
-                                popup += `<br>LMI: ${lmi.lmi}% | EH: ${lmi.eh}% | Income: $${lmi.income.toLocaleString()}`;
                             }
                             layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
 
@@ -549,6 +636,59 @@
                         const b = L.geoJSON(feature).getBounds();
                         zipCentroids[zip] = [b.getCenter().lat, b.getCenter().lng];
                     } catch(e) {}
+
+                    // Income Per Capita choropleth overlay
+                    const demo = demoData[zip];
+                    if (demo && demo.inc > 0) {
+                        const incColor = getIncomeColor(demo.inc);
+                        L.geoJSON(feature, {
+                            interactive: false,
+                            style: {
+                                fillColor: incColor,
+                                fillOpacity: 0.50,
+                                color: incColor,
+                                weight: 1.5,
+                                opacity: 0.7
+                            }
+                        }).addTo(fg.incomeOverlay);
+
+                        // Income label at centroid for zoomed-in view (only show for notable ZIPs)
+                        if (zipCentroids[zip] && demo.pop >= 2000) {
+                            L.marker(zipCentroids[zip], {
+                                icon: L.divIcon({
+                                    className: 'zone-label',
+                                    html: `<span style="color:${incColor};font-size:10px;background:rgba(0,0,0,0.75);padding:1px 4px;border-radius:3px;">$${(demo.inc/1000).toFixed(0)}K</span>`,
+                                    iconSize: [50, 14], iconAnchor: [25, 7]
+                                })
+                            }).addTo(fg.incomeOverlay);
+                        }
+                    }
+
+                    // Race/Ethnicity choropleth overlay
+                    if (demo && demo.pop >= 300) {
+                        const race = getRaceDominant(demo);
+                        L.geoJSON(feature, {
+                            interactive: false,
+                            style: {
+                                fillColor: race.color,
+                                fillOpacity: race.isDiverse ? 0.35 : Math.min(0.55, 0.15 + (race.pct / 150)),
+                                color: race.borderColor,
+                                weight: 1.5,
+                                opacity: 0.6
+                            }
+                        }).addTo(fg.raceOverlay);
+
+                        // Race label at centroid for zoomed-in view
+                        if (zipCentroids[zip] && demo.pop >= 3000) {
+                            L.marker(zipCentroids[zip], {
+                                icon: L.divIcon({
+                                    className: 'zone-label',
+                                    html: `<span style="color:${race.color};font-size:9px;background:rgba(0,0,0,0.75);padding:1px 4px;border-radius:3px;">${race.label}</span>`,
+                                    iconSize: [90, 14], iconAnchor: [45, -8]
+                                })
+                            }).addTo(fg.raceOverlay);
+                        }
+                    }
 
                     // LMI outline
                     if (isTarget) {
