@@ -105,6 +105,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <!-- HEADER -->
 <div id="header">
+    <a href="/" style="color:#888;text-decoration:none;font-size:13px;margin-right:4px;transition:color 0.2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">←</a>
     <h1>Territory Intelligence Engine</h1>
     <select id="state-select" onchange="switchState(this.value)">
         <option value="NY">New York</option>
@@ -1448,8 +1449,12 @@ function initMap() {
         maxZoom: 19
     }).addTo(map);
 
-    // Default to NY
-    switchState('NY');
+    // Check URL param for deep linking from landing page
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestedState = urlParams.get('state');
+    const initState = (requestedState && STATE_CONFIG[requestedState]) ? requestedState : 'NY';
+    document.getElementById('state-select').value = initState;
+    switchState(initState);
 }
 
 initMap();
