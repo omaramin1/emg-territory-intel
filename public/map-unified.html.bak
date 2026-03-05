@@ -305,12 +305,10 @@ const STATE_CONFIG = {
         },
         toggles: [
             { id: 'zipZones', label: '🗺 ZIP Sales Density', default: true },
-            { id: 'salesCluster', label: '📍 Sales History (orange dots)', default: false },
-            { id: 'ordersLayer', label: '◆ Recent Orders (diamonds)', default: false },
-            { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
-            { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
+            { id: 'salesCluster', label: '📍 Sales History', default: false },
+            { id: 'ordersLayer', label: '📋 Recent Orders', default: false },
             { id: 'ehZones', label: '⚡ Electric Heat Zones', default: false },
-            { id: 'lmiOutlines', label: '📋 LMI Qualify Zones (Arcadia)', default: false },
+            { id: 'lmiOutlines', label: '📋 LMI Qualify Zones', default: false },
             { id: 'dacZones', label: '🏘 DAC Zones', default: false },
             { id: 'housingPins', label: '🏠 Communities Database', default: false },
             { id: 'allElectricPins', label: '⚡🏠 All-Electric Communities', default: false },
@@ -322,7 +320,7 @@ const STATE_CONFIG = {
         ],
         lmiData: null,
         housingPins: null,
-        hasExtras: true  // VA has extra layers: orders, LMI zones, communities, all-electric
+        isVA: true
     }
 };
 
@@ -489,10 +487,11 @@ async function switchState(stateCode) {
     priorityData = {};
 
     // Initialize feature groups
-    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight'];
-    if (cfg.hasExtras) { groupIds.push('ordersLayer','lmiOutlines','housingPins','allElectricPins'); }
-    if (cfg.lmiData) groupIds.push('lmiOutlines');
-    if (cfg.housingPins) groupIds.push('housingPins');
+    const groupIds = ['zipZones','salesCluster','ehZones','dacZones','targetZones','priorityHighlight'];
+    if (!cfg.isVA) { groupIds.push('incomeOverlay','raceOverlay'); }
+    if (cfg.isVA) { groupIds.push('ordersLayer','lmiOutlines','housingPins','allElectricPins'); }
+    if (!cfg.isVA && cfg.lmiData) groupIds.push('lmiOutlines');
+    if (!cfg.isVA && cfg.housingPins) groupIds.push('housingPins');
     Object.keys(cfg.utilities).forEach(u => groupIds.push('util_' + u));
 
     groupIds.forEach(id => {
@@ -511,14 +510,17 @@ async function switchState(stateCode) {
     // Set map view
     map.setView(cfg.center, cfg.zoom);
 
-    // Load all data — all states use the same ZIP boundary path
-    await loadZipBoundaries();
+    // Load all data
+    if (cfg.isVA) {
+        await loadVAData();
+    } else {
+        await loadZipBoundaries();
+    }
     await loadSalesData();
-    if (cfg.hasExtras) await loadVAExtras();  // VA-specific: orders, LMI zones, communities, all-electric
     loadUtilityTerritories();
     loadDACZones();
-    if (cfg.lmiData) loadLMIOutlines();
-    if (cfg.housingPins) loadHousingPins();
+    if (!cfg.isVA && cfg.lmiData) loadLMIOutlines();
+    if (!cfg.isVA && cfg.housingPins) loadHousingPins();
     loadTargetZones();
 
     // Apply default toggles
@@ -652,9 +654,9 @@ async function loadSalesData() {
 
         salesData.forEach(d => {
             const marker = L.circleMarker([d[0], d[1]], {
-                radius: 2.5, fillColor: '#ff8800', color: '#cc6600', weight: 0.5, fillOpacity: 0.35
+                radius: 3, fillColor: '#ff8800', color: '#ff8800', weight: 0, fillOpacity: 0.5
             });
-            marker.bindPopup(`<b>📍 ${d[2]}</b><br>ZIP: ${d[3]}<br>Date: ${d[4] || 'N/A'}<br><span style="color:#888;font-size:11px;">Historical Sale</span>`);
+            marker.bindPopup(`<b>${d[2]}</b><br>ZIP: ${d[3]}<br>Date: ${d[4] || 'N/A'}`);
             marker.addTo(fg.salesCluster);
         });
     } catch (e) {
@@ -663,21 +665,65 @@ async function loadSalesData() {
 }
 
 // ═══════════════════════════════════════════════════
-// ██  VIRGINIA EXTRA LAYERS (orders, LMI, housing) ██
+// ██  VIRGINIA-SPECIFIC DATA LOADERS               ██
 // ═══════════════════════════════════════════════════
-async function loadVAExtras() {
-    updateLoading('Loading VA-specific layers...', 55);
-    window._vaRoutes = [];
+async function loadVAData() {
+    updateLoading('Loading Virginia data...', 10);
 
-    const [routesResp, commResp, lmiResp, ordersResp] = await Promise.all([
+    // Load all VA data files in parallel
+    const [zipDataResp, dacResp, routesResp, commResp, lmiResp, ordersResp] = await Promise.all([
+        fetch('va_zip_data.json'),
+        fetch('va_dac.json').catch(() => null),
         fetch('routes_lite.geojson').catch(() => null),
         fetch('va_communities.geojson').catch(() => null),
         fetch('https://emgmap2-wp1j.vercel.app/lmi_auto_qualify_zones.geojson').catch(() => null),
         fetch('va_orders.json').catch(() => null)
     ]);
 
-    // Routes (Electric Heat zone polygons from Arcadia)
-    updateLoading('Loading Arcadia EH route zones...', 60);
+    zipSalesData = zipDataResp.ok ? await zipDataResp.json() : {};
+    dacData = (dacResp && dacResp.ok) ? await dacResp.json() : {};
+
+    updateLoading('Rendering VA ZIP zones...', 25);
+
+    // Render ZIP-level density circles (no polygon boundaries for VA)
+    for (const [zip, data] of Object.entries(zipSalesData)) {
+        const count = data.n;
+        const city = data.c;
+        const color = getDensityColor(count);
+        const opacity = getDensityOpacity(count);
+        const dac = dacData[zip];
+
+        // Estimate centroid from ZIP code (Virginia ZIPs)
+        const centroid = vaZipCentroid(zip);
+        if (!centroid) continue;
+        zipCentroids[zip] = centroid;
+
+        const radius = Math.max(300, Math.min(2500, Math.sqrt(count) * 80));
+        const circle = L.circle(centroid, {
+            radius: radius,
+            fillColor: color, fillOpacity: opacity,
+            color: color, weight: 1.5, opacity: 0.6
+        });
+        let popup = `<b>ZIP ${zip}</b><br>${city}<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+        if (dac) popup += `<br><span style="color:#ff66aa;font-weight:bold;">DAC Zone (${dac.pct}%)</span>`;
+        circle.bindTooltip(popup, { sticky: true, opacity: 0.95 });
+        circle.on('click', () => showVAZipDetail(zip, count, city, dac));
+        circle.addTo(fg.zipZones);
+
+        // DAC overlay
+        if (dac) {
+            const dacOpacity = dac.pct >= 80 ? 0.35 : dac.pct >= 50 ? 0.25 : 0.15;
+            L.circle(centroid, {
+                radius: radius * 1.2,
+                fillColor: '#ff66aa', fillOpacity: dacOpacity,
+                color: '#ff66aa', weight: 2, opacity: 0.6,
+                dashArray: dac.approx ? '5, 3' : null
+            }).addTo(fg.dacZones);
+        }
+    }
+
+    // Routes (Electric Heat zones)
+    updateLoading('Loading Electric Heat zones...', 40);
     if (routesResp && routesResp.ok) {
         try {
             const routes = await routesResp.json();
@@ -689,13 +735,16 @@ async function loadVAExtras() {
                 L.geoJSON(f, {
                     style: { fillColor: ehColor, fillOpacity: ehOpacity, color: ehColor, weight: 1, opacity: 0.5 }
                 }).addTo(fg.ehZones);
+
+                // Store route centroids for all-electric cross-reference
+                if (!window._vaRoutes) window._vaRoutes = [];
                 window._vaRoutes.push(f);
             });
         } catch(e) { console.warn('Routes load error:', e); }
     }
 
     // Communities database
-    updateLoading('Loading communities database...', 65);
+    updateLoading('Loading communities database...', 55);
     if (commResp && commResp.ok) {
         try {
             const communities = await commResp.json();
@@ -711,6 +760,7 @@ async function loadVAExtras() {
                 'Senior Housing (202)': '👴', 'USDA Rural': '🌾',
                 'Mobile Home Park': '🏕'
             };
+            window._vaCommunities = communities;
 
             communities.features.forEach(f => {
                 if (!f.geometry || !f.geometry.coordinates) return;
@@ -734,8 +784,8 @@ async function loadVAExtras() {
         } catch(e) { console.warn('Communities load error:', e); }
     }
 
-    // LMI auto-qualify zones (Arcadia — REAL zones)
-    updateLoading('Loading LMI qualification zones (Arcadia)...', 72);
+    // LMI zones
+    updateLoading('Loading LMI qualification zones...', 65);
     if (lmiResp && lmiResp.ok) {
         try {
             const lmiGeo = await lmiResp.json();
@@ -752,32 +802,27 @@ async function loadVAExtras() {
     }
 
     // Recent orders
-    updateLoading('Loading recent orders...', 78);
+    updateLoading('Loading recent orders...', 75);
     if (ordersResp && ordersResp.ok) {
         try {
             const orders = await ordersResp.json();
             const statusColors = {
-                'Payable': '#00cc66', 'Enrolled': '#00cc66', 'Processed': '#00cc66',
+                'Payable': '#00cc66', 'Enrolled': '#00cc66',
                 'Sent': '#ffcc44', 'Pending': '#ffcc44', 'Awaiting Client Update': '#ffcc44',
-                'Compliance Review': '#ffcc44', 'TPV Not Complete': '#ffaa22',
                 'Cannot Process': '#ff4444', 'Denied': '#ff4444', 'Duplicate': '#ff8844',
-                'Canceled': '#888', 'Rejected': '#ff4444', 'Chargeback': '#cc2222',
-                'Incomplete': '#999', 'Test': '#666',
-                'Failed - Agent Phone Number': '#ff4444'
+                'Canceled': '#888', 'Rejected': '#ff4444'
             };
             orders.forEach(o => {
                 const centroid = zipCentroids[o.z];
                 if (!centroid) return;
+                // Jitter for visibility
                 const jLat = centroid[0] + (Math.random() - 0.5) * 0.008;
                 const jLon = centroid[1] + (Math.random() - 0.5) * 0.008;
                 const col = statusColors[o.st] || '#888';
-                // Orders use SQUARE markers (via DivIcon) — visually distinct from round sales pins
-                const icon = L.divIcon({
-                    className: '',
-                    html: `<div style="width:8px;height:8px;background:${col};border:1.5px solid #fff;transform:rotate(45deg);box-shadow:0 0 3px rgba(0,0,0,0.4);"></div>`,
-                    iconSize: [11, 11], iconAnchor: [5.5, 5.5]
+                const marker = L.circleMarker([jLat, jLon], {
+                    radius: 4, fillColor: col, color: col,
+                    weight: 0, fillOpacity: 0.7
                 });
-                const marker = L.marker([jLat, jLon], { icon });
                 marker.bindPopup(`<b style="color:${col}">📋 ${o.st}</b><br>${o.c} (${o.z})<br>Date: ${o.d}<br>Campaign: ${o.camp}<br>Rep: ${o.rep || 'N/A'}<br>TPV: ${o.tpv || 'N/A'}<br>Type: ${o.dw || 'N/A'}${o.lmi ? '<br><span style="color:#00cc66;">LMI: ' + o.lmi + '</span>' : ''}`);
                 marker.addTo(fg.ordersLayer);
             });
@@ -832,6 +877,69 @@ function pointInGeoJSONPoly(lat, lon, ring) {
         }
     }
     return inside;
+}
+
+// Approximate VA ZIP centroids from known data
+function vaZipCentroid(zip) {
+    // Use known centroids from sales data or a lookup
+    const vaRegions = {
+        '232': [37.55, -77.45],  // Richmond area
+        '233': [37.30, -77.40],  // S Richmond
+        '234': [36.85, -76.30],  // Norfolk/VB area
+        '235': [36.85, -76.28],  // Norfolk
+        '236': [37.00, -76.40],  // Hampton Roads
+        '237': [37.00, -76.35],  // Hampton
+        '238': [37.30, -79.45],  // Lynchburg area
+        '239': [37.10, -78.40],  // Farmville area
+        '240': [37.28, -79.95],  // Roanoke area
+        '241': [37.28, -80.05],  // Roanoke
+        '242': [36.70, -81.95],  // Bristol area
+        '243': [37.80, -79.45],  // Staunton area
+        '244': [38.45, -79.00],  // Staunton/Covington
+        '245': [37.40, -79.15],  // Lynchburg
+        '246': [36.80, -76.00],  // VA Beach S
+        '220': [38.80, -77.10],  // Arlington/Alexandria
+        '221': [38.75, -77.10],  // Alexandria
+        '222': [38.88, -77.25],  // Arlington
+        '223': [38.85, -77.35],  // Fairfax
+        '224': [38.30, -77.47],  // Fredericksburg
+        '225': [38.30, -77.47],  // Fredericksburg
+        '226': [38.45, -78.85],  // Harrisonburg
+        '227': [38.03, -78.48],  // Charlottesville
+        '228': [38.75, -77.55],  // Manassas
+        '201': [38.85, -77.35],  // NoVA/DC suburbs
+    };
+    // Exact ZIP if we can derive from 3-digit prefix
+    const prefix3 = zip.substring(0, 3);
+    if (vaRegions[prefix3]) {
+        // Add small jitter based on last 2 digits for differentiation
+        const last2 = parseInt(zip.substring(3)) || 0;
+        return [
+            vaRegions[prefix3][0] + (last2 % 10 - 5) * 0.015,
+            vaRegions[prefix3][1] + (Math.floor(last2 / 10) - 5) * 0.015
+        ];
+    }
+    return null;
+}
+
+function showVAZipDetail(zip, count, city, dac) {
+    const color = getDensityColor(count);
+    let html = `
+        <div class="info-section-title">Sales Activity</div>
+        <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
+        <div class="info-row"><span class="info-label">City:</span><span class="info-value">${city}</span></div>
+        <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:#00cc88">Dominion Virginia</span></div>`;
+
+    if (dac) {
+        html += `<div class="info-section">
+            <div class="info-section-title">DAC Status</div>
+            <div class="info-row"><span class="info-label">DAC Coverage:</span><span class="info-value" style="color:#ff66aa;">${dac.pct}%</span></div>
+            <div style="font-size:10px;color:#666;margin-top:4px;">Approximate (sales density analysis)</div>
+        </div>`;
+    }
+
+    showInfoPanel(`ZIP ${zip} — ${city}`, html);
 }
 
 // ═══════════════════════════════════════════════════
@@ -933,6 +1041,12 @@ function loadHousingPins() {
 function loadTargetZones() {
     const cfg = STATE_CONFIG[currentState];
     updateLoading('Running priority scoring engine...', 90);
+
+    // VA uses simplified scoring from sales data (no demographics)
+    if (cfg.isVA) {
+        loadVATargetZones();
+        return;
+    }
 
     // Step 1: Compute state median income (population-weighted)
     const incomeEntries = [];
@@ -1044,6 +1158,63 @@ function loadTargetZones() {
     renderPriorityPanel();
 }
 
+function loadVATargetZones() {
+    const cfg = STATE_CONFIG[currentState];
+    const scored = [];
+    let maxSales = 0;
+    Object.values(zipSalesData).forEach(d => { if (d.n > maxSales) maxSales = d.n; });
+
+    for (const [zip, data] of Object.entries(zipSalesData)) {
+        if (data.n < 5) continue;
+        const centroid = zipCentroids[zip];
+        if (!centroid) continue;
+        const dac = dacData[zip];
+
+        // Simplified scoring: sales volume + DAC status
+        const salesScore = Math.min(40, (data.n / maxSales) * 40);
+        const dacBonus = dac ? Math.min(25, dac.pct / 3) : 0;
+        const volumeScore = Math.min(20, data.n / 50 * 20);
+        const diversityScore = Math.min(15, data.n > 100 ? 15 : data.n > 50 ? 10 : 5);
+
+        const total = Math.round(salesScore + dacBonus + volumeScore + diversityScore);
+
+        scored.push({
+            zip, city: data.c || 'N/A', utility: 'Dominion Virginia',
+            score: total, inc: 0, pop: 0, sales: data.n,
+            ehp: 0, dac: !!dac,
+            incS: 0, satS: Math.round(salesScore),
+            ehS: 0, popS: Math.round(volumeScore),
+            provenS: Math.round(diversityScore)
+        });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+
+    priorityData = { 'Dominion Virginia': scored };
+
+    // Add target pins
+    scored.slice(0, 50).forEach((s, i) => {
+        const centroid = zipCentroids[s.zip];
+        if (!centroid) return;
+        const pinColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#ff8800' : '#ffcc44';
+        const marker = L.circleMarker(centroid, {
+            radius: Math.max(6, Math.min(14, s.score / 8)),
+            fillColor: pinColor, color: '#fff', weight: 2, fillOpacity: 0.85
+        });
+        marker.bindPopup(`<b>🎯 #${i+1} ${s.city}</b><br>ZIP: ${s.zip}<br>Score: <b style="color:${pinColor}">${s.score}/100</b><br>Sales: ${s.sales}${s.dac ? '<br><span style="color:#ff66aa;">DAC Zone</span>' : ''}`);
+        marker.addTo(fg.targetZones);
+
+        if (i < 25) {
+            L.circle(centroid, {
+                radius: 2000,
+                fillColor: '#00ff88', fillOpacity: 0.20,
+                color: '#00ff88', weight: 2, opacity: 0.6
+            }).addTo(fg.priorityHighlight);
+        }
+    });
+
+    renderPriorityPanel();
+}
 
 // ═══════════════════════════════════════════════════
 // ██  PRIORITY PANEL (Per Utility Tabs)            ██

@@ -116,6 +116,41 @@
         .legend-circle { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
         .legend-line { width: 18px; height: 0; border-top: 3px solid; margin-right: 6px; flex-shrink: 0; }
 
+        /* ── UPLOAD PANEL ── */
+        .upload-btn { position: absolute; top: 10px; left: 50%; transform: translateX(calc(-50% + 160px)); z-index: 1100; background: linear-gradient(135deg, #ff8800, #ff5500); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; letter-spacing: 0.3px; box-shadow: 0 2px 12px rgba(255,136,0,0.4); transition: all 0.2s; }
+        .upload-btn:hover { transform: translateX(calc(-50% + 160px)) scale(1.05); box-shadow: 0 4px 20px rgba(255,136,0,0.6); }
+        .upload-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; }
+        .upload-overlay.active { display: flex; }
+        .upload-modal { background: #0f1420; border: 2px solid #ff8800; border-radius: 12px; padding: 28px; width: 520px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+        .upload-modal h3 { color: #ff8800; font-size: 18px; margin-bottom: 16px; }
+        .upload-dropzone { border: 2px dashed #555; border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 16px; }
+        .upload-dropzone:hover, .upload-dropzone.dragover { border-color: #ff8800; background: rgba(255,136,0,0.05); }
+        .upload-dropzone .icon { font-size: 40px; margin-bottom: 8px; }
+        .upload-dropzone .main-text { font-size: 15px; color: #ddd; font-weight: 600; }
+        .upload-dropzone .sub-text { font-size: 12px; color: #888; margin-top: 6px; }
+        .upload-file-input { display: none; }
+        .upload-status { font-size: 13px; color: #aaa; margin-top: 12px; min-height: 20px; }
+        .upload-status.success { color: #00ff88; }
+        .upload-status.error { color: #ff4444; }
+        .upload-progress { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; margin-top: 8px; display: none; }
+        .upload-progress.active { display: block; }
+        .upload-progress-bar { height: 100%; background: linear-gradient(90deg, #ff8800, #ff5500); width: 0%; transition: width 0.3s; }
+        .upload-results { margin-top: 16px; padding: 12px; background: rgba(255,136,0,0.06); border-radius: 6px; font-size: 12px; display: none; }
+        .upload-results.active { display: block; }
+        .upload-results .stat-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .upload-results .stat-label { color: #aaa; }
+        .upload-results .stat-value { color: #ff8800; font-weight: 700; }
+        .upload-close { background: none; border: 1px solid #555; color: #aaa; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 12px; transition: all 0.2s; }
+        .upload-close:hover { border-color: #ff8800; color: #ff8800; }
+        .upload-apply { background: #ff8800; border: none; color: #000; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700; margin-top: 12px; margin-left: 8px; display: none; transition: all 0.2s; }
+        .upload-apply.active { display: inline-block; }
+        .upload-apply:hover { background: #ffaa33; }
+        .upload-col-config { margin-top: 12px; display: none; }
+        .upload-col-config.active { display: block; }
+        .upload-col-config .col-row { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
+        .upload-col-config .col-label { font-size: 12px; color: #aaa; width: 80px; }
+        .upload-col-config select { background: #1a2235; border: 1px solid #444; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; flex: 1; }
+
         /* ── LOADING ── */
         .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a12; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
         .loading-screen.hidden { opacity: 0; pointer-events: none; }
@@ -183,7 +218,7 @@
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (90K+)</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label" id="salesPinLabel">📍 Sales Pins</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">📌 Priority Targets</span></label>
             </div>
 
@@ -276,6 +311,37 @@
         </div>
     </div>
 
+    <!-- ── UPLOAD BUTTON + MODAL ── -->
+    <button class="upload-btn" onclick="openUpload()">📤 Upload Data</button>
+    <div class="upload-overlay" id="uploadOverlay" onclick="if(event.target===this)closeUpload()">
+        <div class="upload-modal">
+            <h3>📤 Upload Sales Spreadsheet</h3>
+            <div class="upload-dropzone" id="uploadDropzone" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📁</div>
+                <div class="main-text">Drop CSV or Excel file here</div>
+                <div class="sub-text">Supports .csv, .xlsx, .xls — auto-detects columns</div>
+            </div>
+            <input type="file" id="fileInput" class="upload-file-input" accept=".csv,.xlsx,.xls,.tsv" onchange="handleFileSelect(this.files[0])">
+
+            <div class="upload-col-config" id="colConfig">
+                <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Column Mapping</div>
+                <div class="col-row"><span class="col-label">Latitude</span><select id="colLat"></select></div>
+                <div class="col-row"><span class="col-label">Longitude</span><select id="colLon"></select></div>
+                <div class="col-row"><span class="col-label">ZIP Code</span><select id="colZip"></select></div>
+                <div class="col-row"><span class="col-label">City</span><select id="colCity"></select></div>
+                <div class="col-row"><span class="col-label">Date</span><select id="colDate"></select></div>
+            </div>
+
+            <div class="upload-progress" id="uploadProgress"><div class="upload-progress-bar" id="uploadProgressBar"></div></div>
+            <div class="upload-status" id="uploadStatus"></div>
+            <div class="upload-results" id="uploadResults"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="upload-close" onclick="closeUpload()">Cancel</button>
+                <button class="upload-apply" id="uploadApply" onclick="applyUploadedData()">Apply to Map</button>
+            </div>
+        </div>
+    </div>
+
     <div class="loading-screen" id="loadingScreen">
         <div class="spinner"></div>
         <div class="loading-text">Loading New York territory data...</div>
@@ -285,6 +351,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         // ── NY center: roughly Albany area, zoom to see whole state ──
         const map = L.map('map', { zoomControl: true }).setView([42.85, -75.80], 7);
@@ -764,6 +831,355 @@
         }
         loadAllData();
         document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
+
+        // ══════════════════════════════════════════════════
+        // ██  SPREADSHEET UPLOAD ENGINE                    ██
+        // ══════════════════════════════════════════════════
+        let uploadedRows = null, uploadHeaders = null, uploadFileName = '';
+        let parsedUploadSales = null; // Final processed records
+
+        // Store boundary features for point-in-polygon geocoding
+        let boundaryFeatures = null;
+        (async function cacheBoundaries() {
+            try {
+                const resp = await fetch('ny_zip_boundaries.geojson');
+                if (resp.ok) boundaryFeatures = await resp.json();
+            } catch(e) {}
+        })();
+
+        function openUpload() { document.getElementById('uploadOverlay').classList.add('active'); }
+        function closeUpload() {
+            document.getElementById('uploadOverlay').classList.remove('active');
+            document.getElementById('uploadStatus').textContent = '';
+            document.getElementById('uploadStatus').className = 'upload-status';
+            document.getElementById('uploadResults').classList.remove('active');
+            document.getElementById('uploadApply').classList.remove('active');
+            document.getElementById('uploadProgress').classList.remove('active');
+            document.getElementById('colConfig').classList.remove('active');
+        }
+
+        // Drag & drop
+        const dz = document.getElementById('uploadDropzone');
+        dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]); });
+
+        function handleFileSelect(file) {
+            if (!file) return;
+            uploadFileName = file.name;
+            const ext = file.name.split('.').pop().toLowerCase();
+            const statusEl = document.getElementById('uploadStatus');
+            statusEl.textContent = `Reading ${file.name} (${(file.size/1024).toFixed(0)} KB)...`;
+            statusEl.className = 'upload-status';
+            document.getElementById('uploadProgress').classList.add('active');
+            document.getElementById('uploadProgressBar').style.width = '20%';
+
+            if (ext === 'csv' || ext === 'tsv') {
+                const reader = new FileReader();
+                reader.onload = e => parseCSV(e.target.result, ext === 'tsv' ? '\t' : ',');
+                reader.readAsText(file);
+            } else if (ext === 'xlsx' || ext === 'xls') {
+                const reader = new FileReader();
+                reader.onload = e => parseXLSX(e.target.result);
+                reader.readAsArrayBuffer(file);
+            } else {
+                statusEl.textContent = 'Unsupported file type. Use .csv, .xlsx, or .xls';
+                statusEl.className = 'upload-status error';
+            }
+        }
+
+        function parseCSV(text, delimiter) {
+            const lines = text.split('\n').filter(l => l.trim());
+            if (lines.length < 2) { showUploadError('File appears empty'); return; }
+            uploadHeaders = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+            uploadedRows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const vals = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+                if (vals.length >= uploadHeaders.length - 1) uploadedRows.push(vals);
+            }
+            document.getElementById('uploadProgressBar').style.width = '50%';
+            showColumnMapping();
+        }
+
+        function parseXLSX(buffer) {
+            try {
+                const wb = XLSX.read(buffer, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                if (data.length < 2) { showUploadError('Sheet appears empty'); return; }
+                uploadHeaders = data[0].map(h => String(h).trim());
+                uploadedRows = data.slice(1).map(r => r.map(v => String(v).trim()));
+                document.getElementById('uploadProgressBar').style.width = '50%';
+                showColumnMapping();
+            } catch(e) {
+                showUploadError('Could not parse Excel file: ' + e.message);
+            }
+        }
+
+        function showUploadError(msg) {
+            document.getElementById('uploadStatus').textContent = msg;
+            document.getElementById('uploadStatus').className = 'upload-status error';
+            document.getElementById('uploadProgress').classList.remove('active');
+        }
+
+        function autoDetectColumn(headers, patterns) {
+            const lower = headers.map(h => h.toLowerCase().replace(/[_\-\s]/g, ''));
+            for (const p of patterns) {
+                const idx = lower.findIndex(h => h === p || h.includes(p));
+                if (idx >= 0) return idx;
+            }
+            return -1;
+        }
+
+        function showColumnMapping() {
+            const cfg = document.getElementById('colConfig');
+            cfg.classList.add('active');
+
+            const selectors = { colLat: ['latitude','lat'], colLon: ['longitude','lon','lng','long'], colZip: ['zip','zipcode','postalcode','postal'], colCity: ['city','town','municipality','place'], colDate: ['date','saledate','sale_date','created','timestamp'] };
+
+            for (const [selId, patterns] of Object.entries(selectors)) {
+                const sel = document.getElementById(selId);
+                sel.innerHTML = '<option value="-1">(none)</option>';
+                uploadHeaders.forEach((h, i) => {
+                    const opt = document.createElement('option'); opt.value = i; opt.textContent = h; sel.appendChild(opt);
+                });
+                const detected = autoDetectColumn(uploadHeaders, patterns);
+                if (detected >= 0) sel.value = detected;
+            }
+
+            const statusEl = document.getElementById('uploadStatus');
+            statusEl.textContent = `Loaded ${uploadedRows.length.toLocaleString()} rows, ${uploadHeaders.length} columns from ${uploadFileName}. Verify column mapping then click Process.`;
+            statusEl.className = 'upload-status';
+
+            // Change Apply button to Process first
+            const applyBtn = document.getElementById('uploadApply');
+            applyBtn.textContent = 'Process Data';
+            applyBtn.classList.add('active');
+            applyBtn.onclick = processUploadedData;
+        }
+
+        // Point-in-polygon: ray casting
+        function pipCheck(lat, lon, coords) {
+            for (const poly of coords) {
+                for (const ring of poly) {
+                    let inside = false;
+                    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                        const [xi, yi] = ring[i]; const [xj, yj] = ring[j];
+                        if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+                    }
+                    if (inside) return true;
+                }
+            }
+            return false;
+        }
+
+        function reverseGeocodeZip(lat, lon) {
+            if (!boundaryFeatures) return null;
+            for (const feat of boundaryFeatures.features) {
+                const zip = feat.properties.zip;
+                const geom = feat.geometry;
+                const coords = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+                // Quick bbox check
+                let minLat=90,maxLat=-90,minLon=180,maxLon=-180;
+                for(const p of coords) for(const r of p) for(const [x,y] of r) { if(y<minLat)minLat=y;if(y>maxLat)maxLat=y;if(x<minLon)minLon=x;if(x>maxLon)maxLon=x; }
+                if (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) continue;
+                if (pipCheck(lat, lon, coords)) return zip;
+            }
+            return null;
+        }
+
+        function processUploadedData() {
+            if (!uploadedRows || !uploadedRows.length) return;
+
+            const latIdx = parseInt(document.getElementById('colLat').value);
+            const lonIdx = parseInt(document.getElementById('colLon').value);
+            const zipIdx = parseInt(document.getElementById('colZip').value);
+            const cityIdx = parseInt(document.getElementById('colCity').value);
+            const dateIdx = parseInt(document.getElementById('colDate').value);
+
+            if (latIdx < 0 && zipIdx < 0) { showUploadError('Need at least Latitude or ZIP column mapped'); return; }
+
+            const statusEl = document.getElementById('uploadStatus');
+            statusEl.textContent = 'Processing records...';
+            document.getElementById('uploadProgressBar').style.width = '60%';
+
+            // Process asynchronously to not freeze UI
+            setTimeout(() => {
+                const records = []; // [lat, lon, city, zip, date]
+                const newZipCounts = {};
+                let validZip = 0, geocoded = 0, noLocation = 0;
+
+                for (let i = 0; i < uploadedRows.length; i++) {
+                    const row = uploadedRows[i];
+                    const lat = latIdx >= 0 ? parseFloat(row[latIdx]) : NaN;
+                    const lon = lonIdx >= 0 ? parseFloat(row[lonIdx]) : NaN;
+                    let zip = zipIdx >= 0 ? (row[zipIdx]||'').replace(/[^0-9]/g,'') : '';
+                    const city = cityIdx >= 0 ? (row[cityIdx]||'') : '';
+                    const date = dateIdx >= 0 ? (row[dateIdx]||'') : '';
+
+                    // Validate/fix ZIP
+                    if (zip && zip !== '0') {
+                        zip = zip.length <= 5 ? zip.padStart(5, '0') : zip.substring(0,5);
+                        const pfx = parseInt(zip.substring(0,3));
+                        if (pfx >= 100 && pfx <= 149) {
+                            validZip++;
+                            records.push([lat||0, lon||0, city, zip, date]);
+                            if (!newZipCounts[zip]) newZipCounts[zip] = { n: 0, cities: new Set() };
+                            newZipCounts[zip].n++;
+                            if (city) newZipCounts[zip].cities.add(city);
+                            continue;
+                        }
+                    }
+
+                    // Try reverse geocode from lat/lon
+                    if (!isNaN(lat) && !isNaN(lon) && lat > 40 && lat < 46 && lon > -80 && lon < -71) {
+                        const foundZip = reverseGeocodeZip(lat, lon);
+                        if (foundZip) {
+                            geocoded++;
+                            records.push([lat, lon, city, foundZip, date]);
+                            if (!newZipCounts[foundZip]) newZipCounts[foundZip] = { n: 0, cities: new Set() };
+                            newZipCounts[foundZip].n++;
+                            if (city) newZipCounts[foundZip].cities.add(city);
+                            continue;
+                        }
+                    }
+                    noLocation++;
+
+                    if (i % 10000 === 0 && i > 0) {
+                        const pct = 60 + (i / uploadedRows.length) * 30;
+                        document.getElementById('uploadProgressBar').style.width = pct + '%';
+                    }
+                }
+
+                parsedUploadSales = { records, zipCounts: newZipCounts };
+
+                document.getElementById('uploadProgressBar').style.width = '100%';
+                statusEl.textContent = `Processed ${uploadedRows.length.toLocaleString()} rows from ${uploadFileName}`;
+                statusEl.className = 'upload-status success';
+
+                // Show results
+                const resultsEl = document.getElementById('uploadResults');
+                const zipCountObj = {};
+                for (const [z, d] of Object.entries(newZipCounts)) zipCountObj[z] = { n: d.n, c: [...d.cities].slice(0,3).join(', ') };
+                const topZips = Object.entries(zipCountObj).sort((a,b) => b[1].n - a[1].n).slice(0,5);
+
+                resultsEl.innerHTML = `
+                    <div class="stat-row"><span class="stat-label">Total Usable Records</span><span class="stat-value">${records.length.toLocaleString()}</span></div>
+                    <div class="stat-row"><span class="stat-label">Valid ZIP from file</span><span class="stat-value">${validZip.toLocaleString()}</span></div>
+                    <div class="stat-row"><span class="stat-label">Geocoded from lat/lon</span><span class="stat-value" style="color:#00ff88;">${geocoded.toLocaleString()}</span></div>
+                    <div class="stat-row"><span class="stat-label">Unrecoverable</span><span class="stat-value" style="color:#ff6644;">${noLocation.toLocaleString()}</span></div>
+                    <div class="stat-row"><span class="stat-label">Unique ZIPs</span><span class="stat-value">${Object.keys(newZipCounts).length}</span></div>
+                    ${topZips.length ? '<div style="margin-top:8px;font-size:11px;color:#888;">TOP ZIPs:</div>' + topZips.map(([z,d]) => `<div class="stat-row"><span class="stat-label">${z} ${d.c}</span><span class="stat-value">${d.n.toLocaleString()}</span></div>`).join('') : ''}
+                `;
+                resultsEl.classList.add('active');
+
+                // Switch button to Apply
+                const applyBtn = document.getElementById('uploadApply');
+                applyBtn.textContent = 'Apply to Map';
+                applyBtn.onclick = applyUploadedData;
+            }, 50);
+        }
+
+        function applyUploadedData() {
+            if (!parsedUploadSales) return;
+            const { records, zipCounts } = parsedUploadSales;
+
+            const statusEl = document.getElementById('uploadStatus');
+            statusEl.textContent = 'Applying to map...';
+
+            // Update global data
+            salesData = records;
+            zipSalesData = {};
+            for (const [z, d] of Object.entries(zipCounts)) {
+                zipSalesData[z] = { n: d.n, c: [...d.cities].slice(0,3).join(', ') };
+            }
+
+            // Clear existing layers
+            salesCluster.clearLayers();
+            fg.zipZones.clearLayers();
+            fg.incomeOverlay.clearLayers();
+            fg.raceOverlay.clearLayers();
+            fg.ehZones.clearLayers();
+            fg.targetZones.clearLayers();
+            fg.priorityHighlight.clearLayers();
+
+            // Rebuild all layers
+            cityStats = {}; zipStats = {};
+
+            // Rebuild sales markers
+            const markers = [];
+            for (const [lat, lon, city, zip, date] of records) {
+                if (city) cityStats[city] = (cityStats[city] || 0) + 1;
+                if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
+                if (lat && lon) {
+                    const m = L.circleMarker([lat, lon], { radius: 3, fillColor: '#ff8800', color: '#ff6600', weight: 1, opacity: 0.7, fillOpacity: 0.6 });
+                    m.bindPopup(`<b>📍 Sale</b><br>${city || ''} ${zip || ''}<br>${date || ''}`);
+                    markers.push(m);
+                }
+            }
+            salesCluster.addLayers(markers);
+
+            // Rebuild ZIP boundary overlays with new sales data
+            if (boundaryFeatures) {
+                boundaryFeatures.features.forEach(feature => {
+                    const zip = feature.properties.zip;
+                    const sales = zipSalesData[zip] || { n: 0, c: '' };
+                    const count = sales.n;
+                    const cities = sales.c;
+                    const color = getDensityColor(count);
+                    const opacity = getDensityOpacity(count);
+                    zipGeoFeatures[zip] = feature;
+
+                    L.geoJSON(feature, {
+                        style: { fillColor: color, fillOpacity: opacity, color: count > 0 ? color : '#555', weight: count >= 100 ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3 },
+                        onEachFeature: (feat, layer) => {
+                            layer.on('mouseover', function() { this.setStyle({ weight: 3, opacity: 1, fillOpacity: opacity + 0.15 }); this.bringToFront(); });
+                            layer.on('mouseout', function() { this.setStyle({ weight: count >= 100 ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3, fillOpacity: opacity }); });
+                            const dTip = demoData[zip];
+                            let popup = `<b>ZIP ${zip}</b>`;
+                            if (cities) popup += `<br>${cities}`;
+                            popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+                            if (dTip && dTip.inc > 0) {
+                                popup += `<br>Income/capita: <b style="color:${getIncomeColor(dTip.inc)};">$${dTip.inc.toLocaleString()}</b>`;
+                                const rDom = getRaceDominant(dTip);
+                                popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
+                            }
+                            layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
+                        }
+                    }).addTo(fg.zipZones);
+
+                    try { const b = L.geoJSON(feature).getBounds(); zipCentroids[zip] = [b.getCenter().lat, b.getCenter().lng]; } catch(e) {}
+
+                    const demo = demoData[zip];
+                    if (demo && demo.inc > 0) {
+                        L.geoJSON(feature, { interactive: false, style: { fillColor: getIncomeColor(demo.inc), fillOpacity: 0.50, color: getIncomeColor(demo.inc), weight: 1.5, opacity: 0.7 } }).addTo(fg.incomeOverlay);
+                    }
+                    if (demo && demo.pop >= 300) {
+                        const race = getRaceDominant(demo);
+                        L.geoJSON(feature, { interactive: false, style: { fillColor: race.color, fillOpacity: race.isDiverse ? 0.35 : Math.min(0.55, 0.15 + (race.pct / 150)), color: race.borderColor, weight: 1.5, opacity: 0.6 } }).addTo(fg.raceOverlay);
+                    }
+                    if (demo && demo.ehp >= 35 && demo.pop >= 1000) {
+                        const ehColor = demo.ehp >= 50 ? '#ff2222' : '#ff6644';
+                        L.geoJSON(feature, { interactive: false, style: { fillColor: '#ff3333', fillOpacity: demo.ehp >= 50 ? 0.12 : 0.06, color: ehColor, weight: demo.ehp >= 50 ? 4 : 2.5, opacity: 0.8, dashArray: '4, 3' } }).addTo(fg.ehZones);
+                    }
+                });
+            }
+
+            // Re-run priority scoring
+            loadTargetZones();
+
+            // Update stats
+            document.getElementById('statTotal').textContent = records.length.toLocaleString();
+            document.getElementById('statZips').textContent = Object.keys(zipCentroids).length;
+            document.getElementById('statCities').textContent = Object.keys(cityStats).length;
+            document.getElementById('statVisible').textContent = records.length.toLocaleString();
+            updateStatus(`📤 Uploaded: ${records.length.toLocaleString()} sales across ${Object.keys(cityStats).length} cities | ${Object.keys(zipStats).length} ZIPs`);
+
+            // Update the sales pin count label
+            const salesLabel = document.querySelector('.toggle-label');
+
+            closeUpload();
+        }
     </script>
 </body>
 </html>
