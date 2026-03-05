@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EMG Targeting Map - New York Territory</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a12; color: #e0e0e0; overflow: hidden; }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; }
+
+        .leaflet-popup-content-wrapper { background: rgba(10,10,18,0.96) !important; color: #e0e0e0; border-radius: 8px; border: 1px solid rgba(255,136,0,0.4) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+        .leaflet-popup-tip { background: rgba(10,10,18,0.96); }
+        .leaflet-popup-content b { color: #ff8800; }
+        .leaflet-popup-content { font-size: 13px; line-height: 1.6; }
+        .leaflet-control-layers { display: none !important; }
+
+        .marker-cluster-small { background-color: rgba(255,136,0,0.4); }
+        .marker-cluster-small div { background-color: rgba(255,136,0,0.7); color: #fff; }
+        .marker-cluster-medium { background-color: rgba(255,80,0,0.4); }
+        .marker-cluster-medium div { background-color: rgba(255,80,0,0.7); color: #fff; }
+        .marker-cluster-large { background-color: rgba(220,20,0,0.4); }
+        .marker-cluster-large div { background-color: rgba(220,20,0,0.7); color: #fff; }
+        .marker-cluster div { width: 22px; height: 22px; margin-left: 4px; margin-top: 4px; text-align: center; border-radius: 11px; font: 10px "Segoe UI", sans-serif; font-weight: 700; line-height: 22px; }
+
+        .zone-label { background: none !important; border: none !important; box-shadow: none !important; color: #fff; font-size: 11px; font-weight: 700; text-shadow: 0 0 4px #000, 0 0 8px #000, 1px 1px 2px #000; white-space: nowrap; }
+
+        .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 12px 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); }
+        .header h1 { font-size: 16px; color: #ff8800; font-weight: 600; }
+        .header .sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+        .utility-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 10px; font-weight: 600; margin: 1px; }
+        .badge-nyseg { background: #00cc88; color: #000; }
+        .badge-ngrid { background: #4a90d9; color: #fff; }
+        .badge-chudson { background: #ff6644; color: #000; }
+        .badge-oru { background: #aa66ff; color: #fff; }
+        .badge-rge { background: #ffcc00; color: #000; }
+
+        /* ── COLLAPSIBLE PANELS ── */
+        .panel-minimized .panel-body { display: none !important; }
+        .panel-minimized .legend-body { display: none !important; }
+        .panel-minimized { width: auto !important; min-width: 0 !important; }
+
+        .toggle-panel { position: absolute; top: 10px; right: 10px; z-index: 1200; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 30px); overflow-y: auto; transition: width 0.2s; }
+        .toggle-panel h3 { color: #ff8800; font-size: 13px; margin-bottom: 10px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .toggle-panel h3 .arrow { transition: transform 0.2s; font-size: 10px; }
+        .toggle-panel.panel-minimized h3 .arrow { transform: rotate(-90deg); }
+        .toggle-panel.panel-minimized h3 { margin-bottom: 0; }
+
+        .toggle-section { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .toggle-section-title { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .toggle-row { display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; padding: 3px 4px; border-radius: 4px; transition: background 0.15s; }
+        .toggle-row:hover { background: rgba(255,136,0,0.1); }
+        .toggle-row input[type="checkbox"] { display: none; }
+        .toggle-switch { width: 32px; height: 18px; background: #333; border-radius: 9px; position: relative; margin-right: 8px; flex-shrink: 0; transition: background 0.2s; }
+        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #666; transition: all 0.2s; }
+        .toggle-row input:checked + .toggle-switch { background: #ff8800; }
+        .toggle-row input:checked + .toggle-switch::after { left: 16px; background: #fff; }
+        .toggle-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+        .toggle-dot.square { border-radius: 2px; }
+        .toggle-label { font-size: 12px; color: #ccc; }
+
+        .basemap-row { display: flex; align-items: center; margin-bottom: 4px; cursor: pointer; padding: 2px 4px; }
+        .basemap-row input { margin-right: 6px; accent-color: #ff8800; }
+        .basemap-label { font-size: 12px; color: #ccc; }
+
+        .search-panel { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1100; display: flex; gap: 4px; }
+        .search-panel input { background: rgba(10,10,18,0.95); border: 1px solid #555; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
+        .search-panel input:focus { border-color: #ff8800; }
+        .search-btn { background: #ff8800; color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
+
+        .info-panel { position: absolute; bottom: 20px; left: 20px; z-index: 1100; background: rgba(10,10,18,0.97); padding: 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 340px; max-height: 450px; overflow-y: auto; display: none; }
+        .info-panel.active { display: block; }
+        .info-panel h3 { color: #ff8800; font-size: 15px; margin-bottom: 10px; padding-right: 24px; }
+        .close-button { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer; }
+        .info-section { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .info-section-title { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 12px; }
+        .info-label { color: #aaa; }
+        .info-value { color: #fff; font-weight: 600; text-align: right; }
+
+        .status-banner { position: absolute; bottom: 10px; right: 10px; z-index: 1100; background: rgba(10,10,18,0.9); padding: 6px 12px; border-radius: 6px; font-size: 11px; color: #888; border: 1px solid #333; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* ── PRIORITY DROP PINS ── */
+        .priority-pin { width: 28px; height: 36px; position: relative; }
+        .priority-pin .pin-head { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .priority-pin .pin-num { transform: rotate(45deg); font-weight: 700; font-size: 11px; color: #000; }
+        .priority-pin .pin-tail { width: 2px; height: 10px; background: #fff; position: absolute; bottom: 0; left: 13px; }
+
+        /* ── PRIORITY RANKING PANEL ── */
+        .priority-panel { position: absolute; top: 10px; left: 10px; z-index: 1150; background: rgba(10,10,18,0.97); border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 260px; max-height: calc(100vh - 100px); overflow-y: auto; margin-top: 75px; transition: width 0.2s; }
+        .priority-panel h4 { color: #ff8800; font-size: 13px; padding: 10px 12px; margin: 0; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(10,10,18,0.97); border-bottom: 1px solid rgba(255,136,0,0.3); z-index: 2; }
+        .priority-panel h4 .arrow { font-size: 10px; transition: transform 0.2s; }
+        .priority-panel.panel-minimized h4 .arrow { transform: rotate(-90deg); }
+        .priority-tier-header { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 12px; background: rgba(255,136,0,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .priority-item { display: flex; align-items: center; padding: 6px 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+        .priority-item:hover { background: rgba(255,136,0,0.1); }
+        .priority-rank { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; color: #000; flex-shrink: 0; margin-right: 8px; }
+        .priority-info { flex: 1; min-width: 0; }
+        .priority-zip { font-size: 12px; font-weight: 600; color: #fff; }
+        .priority-city { font-size: 10px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .priority-score { font-size: 13px; font-weight: 700; margin-left: 6px; }
+
+        /* ── MAP LEGEND ── */
+        .legend { position: absolute; bottom: 20px; right: 10px; z-index: 1100; background: rgba(10,10,18,0.97); padding: 10px 12px; border-radius: 8px; border: 1px solid #555; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 80px); overflow-y: auto; transition: width 0.2s; }
+        .legend h4 { color: #ff8800; font-size: 12px; margin-bottom: 8px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .legend h4 .arrow { font-size: 10px; transition: transform 0.2s; }
+        .legend.panel-minimized h4 .arrow { transform: rotate(-90deg); }
+        .legend.panel-minimized h4 { margin-bottom: 0; }
+        .legend-section { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .legend-section-title { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+        .legend-item { display: flex; align-items: center; font-size: 11px; color: #bbb; margin-bottom: 2px; }
+        .legend-swatch { width: 14px; height: 14px; border-radius: 2px; margin-right: 6px; flex-shrink: 0; }
+        .legend-circle { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+        .legend-line { width: 18px; height: 0; border-top: 3px solid; margin-right: 6px; flex-shrink: 0; }
+
+        /* ── LOADING ── */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a12; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #ff8800; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: #888; margin-top: 16px; font-size: 14px; }
+        .loading-progress { width: 200px; height: 4px; background: #222; border-radius: 2px; margin-top: 12px; overflow: hidden; }
+        .loading-bar { height: 100%; background: #ff8800; width: 0%; transition: width 0.3s; }
+
+        /* ── MOBILE RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .header { padding: 8px 12px; max-width: 200px; }
+            .header h1 { font-size: 13px; }
+            .toggle-panel { width: 180px; max-height: 50vh; }
+            .info-panel { max-width: 280px; max-height: 350px; }
+            .priority-panel { width: 220px; max-height: 280px; }
+            .legend { width: 180px; max-height: 300px; }
+            .search-panel input { width: 140px; }
+        }
+        @media (max-width: 480px) {
+            .header { max-width: 160px; }
+            .toggle-panel { width: 160px; top: 5px; right: 5px; }
+            .priority-panel { width: 190px; }
+            .legend { width: 160px; }
+            .search-panel input { width: 110px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="header">
+        <h1>EMG Targeting Map — New York</h1>
+        <div class="sub">
+            <span class="utility-badge badge-nyseg">NYSEG</span>
+            <span class="utility-badge badge-ngrid">NATIONAL GRID</span>
+            <span class="utility-badge badge-chudson">CENTRAL HUDSON</span>
+            <span class="utility-badge badge-oru">ORU</span>
+            <span class="utility-badge badge-rge">RGE</span>
+            Community Solar Territory Intelligence
+        </div>
+    </div>
+
+    <div class="status-banner" id="statusBanner">Loading data layers...</div>
+
+    <!-- ── CUSTOM TOGGLE PANEL (collapsible) ── -->
+    <div class="toggle-panel" id="togglePanel">
+        <h3 onclick="document.getElementById('togglePanel').classList.toggle('panel-minimized')">⚙ Layers & Overlays <span class="arrow">▼</span></h3>
+        <div class="panel-body">
+            <div class="toggle-section">
+                <div class="toggle-section-title">Base Map</div>
+                <label class="basemap-row"><input type="radio" name="basemap" value="streets" checked onchange="switchBasemap('streets')"><span class="basemap-label">Streets</span></label>
+                <label class="basemap-row"><input type="radio" name="basemap" value="satellite" onchange="switchBasemap('satellite')"><span class="basemap-label">Satellite</span></label>
+                <label class="basemap-row"><input type="radio" name="basemap" value="dark" onchange="switchBasemap('dark')"><span class="basemap-label">Dark</span></label>
+            </div>
+
+            <div class="toggle-section">
+                <div class="toggle-section-title">Zone Overlays</div>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffa726;"></div><span class="toggle-label">💰 Income Per Capita</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
+            </div>
+
+            <div class="toggle-section">
+                <div class="toggle-section-title">Pins & Markers</div>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (90K+)</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">📌 Priority Targets</span></label>
+            </div>
+
+            <div class="toggle-section">
+                <div class="toggle-section-title">Utility Territories</div>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('nyseg',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc88;"></div><span class="toggle-label">⚡ NYSEG</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ngrid',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#4a90d9;"></div><span class="toggle-label">⚡ National Grid</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('chudson',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6644;"></div><span class="toggle-label">⚡ Central Hudson</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('oru',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#aa66ff;"></div><span class="toggle-label">⚡ ORU</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('rge',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffcc00;"></div><span class="toggle-label">⚡ RGE</span></label>
+            </div>
+
+            <div class="toggle-section" style="border-bottom:none;">
+                <div class="toggle-section-title">Stats</div>
+                <div style="font-size:11px;">Total Sales: <span style="color:#ff8800;font-weight:700;" id="statTotal">—</span></div>
+                <div style="font-size:11px;">ZIP Zones: <span style="color:#ff8800;font-weight:700;" id="statZips">—</span></div>
+                <div style="font-size:11px;">Cities: <span style="color:#ff8800;font-weight:700;" id="statCities">—</span></div>
+                <div style="font-size:11px;">Priorities: <span style="color:#00ff44;font-weight:700;" id="statTargets">—</span></div>
+                <div style="font-size:11px;">In View: <span style="color:#ff8800;font-weight:700;" id="statVisible">—</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-panel">
+        <input type="text" id="searchInput" placeholder="City, ZIP, or address...">
+        <button class="search-btn" onclick="searchLocation()">Search</button>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+        <button class="close-button" onclick="closeInfoPanel()">×</button>
+        <h3 id="infoPanelTitle">Details</h3>
+        <div id="infoPanelContent"></div>
+    </div>
+
+    <!-- ── PRIORITY RANKING PANEL (collapsible) ── -->
+    <div class="priority-panel" id="priorityPanel" style="display:none;">
+        <h4 onclick="document.getElementById('priorityPanel').classList.toggle('panel-minimized')">📌 Priority Rankings <span class="arrow">▼</span></h4>
+        <div class="panel-body" id="priorityList"></div>
+    </div>
+
+    <!-- ── MAP LEGEND (collapsible) ── -->
+    <div class="legend" id="mapLegend">
+        <h4 onclick="document.getElementById('mapLegend').classList.toggle('panel-minimized')">🗺 Map Key <span class="arrow">▼</span></h4>
+        <div class="legend-body">
+            <div class="legend-section">
+                <div class="legend-section-title">Sales Density (ZIP Fill)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff2200;"></div> 500+ sales — HOT ZONE</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff6600;"></div> 200–499 — High</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff9900;"></div> 100–199 — Moderate</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffcc44;"></div> 20–99 — Low</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffe888;"></div> 1–19 — Minimal</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#444;"></div> 0 sales</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Priority Drop Pins</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00ff44;"></div> Tier 1 — LMI + Low Sat + High kWh</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00ccff;"></div> Tier 2 — ~80% Median + Partial Sat</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ffcc00;"></div> Tier 3 — Moderate Opportunity</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">💰 Income Per Capita (toggle on)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f;"></div> &lt;$20K — Critical</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#f57c00;"></div> $28-35K — Low</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffcc02;"></div> $42-50K — Near Avg</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#66bb6a;"></div> $60-75K — Above Avg</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#1b5e20;"></div> $100K+ — Very High</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e8d4a8;"></div> Majority White</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#4a90d9;"></div> Majority Black</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e67e22;"></div> Majority Hispanic</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#27ae60;"></div> Majority Asian</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#9b59b6;"></div> Diverse (no majority)</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">EH Zones</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ff2222;border-width:4px;border-style:dashed;"></div> EH ≥ 50% — Critical</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ff6644;border-style:dashed;"></div> EH 35–49% — High</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Utility Territories</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#00cc88;border-style:dashed;"></div> NYSEG (Avangrid)</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#4a90d9;border-style:dashed;"></div> National Grid</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ff6644;border-style:dashed;"></div> Central Hudson (Fortis)</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#aa66ff;border-style:dashed;"></div> ORU (Con Ed subsidiary)</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ffcc00;border-style:dashed;"></div> RGE (Avangrid)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-screen" id="loadingScreen">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading New York territory data...</div>
+        <div class="loading-progress"><div class="loading-bar" id="loadingBar"></div></div>
+        <div class="loading-text" id="loadingStatus">Initializing...</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    <script>
+        // ── NY center: roughly Albany area, zoom to see whole state ──
+        const map = L.map('map', { zoomControl: true }).setView([42.85, -75.80], 7);
+
+        const basemaps = {
+            streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri', maxZoom: 18 }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB', maxZoom: 18 })
+        };
+        let activeBasemap = basemaps.streets;
+        activeBasemap.addTo(map);
+
+        function switchBasemap(name) { map.removeLayer(activeBasemap); activeBasemap = basemaps[name]; activeBasemap.addTo(map); }
+
+        const fg = {
+            zipZones: L.featureGroup(),
+            incomeOverlay: L.featureGroup(),
+            raceOverlay: L.featureGroup(),
+            ehZones: L.featureGroup(),
+            nysegArea: L.featureGroup(),
+            ngridArea: L.featureGroup(),
+            chudsonArea: L.featureGroup(),
+            oruArea: L.featureGroup(),
+            rgeArea: L.featureGroup(),
+            targetZones: L.featureGroup(),
+            priorityHighlight: L.featureGroup()
+        };
+
+        const salesCluster = L.markerClusterGroup({
+            chunkedLoading: true, chunkInterval: 100, chunkDelay: 10,
+            maxClusterRadius: 30, spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false, disableClusteringAtZoom: 13,
+            iconCreateFunction: function(cluster) {
+                const n = cluster.getChildCount();
+                let c = 'small';
+                if (n > 100) c = 'large'; else if (n > 30) c = 'medium';
+                return L.divIcon({ html: '<div>' + (n >= 1000 ? (n/1000).toFixed(1)+'K' : n) + '</div>', className: 'marker-cluster marker-cluster-' + c, iconSize: L.point(30, 30) });
+            }
+        });
+
+        // All ON except income/race overlays
+        const defaultOffLayers = ['incomeOverlay', 'raceOverlay'];
+        Object.entries(fg).forEach(([name, g]) => { if (!defaultOffLayers.includes(name)) g.addTo(map); });
+        salesCluster.addTo(map);
+
+        const layerMap = {
+            zipZones: fg.zipZones, incomeOverlay: fg.incomeOverlay, raceOverlay: fg.raceOverlay,
+            ehZones: fg.ehZones, sales: salesCluster, targets: fg.targetZones,
+            priorityHighlight: fg.priorityHighlight,
+            nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
+            oru: fg.oruArea, rge: fg.rgeArea
+        };
+
+        function toggleLayer(name, on) {
+            const layer = layerMap[name]; if (!layer) return;
+            if (on) { if (!map.hasLayer(layer)) map.addLayer(layer); }
+            else { if (map.hasLayer(layer)) map.removeLayer(layer); }
+        }
+
+        let zipSalesData = {}, salesData = [], cityStats = {}, zipStats = {}, demoData = {};
+        let priorityTargets = [];
+        const zipCentroids = {}, zipGeoFeatures = {};
+
+        function updateLoading(s, p) { document.getElementById('loadingStatus').textContent = s; document.getElementById('loadingBar').style.width = p + '%'; }
+        function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
+        function showInfoPanel(title, html) { document.getElementById('infoPanelTitle').textContent = title; document.getElementById('infoPanelContent').innerHTML = html; document.getElementById('infoPanel').classList.add('active'); }
+        function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('active'); }
+        function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
+
+        // ── Color functions ──
+        function getIncomeColor(inc) {
+            if (inc <= 0) return '#555';
+            if (inc < 20000) return '#d32f2f'; if (inc < 28000) return '#e64a19';
+            if (inc < 35000) return '#f57c00'; if (inc < 42000) return '#ffa726';
+            if (inc < 50000) return '#ffcc02'; if (inc < 60000) return '#c0ca33';
+            if (inc < 75000) return '#66bb6a'; if (inc < 100000) return '#2e7d32';
+            return '#1b5e20';
+        }
+
+        function getRaceDominant(d) {
+            const groups = [
+                { key: 'rw', pct: d.rw, color: '#e8d4a8', label: 'White', darkColor: '#c9a96e' },
+                { key: 'rb', pct: d.rb, color: '#4a90d9', label: 'Black', darkColor: '#2d6cb5' },
+                { key: 'rh', pct: d.rh, color: '#e67e22', label: 'Hispanic', darkColor: '#c0650f' },
+                { key: 'ra', pct: d.ra, color: '#27ae60', label: 'Asian', darkColor: '#1e8c4d' },
+                { key: 'ro', pct: d.ro, color: '#95a5a6', label: 'Other', darkColor: '#728485' }
+            ];
+            groups.sort((a, b) => b.pct - a.pct);
+            const top = groups[0];
+            const isDiverse = top.pct < 50;
+            return { color: isDiverse ? '#9b59b6' : top.color, borderColor: isDiverse ? '#7d3c98' : top.darkColor,
+                label: isDiverse ? `Diverse (${top.label} ${top.pct}%)` : `${top.label} ${top.pct}%`,
+                group: isDiverse ? 'Diverse' : top.label, pct: top.pct, isDiverse,
+                top3: groups.slice(0, 3).map(g => `${g.label} ${g.pct}%`).join(' · ') };
+        }
+
+        // NY has higher sales volumes, adjust density thresholds
+        function getDensityColor(count) {
+            if (count >= 500) return '#ff2200'; if (count >= 200) return '#ff6600';
+            if (count >= 100) return '#ff9900'; if (count >= 20) return '#ffcc44';
+            if (count >= 1)  return '#ffe888'; return '#444444';
+        }
+        function getDensityOpacity(count) {
+            if (count >= 500) return 0.45; if (count >= 200) return 0.35;
+            if (count >= 100) return 0.28; if (count >= 20) return 0.20;
+            if (count >= 1)  return 0.12; return 0.05;
+        }
+        function getDensityLabel(count) {
+            if (count >= 500) return '🔥 HOT ZONE'; if (count >= 200) return '⬆ HIGH';
+            if (count >= 100) return '📈 MODERATE'; if (count >= 20) return '📊 LOW';
+            if (count >= 1)  return '🔹 MINIMAL'; return '—';
+        }
+
+        // ══════════════════════════════════════════════
+        // ██  NY UTILITY TERRITORIES                  ██
+        // ══════════════════════════════════════════════
+        function loadUtilityTerritories() {
+            // NYSEG — Southern Tier, Finger Lakes, parts of Capital Region (Avangrid)
+            const nysegCoords = [[42.00,-79.76],[42.00,-76.80],[42.20,-76.20],[42.50,-75.80],[42.80,-75.20],[43.00,-75.00],[42.80,-74.80],[42.50,-74.50],[42.20,-74.80],[42.00,-75.00],[41.80,-75.30],[41.99,-76.50],[42.00,-79.76]];
+            L.polygon(nysegCoords, { color: '#00cc88', weight: 3, opacity: 0.6, fillColor: '#00cc88', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#00cc88">NYSEG</b><br>Southern Tier / Finger Lakes / Capital Region<br>Parent: Avangrid (Iberdrola)')
+            .addTo(fg.nysegArea);
+            L.marker([42.20,-76.50], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#00cc88;font-size:15px;">NYSEG</span>', iconSize:[80,20], iconAnchor:[40,10] }) }).addTo(fg.nysegArea);
+
+            // National Grid — Upstate NY: Syracuse, Albany, Capital District
+            const ngridCoords = [[44.00,-76.20],[44.00,-73.50],[43.50,-73.50],[43.00,-73.80],[42.60,-73.80],[42.50,-74.00],[42.50,-74.50],[42.80,-75.00],[43.00,-75.50],[43.50,-76.20],[44.00,-76.20]];
+            L.polygon(ngridCoords, { color: '#4a90d9', weight: 3, opacity: 0.6, fillColor: '#4a90d9', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#4a90d9">NATIONAL GRID</b><br>Syracuse / Albany / Capital District / Utica<br>Parent: National Grid plc')
+            .addTo(fg.ngridArea);
+            L.marker([43.20,-75.00], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#4a90d9;font-size:15px;">NATIONAL GRID</span>', iconSize:[140,20], iconAnchor:[70,10] }) }).addTo(fg.ngridArea);
+
+            // Central Hudson — Mid-Hudson Valley (Fortis)
+            const chudsonCoords = [[42.10,-74.40],[42.10,-73.50],[41.60,-73.50],[41.30,-73.90],[41.30,-74.30],[41.50,-74.50],[41.80,-74.60],[42.10,-74.40]];
+            L.polygon(chudsonCoords, { color: '#ff6644', weight: 3, opacity: 0.6, fillColor: '#ff6644', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#ff6644">CENTRAL HUDSON</b><br>Mid-Hudson Valley / Poughkeepsie / Kingston / Newburgh<br>Parent: Fortis Inc.')
+            .addTo(fg.chudsonArea);
+            L.marker([41.75,-74.00], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ff6644;font-size:14px;">CENTRAL HUDSON</span>', iconSize:[130,20], iconAnchor:[65,10] }) }).addTo(fg.chudsonArea);
+
+            // ORU — Orange & Rockland (Con Ed subsidiary)
+            const oruCoords = [[41.50,-74.50],[41.50,-73.90],[41.10,-73.90],[41.00,-74.10],[41.00,-74.40],[41.20,-74.60],[41.50,-74.50]];
+            L.polygon(oruCoords, { color: '#aa66ff', weight: 3, opacity: 0.6, fillColor: '#aa66ff', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#aa66ff">ORU (Orange & Rockland)</b><br>Orange / Rockland / Sullivan Counties<br>Parent: Consolidated Edison')
+            .addTo(fg.oruArea);
+            L.marker([41.25,-74.25], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#aa66ff;font-size:14px;">ORU</span>', iconSize:[60,20], iconAnchor:[30,10] }) }).addTo(fg.oruArea);
+
+            // RGE — Rochester Gas & Electric (Avangrid)
+            const rgeCoords = [[43.40,-77.90],[43.40,-77.20],[43.00,-77.20],[42.90,-77.40],[42.90,-77.90],[43.10,-77.90],[43.40,-77.90]];
+            L.polygon(rgeCoords, { color: '#ffcc00', weight: 3, opacity: 0.6, fillColor: '#ffcc00', fillOpacity: 0.04, dashArray: '10, 6' })
+            .bindPopup('<b style="color:#ffcc00">RGE</b><br>Rochester / Monroe County area<br>Parent: Avangrid (Iberdrola)')
+            .addTo(fg.rgeArea);
+            L.marker([43.15,-77.55], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ffcc00;font-size:15px;">RGE</span>', iconSize:[60,20], iconAnchor:[30,10] }) }).addTo(fg.rgeArea);
+        }
+
+        // ── LOAD ZIP BOUNDARIES ──
+        async function loadZipBoundaries() {
+            try {
+                updateLoading('Loading ZIP code boundaries...', 10);
+                const [geoResp, dataResp, demoResp] = await Promise.all([
+                    fetch('ny_zip_boundaries.geojson'),
+                    fetch('ny_zip_data.json'),
+                    fetch('ny_demographics.json')
+                ]);
+                if (!geoResp.ok) throw new Error('Failed to load boundaries');
+                const boundaries = await geoResp.json();
+                zipSalesData = dataResp.ok ? await dataResp.json() : {};
+                demoData = demoResp.ok ? await demoResp.json() : {};
+
+                updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
+
+                boundaries.features.forEach(feature => {
+                    const zip = feature.properties.zip;
+                    const sales = zipSalesData[zip] || { n: 0, c: '' };
+                    const count = sales.n;
+                    const cities = sales.c;
+                    const color = getDensityColor(count);
+                    const opacity = getDensityOpacity(count);
+
+                    zipGeoFeatures[zip] = feature;
+
+                    // Sales density choropleth
+                    L.geoJSON(feature, {
+                        style: { fillColor: color, fillOpacity: opacity, color: count > 0 ? color : '#555', weight: count >= 100 ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3 },
+                        onEachFeature: (feat, layer) => {
+                            layer.on('mouseover', function() { this.setStyle({ weight: 3, opacity: 1, fillOpacity: opacity + 0.15 }); this.bringToFront(); });
+                            layer.on('mouseout', function() { this.setStyle({ weight: count >= 100 ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3, fillOpacity: opacity }); });
+
+                            const dTip = demoData[zip];
+                            let popup = `<b>ZIP ${zip}</b>`;
+                            if (cities) popup += `<br>${cities}`;
+                            popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+                            if (dTip && dTip.inc > 0) {
+                                const incCol = getIncomeColor(dTip.inc);
+                                popup += `<br>Income/capita: <b style="color:${incCol};">$${dTip.inc.toLocaleString()}</b>`;
+                                const rDom = getRaceDominant(dTip);
+                                popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
+                            }
+                            layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
+
+                            layer.on('click', () => {
+                                const demo = demoData[zip];
+                                let html = `
+                                    <div class="info-section-title">Sales Activity</div>
+                                    <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
+                                    <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
+                                    ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
+                                if (demo) {
+                                    const raceBar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;margin:4px 0;">
+                                        <div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>
+                                        <div style="width:${demo.rb}%;background:#4a90d9;" title="Black ${demo.rb}%"></div>
+                                        <div style="width:${demo.rh}%;background:#e67e22;" title="Hispanic ${demo.rh}%"></div>
+                                        <div style="width:${demo.ra}%;background:#27ae60;" title="Asian ${demo.ra}%"></div>
+                                        <div style="width:${demo.ro}%;background:#95a5a6;" title="Other ${demo.ro}%"></div></div>`;
+                                    html += `
+                                        <div class="info-section">
+                                            <div class="info-section-title">Race / Ethnicity (Census ACS)</div>
+                                            ${raceBar}
+                                            <div style="display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;margin-top:4px;">
+                                                <span><span style="color:#e8d4a8;">●</span> White <b>${demo.rw}%</b></span>
+                                                <span><span style="color:#4a90d9;">●</span> Black <b>${demo.rb}%</b></span>
+                                                <span><span style="color:#e67e22;">●</span> Hispanic <b>${demo.rh}%</b></span>
+                                                <span><span style="color:#27ae60;">●</span> Asian <b>${demo.ra}%</b></span>
+                                                <span><span style="color:#95a5a6;">●</span> Other <b>${demo.ro}%</b></span>
+                                            </div>
+                                        </div>
+                                        <div class="info-section">
+                                            <div class="info-section-title">Demographics</div>
+                                            <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${demo.pop.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value" style="color:#00ff88;">$${demo.inc.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${demo.age}</span></div>
+                                            <div class="info-row"><span class="info-label">Avg Household Size:</span><span class="info-value">${demo.hhs}</span></div>
+                                        </div>
+                                        <div class="info-section">
+                                            <div class="info-section-title">Electric Heating</div>
+                                            <div class="info-row"><span class="info-label">Electric Heat HH:</span><span class="info-value" style="color:#ff3333;font-weight:700;">${demo.ehe.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Total Housing Units:</span><span class="info-value">${demo.eht.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#aaa'};">${demo.ehp}%</span></div>
+                                            <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
+                                                <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#666'};"></div>
+                                            </div>
+                                        </div>`;
+                                }
+                                showInfoPanel(`ZIP ${zip} — ${cities || 'NY'}`, html);
+                            });
+                        }
+                    }).addTo(fg.zipZones);
+
+                    // Centroid
+                    try { const b = L.geoJSON(feature).getBounds(); zipCentroids[zip] = [b.getCenter().lat, b.getCenter().lng]; } catch(e) {}
+
+                    // Income overlay
+                    const demo = demoData[zip];
+                    if (demo && demo.inc > 0) {
+                        const incColor = getIncomeColor(demo.inc);
+                        L.geoJSON(feature, { interactive: false, style: { fillColor: incColor, fillOpacity: 0.50, color: incColor, weight: 1.5, opacity: 0.7 } }).addTo(fg.incomeOverlay);
+                        if (zipCentroids[zip] && demo.pop >= 2000) {
+                            L.marker(zipCentroids[zip], { icon: L.divIcon({ className: 'zone-label', html: `<span style="color:${incColor};font-size:10px;background:rgba(0,0,0,0.75);padding:1px 4px;border-radius:3px;">$${(demo.inc/1000).toFixed(0)}K</span>`, iconSize: [50, 14], iconAnchor: [25, 7] }) }).addTo(fg.incomeOverlay);
+                        }
+                    }
+
+                    // Race overlay
+                    if (demo && demo.pop >= 300) {
+                        const race = getRaceDominant(demo);
+                        L.geoJSON(feature, { interactive: false, style: { fillColor: race.color, fillOpacity: race.isDiverse ? 0.35 : Math.min(0.55, 0.15 + (race.pct / 150)), color: race.borderColor, weight: 1.5, opacity: 0.6 } }).addTo(fg.raceOverlay);
+                        if (zipCentroids[zip] && demo.pop >= 5000) {
+                            L.marker(zipCentroids[zip], { icon: L.divIcon({ className: 'zone-label', html: `<span style="color:${race.color};font-size:9px;background:rgba(0,0,0,0.75);padding:1px 4px;border-radius:3px;">${race.label}</span>`, iconSize: [90, 14], iconAnchor: [45, -8] }) }).addTo(fg.raceOverlay);
+                        }
+                    }
+
+                    // EH zones — highlight ZIPs with high electric heating
+                    if (demo && demo.ehp >= 35 && demo.pop >= 1000) {
+                        const ehColor = demo.ehp >= 50 ? '#ff2222' : '#ff6644';
+                        const ehWeight = demo.ehp >= 50 ? 4 : 2.5;
+                        L.geoJSON(feature, { interactive: false, style: { fillColor: '#ff3333', fillOpacity: demo.ehp >= 50 ? 0.12 : 0.06, color: ehColor, weight: ehWeight, opacity: 0.8, dashArray: '4, 3' } }).addTo(fg.ehZones);
+                    }
+                });
+
+                document.getElementById('statZips').textContent = boundaries.features.length;
+            } catch (error) {
+                console.error('Error loading ZIP boundaries:', error);
+                updateStatus('⚠ Could not load ZIP boundaries');
+            }
+        }
+
+        // ── LOAD SALES DATA ──
+        async function loadSalesData() {
+            try {
+                updateLoading('Loading 90,000+ sales records...', 40);
+                const resp = await fetch('ny_sales.json');
+                if (!resp.ok) throw new Error('No sales data');
+                salesData = await resp.json();
+
+                updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 55);
+                const markers = [];
+                for (let i = 0; i < salesData.length; i++) {
+                    const [lat, lon, city, zip, date] = salesData[i];
+                    if (city) cityStats[city] = (cityStats[city] || 0) + 1;
+                    if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
+                    const m = L.circleMarker([lat, lon], { radius: 3, fillColor: '#ff8800', color: '#ff6600', weight: 1, opacity: 0.7, fillOpacity: 0.6 });
+                    m.bindPopup(`<b>📍 Sale</b><br>${city || ''} ${zip || ''}<br>${date || ''}`);
+                    markers.push(m);
+                }
+
+                updateLoading('Clustering markers...', 70);
+                salesCluster.addLayers(markers);
+
+                document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
+                document.getElementById('statCities').textContent = Object.keys(cityStats).length;
+                document.getElementById('statVisible').textContent = salesData.length.toLocaleString();
+                updateStatus(`${salesData.length.toLocaleString()} sales across ${Object.keys(cityStats).length} cities | ${Object.keys(zipStats).length} ZIPs`);
+            } catch (error) { console.error('Sales load error:', error); }
+        }
+
+        map.on('moveend', () => {
+            if (!salesData.length) return;
+            const b = map.getBounds(); let v = 0;
+            salesData.forEach(d => { if (b.contains([d[0], d[1]])) v++; });
+            document.getElementById('statVisible').textContent = v.toLocaleString();
+        });
+
+        // ══════════════════════════════════════════════════
+        // ██  PRIORITY SCORING ENGINE v2                  ██
+        // ██  Income-relative + Saturation + kWh + Demo   ██
+        // ══════════════════════════════════════════════════
+        function loadTargetZones() {
+            updateLoading('Running priority scoring engine...', 92);
+
+            // Step 1: Population-weighted state median per-capita income
+            const incomeEntries = []; let totalPop = 0;
+            for (const [zip, d] of Object.entries(demoData)) {
+                if (d.pop >= 200 && d.inc > 0) { incomeEntries.push({ inc: d.inc, pop: d.pop }); totalPop += d.pop; }
+            }
+            incomeEntries.sort((a, b) => a.inc - b.inc);
+            let cumPop = 0, stateMedianIncome = 40000;
+            for (const e of incomeEntries) { cumPop += e.pop; if (cumPop >= totalPop / 2) { stateMedianIncome = e.inc; break; } }
+            const lmiThreshold = stateMedianIncome * 0.80;
+            console.log(`NY state median per-capita income: $${stateMedianIncome.toLocaleString()} | LMI threshold (80%): $${lmiThreshold.toLocaleString()}`);
+
+            // Step 2: Score every ZIP
+            const scored = [];
+            for (const [zip, d] of Object.entries(demoData)) {
+                if (d.pop < 500) continue;
+                const coords = zipCentroids[zip]; if (!coords) continue;
+                const sales = zipSalesData[zip] ? zipSalesData[zip].n : 0;
+                const city = zipSalesData[zip] ? zipSalesData[zip].c : '';
+
+                const satRate = (sales / d.pop) * 1000;
+                let satLevel, satLabel;
+                if (satRate < 2) { satLevel = 'low'; satLabel = 'Low Saturation'; }
+                else if (satRate < 8) { satLevel = 'partial'; satLabel = 'Partial Saturation'; }
+                else { satLevel = 'high'; satLabel = 'Saturated'; }
+
+                const incomeRatio = d.inc / stateMedianIncome;
+                const isLMI = d.inc < lmiThreshold;
+                const isNearLMI = d.inc >= lmiThreshold && d.inc < stateMedianIncome;
+                const ehHigh = d.ehp >= 30;
+
+                let tier, tierColor, tierLabel;
+                if (isLMI && satLevel === 'low' && ehHigh) { tier = 1; tierColor = '#00ff44'; tierLabel = '🔥 TIER 1 — TOP PRIORITY'; }
+                else if (isLMI && satLevel === 'low' && d.ehp >= 20) { tier = 1; tierColor = '#00ff44'; tierLabel = '🔥 TIER 1 — TOP PRIORITY'; }
+                else if ((isLMI || isNearLMI) && satLevel === 'partial' && ehHigh) { tier = 2; tierColor = '#00ccff'; tierLabel = '⬆ TIER 2 — HIGH VALUE'; }
+                else if (isNearLMI && satLevel === 'low') { tier = 2; tierColor = '#00ccff'; tierLabel = '⬆ TIER 2 — HIGH VALUE'; }
+                else if (isLMI && satLevel === 'partial') { tier = 2; tierColor = '#00ccff'; tierLabel = '⬆ TIER 2 — HIGH VALUE'; }
+                else if ((isLMI || isNearLMI) && ehHigh) { tier = 3; tierColor = '#ffcc00'; tierLabel = '📊 TIER 3 — MODERATE'; }
+                else if (satLevel === 'low' && d.ehp >= 20 && d.pop >= 5000) { tier = 3; tierColor = '#ffcc00'; tierLabel = '📊 TIER 3 — MODERATE'; }
+                else if (satLevel !== 'high' && (ehHigh || isLMI) && d.pop >= 3000) { tier = 4; tierColor = '#ff8800'; tierLabel = '🔹 TIER 4 — GROWTH'; }
+                else { continue; }
+
+                const incGapScore = Math.max(0, Math.min(30, ((lmiThreshold - d.inc) / lmiThreshold) * 40));
+                const satGapScore = satLevel === 'low' ? 25 : satLevel === 'partial' ? 12 : 0;
+                const ehIntensityScore = Math.min(25, (d.ehp / 60) * 25);
+                const popScore = Math.min(10, (d.pop / 30000) * 10);
+                const provenScore = Math.min(10, (sales / 50) * 10);
+                const compositeScore = incGapScore + satGapScore + ehIntensityScore + popScore + provenScore;
+
+                const reasons = [];
+                if (isLMI) reasons.push(`Income $${(d.inc/1000).toFixed(0)}K (<80% median)`);
+                else if (isNearLMI) reasons.push(`Income $${(d.inc/1000).toFixed(0)}K (~80% median)`);
+                if (satLevel === 'low') reasons.push('Low saturation');
+                else if (satLevel === 'partial') reasons.push(`Partial sat (${satRate.toFixed(1)}/1K)`);
+                if (d.ehp >= 50) reasons.push(`${d.ehp}% EH (very high)`);
+                else if (ehHigh) reasons.push(`${d.ehp}% electric heat`);
+                if (d.ehe >= 2000) reasons.push(`${d.ehe.toLocaleString()} EH units`);
+                if (d.pop >= 20000) reasons.push(`Pop ${(d.pop/1000).toFixed(0)}K`);
+                if (sales > 0 && sales < 50) reasons.push(`${sales} early sales`);
+                else if (sales >= 50) reasons.push(`${sales} proven sales`);
+
+                scored.push({ zip, city: city || '', la: coords[0], lo: coords[1], tier, tierColor, tierLabel, score: compositeScore,
+                    pop: d.pop, inc: d.inc, ehp: d.ehp, ehe: d.ehe, sales, age: d.age, hhs: d.hhs,
+                    satRate: satRate.toFixed(1), satLevel, satLabel, incomeRatio: (incomeRatio * 100).toFixed(0),
+                    why: reasons.slice(0, 4).join(' · ') || 'General opportunity', rw: d.rw, rb: d.rb, rh: d.rh, ra: d.ra, ro: d.ro });
+            }
+
+            scored.sort((a, b) => { if (a.tier !== b.tier) return a.tier - b.tier; return b.score - a.score; });
+            priorityTargets = scored.slice(0, 50);
+
+            // Render pins + highlights
+            priorityTargets.forEach((t, i) => {
+                const rank = i + 1;
+                if (zipGeoFeatures[t.zip]) {
+                    L.geoJSON(zipGeoFeatures[t.zip], { interactive: false, style: { fillColor: t.tierColor, fillOpacity: t.tier === 1 ? 0.20 : t.tier === 2 ? 0.12 : 0.06, color: t.tierColor, weight: t.tier <= 2 ? 3 : 2, opacity: 0.8 } }).addTo(fg.priorityHighlight);
+                }
+                const pinHtml = `<div class="priority-pin"><div class="pin-head" style="background:${t.tierColor};"><span class="pin-num">${rank}</span></div><div class="pin-tail"></div></div>`;
+                const pinIcon = L.divIcon({ className: '', html: pinHtml, iconSize: [28, 36], iconAnchor: [14, 36], popupAnchor: [0, -36] });
+                const marker = L.marker([t.la, t.lo], { icon: pinIcon, zIndexOffset: 1000 - rank });
+
+                marker.bindPopup(`<b>📌 #${rank} — ${t.zip} ${t.city}</b><br><span style="color:${t.tierColor};font-weight:700;">${t.tierLabel}</span><br>${t.why}<br><small>Income: $${t.inc.toLocaleString()} (${t.incomeRatio}% of median) | EH: ${t.ehp}% | Sat: ${t.satRate}/1K</small>`);
+
+                marker.on('click', () => showInfoPanel(`#${rank} — ${t.zip} ${t.city || ''}`, `
+                    <div class="info-row"><span class="info-label">Priority:</span><span class="info-value" style="color:${t.tierColor};font-weight:700;">#${rank}</span></div>
+                    <div class="info-row"><span class="info-label">Tier:</span><span class="info-value" style="color:${t.tierColor};font-weight:700;">${t.tierLabel}</span></div>
+                    <div class="info-row"><span class="info-label">Score:</span><span class="info-value">${t.score.toFixed(1)}</span></div>
+                    <div class="info-section"><div class="info-section-title">Why This Priority</div><div class="info-row"><span class="info-value">${t.why}</span></div></div>
+                    <div class="info-section"><div class="info-section-title">Income</div>
+                        <div class="info-row"><span class="info-label">Per Capita:</span><span class="info-value">$${t.inc.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">% of State Median:</span><span class="info-value" style="color:${t.inc < lmiThreshold ? '#00ff88' : '#ffaa44'};">${t.incomeRatio}%</span></div>
+                    </div>
+                    <div class="info-section"><div class="info-section-title">Saturation</div>
+                        <div class="info-row"><span class="info-label">Sales/1K pop:</span><span class="info-value">${t.satRate}</span></div>
+                        <div class="info-row"><span class="info-label">Level:</span><span class="info-value" style="color:${t.satLevel === 'low' ? '#00ff88' : t.satLevel === 'partial' ? '#ffcc00' : '#ff4444'};">${t.satLabel}</span></div>
+                        <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value">${t.sales.toLocaleString()}</span></div>
+                    </div>
+                    <div class="info-section"><div class="info-section-title">Electric Heating</div>
+                        <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${t.ehp >= 50 ? '#ff3333' : t.ehp >= 30 ? '#ffaa44' : '#aaa'};font-weight:700;">${t.ehp}%</span></div>
+                        <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value">${t.ehe.toLocaleString()}</span></div>
+                    </div>
+                    <div class="info-section"><div class="info-section-title">Demographics</div>
+                        <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${t.pop.toLocaleString()}</span></div>
+                        <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${t.age}</span></div>
+                    </div>`));
+
+                marker.addTo(fg.targetZones);
+                if (rank <= 25) {
+                    L.marker([t.la, t.lo], { icon: L.divIcon({ className: 'zone-label', html: `<span style="color:${t.tierColor};font-size:9px;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:3px;">#${rank} ${t.zip}</span>`, iconSize: [70, 14], iconAnchor: [35, -20] }) }).addTo(fg.targetZones);
+                }
+            });
+
+            // Build priority panel
+            let panelHtml = ''; let currentTier = 0;
+            const tierNames = { 1: '🔥 Tier 1 — Top Priority', 2: '⬆ Tier 2 — High Value', 3: '📊 Tier 3 — Moderate', 4: '🔹 Tier 4 — Growth' };
+            priorityTargets.forEach((t, i) => {
+                if (t.tier !== currentTier) { currentTier = t.tier; panelHtml += `<div class="priority-tier-header">${tierNames[t.tier] || 'Other'}</div>`; }
+                panelHtml += `<div class="priority-item" onclick="map.setView([${t.la},${t.lo}],13)"><div class="priority-rank" style="background:${t.tierColor};">${i + 1}</div><div class="priority-info"><div class="priority-zip">${t.zip} <span style="color:#aaa;font-weight:400;">${t.city}</span></div><div class="priority-city">${t.why}</div></div><div class="priority-score" style="color:${t.tierColor};">${t.score.toFixed(0)}</div></div>`;
+            });
+            document.getElementById('priorityList').innerHTML = panelHtml;
+            document.getElementById('priorityPanel').style.display = 'block';
+
+            const tierCounts = {};
+            priorityTargets.forEach(t => { tierCounts[t.tier] = (tierCounts[t.tier] || 0) + 1; });
+            document.getElementById('statTargets').textContent = `${priorityTargets.length} (T1:${tierCounts[1]||0} T2:${tierCounts[2]||0} T3:${tierCounts[3]||0} T4:${tierCounts[4]||0})`;
+            console.log('Priority scoring complete:', { stateMedianIncome, lmiThreshold, total: priorityTargets.length, tierCounts });
+        }
+
+        // ── Search ──
+        function searchLocation() {
+            const term = document.getElementById('searchInput').value.trim(); if (!term) return;
+            const lower = term.toLowerCase();
+            if (/^\d{5}$/.test(term) && zipCentroids[term]) { map.setView(zipCentroids[term], 13); const s = zipSalesData[term]; updateStatus(`ZIP ${term}${s ? ` — ${s.c || ''} | ${s.n} sales` : ''}`); return; }
+            for (const t of priorityTargets) { if (t.zip === term || (t.city && t.city.toLowerCase().includes(lower))) { map.setView([t.la, t.lo], 13); updateStatus(`Priority #${priorityTargets.indexOf(t)+1} — ${t.zip} ${t.city}`); return; } }
+            for (const [zip, info] of Object.entries(zipSalesData)) { if (info.c && info.c.toLowerCase().includes(lower) && zipCentroids[zip]) { map.setView(zipCentroids[zip], 13); updateStatus(`${info.c} (ZIP ${zip}) — ${info.n} sales`); return; } }
+            if (salesData.length) { for (const d of salesData) { if ((d[2]||'').toLowerCase().includes(lower) || (d[3]||'') === term) { map.setView([d[0], d[1]], 14); updateStatus(`Found "${term}" — ${d[2] || ''} ${d[3] || ''}`); return; } } }
+            let found = false;
+            map.eachLayer(layer => { if (found) return; const p = layer.getPopup ? layer.getPopup() : null; const t = layer.getTooltip ? layer.getTooltip() : null; const content = (p ? p.getContent() : '') + (t ? t.getContent() : ''); if (content && content.toLowerCase().includes(lower)) { if (layer.getLatLng) { map.setView(layer.getLatLng(), 13); found = true; } else if (layer.getBounds) { map.fitBounds(layer.getBounds()); found = true; } } });
+            if (found) { updateStatus(`Found "${term}"`); return; }
+            alert(`No results for "${term}". Try a ZIP code, city name, or address.`);
+        }
+
+        // ── Init ──
+        async function loadAllData() {
+            try {
+                loadUtilityTerritories();
+                await loadZipBoundaries();
+                await loadSalesData();
+                loadTargetZones();
+                updateLoading('Complete', 100);
+                setTimeout(hideLoading, 500);
+            } catch (e) { console.error('Load error:', e); hideLoading(); }
+        }
+        loadAllData();
+        document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
+    </script>
+</body>
+</html>
