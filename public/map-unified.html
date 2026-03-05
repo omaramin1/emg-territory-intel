@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Territory Intelligence Engine</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;overflow:hidden}
+#map{position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;background:#111}
+.leaflet-popup-content-wrapper{background:#1a1a2e!important;color:#e0e0e0!important;border:1px solid #333!important;border-radius:8px!important}
+.leaflet-popup-tip{background:#1a1a2e!important}
+.leaflet-tooltip{background:#1a1a2e!important;color:#e0e0e0!important;border:1px solid #444!important;border-radius:6px!important;padding:8px 12px!important;font-size:12px!important;max-width:320px!important}
+
+/* HEADER */
+#header{position:fixed;top:0;left:0;right:0;height:48px;background:linear-gradient(135deg,#0d0d1a,#1a1a2e);border-bottom:1px solid #333;z-index:1100;display:flex;align-items:center;padding:0 16px;gap:14px}
+#header h1{font-size:16px;font-weight:700;color:#fff;white-space:nowrap}
+#state-select{background:#222;color:#fff;border:1px solid #555;border-radius:6px;padding:5px 12px;font-size:13px;cursor:pointer;outline:none}
+#state-select:hover{border-color:#00aaff}
+#header .badge{font-size:10px;background:#333;padding:3px 8px;border-radius:10px;color:#888}
+#search-box{margin-left:auto;display:flex;align-items:center;gap:6px}
+#search-box input{width:160px;padding:5px 10px;background:#222;border:1px solid #444;border-radius:6px;color:#fff;font-size:12px;outline:none}
+#search-box input:focus{border-color:#00aaff}
+#search-box button{padding:5px 12px;background:#00aaff;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px}
+
+/* TOGGLE PANEL */
+#toggle-panel{position:fixed;top:56px;left:12px;z-index:1050;background:#111;border:1px solid #333;border-radius:8px;padding:8px 10px;font-size:11px;max-height:calc(100vh - 120px);overflow-y:auto;width:190px}
+#toggle-panel label{display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;white-space:nowrap}
+#toggle-panel input[type="checkbox"]{accent-color:#00aaff;width:14px;height:14px}
+.toggle-divider{height:1px;background:#333;margin:5px 0}
+.toggle-header{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin:4px 0 2px}
+
+/* INFO PANEL */
+#info-panel{position:fixed;top:56px;right:12px;width:300px;max-height:calc(100vh - 120px);background:#111;border:1px solid #333;border-radius:8px;z-index:1050;overflow-y:auto;display:none}
+#info-panel .info-header{padding:10px 12px;background:#1a1a2e;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}
+#info-panel .info-header h3{font-size:13px;color:#00aaff}
+#info-panel .info-close{cursor:pointer;color:#666;font-size:18px}
+#info-panel .info-body{padding:10px 12px;font-size:12px}
+.info-section{margin-top:10px;padding-top:8px;border-top:1px solid #222}
+.info-section-title{font-size:11px;color:#00aaff;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.info-row{display:flex;justify-content:space-between;padding:2px 0}
+.info-label{color:#888}
+.info-value{color:#fff;font-weight:600}
+
+/* PRIORITY PANEL */
+#priority-panel{position:fixed;bottom:0;left:0;right:0;z-index:1050;background:#111;border-top:1px solid #333;display:none;max-height:45vh}
+#priority-tabs{display:flex;background:#0a0a0a;border-bottom:1px solid #333;overflow-x:auto;padding:0 8px}
+#priority-tabs button{padding:8px 14px;background:transparent;border:none;color:#888;font-size:11px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+#priority-tabs button.active{color:#00aaff;border-bottom-color:#00aaff}
+#priority-tabs button:hover{color:#fff}
+#priority-body{overflow-y:auto;max-height:calc(45vh - 40px);padding:8px 12px}
+.priority-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;border-bottom:1px solid #1a1a1a}
+.priority-row:hover{background:#1a1a2e}
+.priority-rank{font-weight:700;color:#00aaff;width:24px;text-align:center}
+.priority-zip{font-weight:600;color:#fff;width:50px}
+.priority-city{color:#aaa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.priority-score{font-weight:700;width:36px;text-align:right}
+.priority-badges{display:flex;gap:3px}
+.priority-badges span{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600}
+#priority-toggle{position:fixed;bottom:8px;right:12px;z-index:1060;padding:6px 14px;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer}
+#priority-toggle:hover{color:#fff;border-color:#00aaff}
+
+/* UPLOAD OVERLAY */
+#upload-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:2000;justify-content:center;align-items:center}
+#upload-box{background:#1a1a2e;border:2px dashed #555;border-radius:12px;padding:40px;text-align:center;max-width:600px;width:90%}
+#upload-box.drag-over{border-color:#00aaff;background:#0d1a2e}
+#upload-box h2{color:#fff;margin-bottom:12px}
+#upload-box p{color:#888;margin-bottom:16px;font-size:13px}
+#upload-file-input{display:none}
+#upload-btn{padding:10px 24px;background:#00aaff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}
+#upload-btn:hover{background:#0088dd}
+#upload-close{position:absolute;top:20px;right:20px;color:#666;font-size:28px;cursor:pointer}
+#upload-close:hover{color:#fff}
+#upload-status{margin-top:16px;color:#aaa;font-size:12px;display:none}
+#upload-mapping{display:none;margin-top:20px;text-align:left}
+#upload-mapping label{display:flex;justify-content:space-between;align-items:center;margin:6px 0;font-size:12px;color:#aaa}
+#upload-mapping select{background:#222;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 8px;font-size:12px}
+#upload-apply{margin-top:16px;padding:8px 20px;background:#00cc66;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+
+/* LEGEND */
+#legend{position:fixed;bottom:56px;left:12px;z-index:1040;background:#111;border:1px solid #333;border-radius:8px;padding:8px 10px;font-size:10px}
+#legend .leg-title{font-size:10px;color:#666;text-transform:uppercase;margin-bottom:4px}
+.leg-row{display:flex;align-items:center;gap:6px;padding:1px 0}
+.leg-swatch{width:14px;height:10px;border-radius:2px}
+
+/* LOADING */
+#loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a0a0a;z-index:3000;display:flex;flex-direction:column;justify-content:center;align-items:center}
+#loading-overlay h2{color:#fff;margin-bottom:20px}
+#loading-bar{width:300px;height:6px;background:#222;border-radius:3px;overflow:hidden}
+#loading-fill{width:0;height:100%;background:#00aaff;border-radius:3px;transition:width 0.3s}
+#loading-text{margin-top:12px;color:#888;font-size:13px}
+
+.zone-label{background:none!important;border:none!important}
+@keyframes pulse-ring{0%{opacity:0.8;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
+.eh-pulse{animation:pulse-ring 2s ease-out infinite}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+    <h1>Territory Intelligence Engine</h1>
+    <select id="state-select" onchange="switchState(this.value)">
+        <option value="NY">New York</option>
+        <option value="MD">Maryland</option>
+    </select>
+    <span class="badge" id="stats-badge">Loading...</span>
+    <div id="search-box">
+        <input type="text" id="search-input" placeholder="Search ZIP or city..." onkeydown="if(event.key==='Enter')searchZip(this.value)"/>
+        <button onclick="searchZip(document.getElementById('search-input').value)">🔍</button>
+    </div>
+</div>
+
+<!-- TOGGLE PANEL -->
+<div id="toggle-panel"></div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- INFO PANEL -->
+<div id="info-panel">
+    <div class="info-header"><h3 id="info-title"></h3><span class="info-close" onclick="document.getElementById('info-panel').style.display='none'">&times;</span></div>
+    <div class="info-body" id="info-body"></div>
+</div>
+
+<!-- PRIORITY PANEL -->
+<div id="priority-panel">
+    <div id="priority-tabs"></div>
+    <div id="priority-body"></div>
+</div>
+<button id="priority-toggle" onclick="togglePriority()">📊 Priority Rankings</button>
+
+<!-- LEGEND -->
+<div id="legend">
+    <div class="leg-title" id="legend-title">Sales Density</div>
+    <div id="legend-rows"></div>
+</div>
+
+<!-- UPLOAD OVERLAY -->
+<div id="upload-overlay" onclick="if(event.target===this)closeUpload()">
+    <span id="upload-close" onclick="closeUpload()">&times;</span>
+    <div id="upload-box">
+        <h2>📂 Upload Sales Data</h2>
+        <p>Drag & drop CSV / XLSX or click to browse.<br>Auto-detects lat/lon, address, ZIP columns.</p>
+        <input type="file" id="upload-file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0])"/>
+        <button id="upload-btn" onclick="document.getElementById('upload-file-input').click()">Choose File</button>
+        <div id="upload-status"></div>
+        <div id="upload-mapping"></div>
+    </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+    <h2 id="loading-state">Territory Intelligence Engine</h2>
+    <div id="loading-bar"><div id="loading-fill"></div></div>
+    <div id="loading-text">Initializing...</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// ██  STATE CONFIGURATION                          ██
+// ═══════════════════════════════════════════════════
+const STATE_CONFIG = {
+    NY: {
+        name: 'New York',
+        center: [42.85, -75.80],
+        zoom: 7,
+        dataPrefix: 'ny',
+        densityThresholds: [500, 200, 100, 20, 1],
+        densityColors: ['#ff2200','#ff6600','#ff9900','#ffcc44','#ffe888'],
+        densityOpacities: [0.45, 0.35, 0.28, 0.20, 0.12],
+        densityLabels: ['🔥 HOT ZONE','⬆ HIGH','📈 MODERATE','📊 LOW','🔹 MINIMAL'],
+        ehThreshold: 35,
+        ehCritical: 50,
+        utilities: {
+            'Central Hudson': { coords: [[42.10,-74.40],[42.10,-73.50],[41.60,-73.50],[41.30,-73.90],[41.30,-74.30],[41.50,-74.50],[41.80,-74.60],[42.10,-74.40]], color: '#ff6644', label: [41.75,-74.00], desc: 'Mid-Hudson Valley / Poughkeepsie / Kingston / Newburgh', parent: 'Fortis Inc.' },
+            'NYSEG': { coords: [[42.00,-79.76],[42.00,-76.80],[42.20,-76.20],[42.50,-75.80],[42.80,-75.20],[43.00,-75.00],[42.80,-74.80],[42.50,-74.50],[42.20,-74.80],[42.00,-75.00],[41.80,-75.30],[41.99,-76.50],[42.00,-79.76]], color: '#00cc88', label: [42.20,-76.50], desc: 'Southern Tier / Finger Lakes / Capital Region', parent: 'Avangrid (Iberdrola)' },
+            'RGE': { coords: [[43.40,-77.90],[43.40,-77.20],[43.00,-77.20],[42.90,-77.40],[42.90,-77.90],[43.10,-77.90],[43.40,-77.90]], color: '#ffcc00', label: [43.15,-77.55], desc: 'Rochester / Monroe County area', parent: 'Avangrid (Iberdrola)' },
+            'National Grid': { coords: [[44.00,-76.20],[44.00,-73.50],[43.50,-73.50],[43.00,-73.80],[42.60,-73.80],[42.50,-74.00],[42.50,-74.50],[42.80,-75.00],[43.00,-75.50],[43.50,-76.20],[44.00,-76.20]], color: '#4a90d9', label: [43.20,-75.00], desc: 'Syracuse / Albany / Capital District / Utica', parent: 'National Grid plc' },
+            'ORU': { coords: [[41.50,-74.50],[41.50,-73.90],[41.10,-73.90],[41.00,-74.10],[41.00,-74.40],[41.20,-74.60],[41.50,-74.50]], color: '#aa66ff', label: [41.25,-74.25], desc: 'Orange / Rockland / Sullivan Counties', parent: 'Consolidated Edison' }
+        },
+        toggles: [
+            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: true },
+            { id: 'salesCluster', label: '📍 Sales Pins', default: false },
+            { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
+            { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
+            { id: 'ehZones', label: '⚡ Electric Heat Zones', default: false },
+            { id: 'dacZones', label: '🏘 DAC Zones', default: false },
+            '_divider',
+            { id: 'targetZones', label: '🎯 Priority Targets', default: false },
+            { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            '_divider',
+            { id: 'util_Central Hudson', label: '⚡ Central Hudson', default: true },
+            { id: 'util_NYSEG', label: '⚡ NYSEG', default: true },
+            { id: 'util_RGE', label: '⚡ RGE', default: true },
+            { id: 'util_National Grid', label: '⚡ National Grid', default: true },
+            { id: 'util_ORU', label: '⚡ ORU', default: true }
+        ],
+        lmiData: null,
+        housingPins: null
+    },
+    MD: {
+        name: 'Maryland',
+        center: [39.15, -76.85],
+        zoom: 8,
+        dataPrefix: 'md',
+        densityThresholds: [200, 100, 50, 10, 1],
+        densityColors: ['#ff2200','#ff6600','#ff9900','#ffcc44','#ffe888'],
+        densityOpacities: [0.45, 0.35, 0.28, 0.20, 0.12],
+        densityLabels: ['🔥 HOT ZONE','⬆ HIGH','📈 MODERATE','📊 LOW','🔹 MINIMAL'],
+        ehThreshold: 55,
+        ehCritical: 65,
+        utilities: {
+            'Pepco': { coords: [[39.35,-77.35],[39.35,-76.75],[39.15,-76.55],[38.85,-76.55],[38.75,-76.75],[38.80,-76.95],[38.79,-77.05],[38.82,-77.12],[38.88,-77.15],[38.95,-77.25],[39.00,-77.30],[39.10,-77.35],[39.20,-77.40],[39.35,-77.35]], color: '#00aaff', label: [39.0,-76.95], desc: 'DC Metro / PG County / Montgomery County', parent: 'Exelon' },
+            'Potomac Edison': { coords: [[39.72,-79.50],[39.72,-77.35],[39.35,-77.35],[39.20,-77.40],[39.10,-77.50],[39.10,-77.70],[39.20,-77.85],[39.30,-78.00],[39.25,-78.30],[39.30,-78.60],[39.40,-78.80],[39.50,-79.10],[39.60,-79.30],[39.65,-79.50],[39.72,-79.50]], color: '#ff8800', label: [39.45,-78.30], desc: 'Western MD / Frederick / Hagerstown / Cumberland', parent: 'FirstEnergy' }
+        },
+        toggles: [
+            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: true },
+            { id: 'salesCluster', label: '📍 Sales Pins', default: false },
+            { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
+            { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
+            { id: 'ehZones', label: '⚡ Electric Heat Zones', default: false },
+            { id: 'dacZones', label: '🏘 DAC Zones', default: false },
+            { id: 'lmiOutlines', label: '📋 LMI Target Outlines', default: false },
+            { id: 'housingPins', label: '🏠 Housing Facilities', default: false },
+            '_divider',
+            { id: 'targetZones', label: '🎯 Priority Targets', default: false },
+            { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            '_divider',
+            { id: 'util_Pepco', label: '⚡ Pepco', default: true },
+            { id: 'util_Potomac Edison', label: '⚡ Potomac Edison', default: true }
+        ],
+        lmiData: {
+            '20743': { city: 'Capitol Heights', lmi: 78, eh: 62, hh: 4200, income: 42500, type: 'Suburban Apt Dense', util: 'Pepco' },
+            '20785': { city: 'Hyattsville', lmi: 72, eh: 58, hh: 5100, income: 48000, type: 'Mixed Residential', util: 'Pepco' },
+            '20737': { city: 'Riverdale', lmi: 81, eh: 65, hh: 3800, income: 38500, type: 'Apt/Townhome Dense', util: 'Pepco' },
+            '20781': { city: 'Hyattsville', lmi: 74, eh: 60, hh: 2900, income: 45200, type: 'Suburban Mixed', util: 'Pepco' },
+            '20710': { city: 'Bladensburg', lmi: 79, eh: 64, hh: 2100, income: 41800, type: 'Urban Mixed', util: 'Pepco' },
+            '20746': { city: 'Suitland', lmi: 76, eh: 61, hh: 5500, income: 43100, type: 'Suburban Apt', util: 'Pepco' },
+            '20748': { city: 'Temple Hills', lmi: 70, eh: 55, hh: 4800, income: 52300, type: 'Suburban SFH/Apt', util: 'Pepco' },
+            '20774': { city: 'Upper Marlboro', lmi: 55, eh: 48, hh: 8200, income: 68500, type: 'Suburban SFH', util: 'Pepco' },
+            '20783': { city: 'Adelphi', lmi: 73, eh: 59, hh: 3400, income: 46700, type: 'Dense Apt/Townhome', util: 'Pepco' },
+            '20706': { city: 'Lanham', lmi: 62, eh: 52, hh: 6100, income: 58200, type: 'Suburban Mixed', util: 'Pepco' },
+            '20770': { city: 'Greenbelt', lmi: 65, eh: 54, hh: 3900, income: 55800, type: 'Planned Community', util: 'Pepco' },
+            '20712': { city: 'Mt Rainier', lmi: 82, eh: 68, hh: 1800, income: 36200, type: 'Urban Dense', util: 'Pepco' },
+            '20906': { city: 'Silver Spring', lmi: 58, eh: 45, hh: 9200, income: 62100, type: 'Suburban Dense', util: 'Pepco' },
+            '20904': { city: 'Colesville', lmi: 52, eh: 42, hh: 7800, income: 71200, type: 'Suburban SFH', util: 'Pepco' },
+            '20902': { city: 'Wheaton', lmi: 61, eh: 50, hh: 5500, income: 59800, type: 'Mixed Residential', util: 'Pepco' },
+            '21740': { city: 'Hagerstown', lmi: 74, eh: 58, hh: 8900, income: 38200, type: 'Urban/Suburban Mix', util: 'Potomac Edison' },
+            '21742': { city: 'Hagerstown W', lmi: 62, eh: 52, hh: 6200, income: 48500, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21701': { city: 'Frederick', lmi: 58, eh: 48, hh: 12500, income: 56800, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21702': { city: 'Frederick N', lmi: 52, eh: 44, hh: 9800, income: 64200, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21502': { city: 'Cumberland', lmi: 80, eh: 72, hh: 5200, income: 32100, type: 'Rural/Urban Mix', util: 'Potomac Edison' },
+            '21532': { city: 'Frostburg', lmi: 76, eh: 68, hh: 2800, income: 35400, type: 'Small Town', util: 'Potomac Edison' },
+            '21795': { city: 'Williamsport', lmi: 65, eh: 55, hh: 3100, income: 47200, type: 'Small Town', util: 'Potomac Edison' },
+            '21793': { city: 'Walkersville', lmi: 45, eh: 40, hh: 4200, income: 72500, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21158': { city: 'Westminster', lmi: 55, eh: 46, hh: 7200, income: 58900, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21550': { city: 'Oakland', lmi: 72, eh: 65, hh: 2400, income: 37800, type: 'Rural', util: 'Potomac Edison' }
+        },
+        housingPins: [
+            { n:'Boulevard at Capital Centre', la:38.8283, lo:-76.8736, t:'LIHTC', u:480, c:'Largo', z:'20774', eh:true },
+            { n:'Addison Road Station', la:38.8866, lo:-76.8930, t:'LIHTC', u:250, c:'Capitol Heights', z:'20743', eh:true },
+            { n:'Glenarden Hills', la:38.9282, lo:-76.8612, t:'Public Housing', u:340, c:'Glenarden', z:'20706', eh:true },
+            { n:'Suitland Manor', la:38.8481, lo:-76.9243, t:'Section 8', u:200, c:'Suitland', z:'20746', eh:true },
+            { n:'Langley Park Apts', la:38.9888, lo:-76.9814, t:'LIHTC', u:320, c:'Langley Park', z:'20783', eh:true },
+            { n:'Rollingcrest Village', la:38.9582, lo:-76.9567, t:'Section 8', u:180, c:'Hyattsville', z:'20785', eh:true },
+            { n:'Columbia Park', la:38.9451, lo:-76.9372, t:'Public Housing', u:275, c:'Bladensburg', z:'20710', eh:true },
+            { n:'Kentland Community', la:38.9210, lo:-76.9255, t:'Section 8', u:420, c:'Landover', z:'20785', eh:true },
+            { n:'Palmer Park Apts', la:38.8800, lo:-76.8856, t:'LIHTC', u:290, c:'Palmer Park', z:'20785', eh:true },
+            { n:'Marlow Heights Apts', la:38.8266, lo:-76.9461, t:'LIHTC', u:350, c:'Marlow Heights', z:'20748', eh:true },
+            { n:'Georgian Court Apts', la:39.0153, lo:-77.0131, t:'Section 8', u:240, c:'Silver Spring', z:'20906', eh:false },
+            { n:'Cinnamon Run', la:39.0783, lo:-77.0489, t:'LIHTC', u:180, c:'Wheaton', z:'20902', eh:true },
+            { n:'Westview Village', la:39.6356, lo:-77.7340, t:'Public Housing', u:150, c:'Hagerstown', z:'21740', eh:true },
+            { n:'Noland Village', la:39.6483, lo:-77.7189, t:'Section 8', u:200, c:'Hagerstown', z:'21740', eh:true },
+            { n:'Potomac Towers', la:39.6421, lo:-77.7151, t:'Senior Housing', u:120, c:'Hagerstown', z:'21740', eh:true },
+            { n:'Prospect Place', la:39.4093, lo:-77.4167, t:'LIHTC', u:160, c:'Frederick', z:'21701', eh:false },
+            { n:'Church Street Terrace', la:39.4161, lo:-77.4082, t:'Public Housing', u:100, c:'Frederick', z:'21701', eh:false },
+            { n:'Queen City Towers', la:39.6529, lo:-78.7647, t:'Senior Housing', u:140, c:'Cumberland', z:'21502', eh:true },
+            { n:'Fort Cumberland Homes', la:39.6478, lo:-78.7701, t:'Public Housing', u:180, c:'Cumberland', z:'21502', eh:true },
+            { n:'Whispering Pines MHP', la:39.5124, lo:-77.3875, t:'Mobile Home', u:85, c:'Frederick', z:'21701', eh:false },
+            { n:'Mountain View MHP', la:39.6281, lo:-78.7892, t:'Mobile Home', u:60, c:'Cumberland', z:'21502', eh:true },
+            { n:'Halfway MHP', la:39.6182, lo:-77.7565, t:'Mobile Home', u:95, c:'Hagerstown', z:'21742', eh:true }
+        ]
+    }
+};
+
+// ═══════════════════════════════════════════════════
+// ██  GLOBAL STATE                                 ██
+// ═══════════════════════════════════════════════════
+let currentState = null;
+let map = null;
+let fg = {};           // Feature groups
+let layerMap = {};     // Toggle ID → feature group
+let zipSalesData = {};
+let demoData = {};
+let dacData = {};
+let salesData = [];
+let zipCentroids = {};
+let zipGeoFeatures = {};
+let boundaryFeatures = null;
+let priorityData = {}; // utility → [{zip, city, score, ...}]
+
+// ═══════════════════════════════════════════════════
+// ██  UTILITY FUNCTIONS                            ██
+// ═══════════════════════════════════════════════════
+function getIncomeColor(inc) {
+    if (inc < 25000) return '#ff4444';
+    if (inc < 35000) return '#ff8844';
+    if (inc < 50000) return '#ffcc44';
+    if (inc < 75000) return '#88cc44';
+    return '#44cc88';
+}
+
+function getRaceDominant(d) {
+    if (!d) return { color: '#888', isDiverse: false, top3: 'N/A' };
+    const groups = [
+        { pct: d.rw || 0, label: 'White', color: '#e8d4a8' },
+        { pct: d.rb || 0, label: 'Black', color: '#4a90d9' },
+        { pct: d.rh || 0, label: 'Hispanic', color: '#e67e22' },
+        { pct: d.ra || 0, label: 'Asian', color: '#27ae60' },
+        { pct: d.ro || 0, label: 'Other', color: '#95a5a6' }
+    ].sort((a, b) => b.pct - a.pct);
+    const isDiverse = groups[0].pct < 50;
+    return {
+        color: isDiverse ? '#ff69b4' : groups[0].color,
+        isDiverse,
+        top3: groups.slice(0, 3).map(g => `${g.label} ${g.pct}%`).join(' · ')
+    };
+}
+
+function getDensityColor(count) {
+    const cfg = STATE_CONFIG[currentState];
+    for (let i = 0; i < cfg.densityThresholds.length; i++) {
+        if (count >= cfg.densityThresholds[i]) return cfg.densityColors[i];
+    }
+    return '#444444';
+}
+function getDensityOpacity(count) {
+    const cfg = STATE_CONFIG[currentState];
+    for (let i = 0; i < cfg.densityThresholds.length; i++) {
+        if (count >= cfg.densityThresholds[i]) return cfg.densityOpacities[i];
+    }
+    return 0.05;
+}
+function getDensityLabel(count) {
+    const cfg = STATE_CONFIG[currentState];
+    for (let i = 0; i < cfg.densityThresholds.length; i++) {
+        if (count >= cfg.densityThresholds[i]) return cfg.densityLabels[i];
+    }
+    return '—';
+}
+
+// Point-in-polygon (ray casting)
+function pointInPoly(lat, lon, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [yi, xi] = poly[i], [yj, xj] = poly[j];
+        if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+function getUtilityForZip(lat, lon) {
+    const cfg = STATE_CONFIG[currentState];
+    for (const [name, u] of Object.entries(cfg.utilities)) {
+        if (pointInPoly(lat, lon, u.coords)) return name;
+    }
+    return 'Other';
+}
+
+function updateLoading(text, pct) {
+    const el = document.getElementById('loading-text');
+    const fill = document.getElementById('loading-fill');
+    if (el) el.textContent = text;
+    if (fill) fill.style.width = pct + '%';
+}
+
+function showInfoPanel(title, html) {
+    document.getElementById('info-title').textContent = title;
+    document.getElementById('info-body').innerHTML = html;
+    document.getElementById('info-panel').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════
+// ██  BUILD TOGGLE PANEL                           ██
+// ═══════════════════════════════════════════════════
+function buildTogglePanel() {
+    const cfg = STATE_CONFIG[currentState];
+    const panel = document.getElementById('toggle-panel');
+    let html = '<div class="toggle-header">' + cfg.name + ' Layers</div>';
+    cfg.toggles.forEach(t => {
+        if (t === '_divider') { html += '<div class="toggle-divider"></div>'; return; }
+        const checked = t.default ? 'checked' : '';
+        html += `<label><input type="checkbox" id="tog-${t.id}" ${checked} onchange="toggleLayer('${t.id}',this.checked)"/>${t.label}</label>`;
+    });
+    html += '<div class="toggle-divider"></div>';
+    html += '<label style="color:#00aaff;cursor:pointer" onclick="openUpload()">📂 Upload Data</label>';
+    panel.innerHTML = html;
+}
+
+function toggleLayer(id, visible) {
+    const group = layerMap[id];
+    if (!group) return;
+    if (visible) map.addLayer(group);
+    else map.removeLayer(group);
+}
+
+// ═══════════════════════════════════════════════════
+// ██  LEGEND                                       ██
+// ═══════════════════════════════════════════════════
+function buildLegend() {
+    const cfg = STATE_CONFIG[currentState];
+    let html = '';
+    cfg.densityThresholds.forEach((t, i) => {
+        html += `<div class="leg-row"><div class="leg-swatch" style="background:${cfg.densityColors[i]}"></div>${t}+ sales</div>`;
+    });
+    html += '<div class="leg-row"><div class="leg-swatch" style="background:#444"></div>No data</div>';
+    document.getElementById('legend-rows').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// ██  STATE SWITCH                                 ██
+// ═══════════════════════════════════════════════════
+async function switchState(stateCode) {
+    currentState = stateCode;
+    const cfg = STATE_CONFIG[stateCode];
+    document.getElementById('loading-overlay').style.display = 'flex';
+    document.getElementById('loading-state').textContent = cfg.name + ' Territory Intelligence';
+    updateLoading('Clearing layers...', 0);
+
+    // Clear all existing layers
+    Object.values(fg).forEach(group => {
+        if (map.hasLayer(group)) map.removeLayer(group);
+        group.clearLayers();
+    });
+    fg = {};
+    layerMap = {};
+    zipSalesData = {};
+    demoData = {};
+    dacData = {};
+    salesData = [];
+    zipCentroids = {};
+    zipGeoFeatures = {};
+    boundaryFeatures = null;
+    priorityData = {};
+
+    // Initialize feature groups
+    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight'];
+    if (cfg.lmiData) groupIds.push('lmiOutlines');
+    if (cfg.housingPins) groupIds.push('housingPins');
+    Object.keys(cfg.utilities).forEach(u => groupIds.push('util_' + u));
+
+    groupIds.forEach(id => {
+        if (id === 'salesCluster') {
+            fg[id] = L.markerClusterGroup({ maxClusterRadius: 40, spiderfyOnMaxZoom: true, showCoverageOnHover: false, disableClusteringAtZoom: 14 });
+        } else {
+            fg[id] = L.featureGroup();
+        }
+        layerMap[id] = fg[id];
+    });
+
+    // Build UI
+    buildTogglePanel();
+    buildLegend();
+
+    // Set map view
+    map.setView(cfg.center, cfg.zoom);
+
+    // Load all data
+    await loadZipBoundaries();
+    await loadSalesData();
+    loadUtilityTerritories();
+    loadDACZones();
+    if (cfg.lmiData) loadLMIOutlines();
+    if (cfg.housingPins) loadHousingPins();
+    loadTargetZones();
+
+    // Apply default toggles
+    cfg.toggles.forEach(t => {
+        if (t === '_divider') return;
+        if (t.default && layerMap[t.id]) map.addLayer(layerMap[t.id]);
+    });
+
+    // Update stats
+    const totalSales = salesData.length;
+    const zipCount = Object.keys(zipSalesData).length;
+    document.getElementById('stats-badge').textContent = `${totalSales.toLocaleString()} sales · ${zipCount} ZIPs`;
+
+    updateLoading('Complete!', 100);
+    setTimeout(() => {
+        document.getElementById('loading-overlay').style.display = 'none';
+    }, 400);
+}
+
+// ═══════════════════════════════════════════════════
+// ██  DATA LOADERS                                 ██
+// ═══════════════════════════════════════════════════
+async function loadZipBoundaries() {
+    const cfg = STATE_CONFIG[currentState];
+    const prefix = cfg.dataPrefix;
+    updateLoading('Loading ZIP boundaries...', 10);
+
+    const [geoResp, dataResp, demoResp, dacResp] = await Promise.all([
+        fetch(`${prefix}_zip_boundaries.geojson`),
+        fetch(`${prefix}_zip_data.json`),
+        fetch(`${prefix}_demographics.json`),
+        fetch(`${prefix}_dac.json`).catch(() => null)
+    ]);
+
+    if (!geoResp.ok) throw new Error('Failed to load boundaries');
+    const boundaries = await geoResp.json();
+    zipSalesData = dataResp.ok ? await dataResp.json() : {};
+    demoData = demoResp.ok ? await demoResp.json() : {};
+    dacData = (dacResp && dacResp.ok) ? await dacResp.json() : {};
+    boundaryFeatures = boundaries.features;
+
+    updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
+
+    boundaries.features.forEach(feature => {
+        const zip = feature.properties.zip;
+        const sales = zipSalesData[zip] || { n: 0, c: '' };
+        const count = sales.n;
+        const cities = sales.c;
+        const color = getDensityColor(count);
+        const opacity = getDensityOpacity(count);
+        const demo = demoData[zip];
+        const dac = dacData[zip];
+        const lmi = cfg.lmiData ? cfg.lmiData[zip] : null;
+
+        // Store centroid + feature for priority system
+        zipGeoFeatures[zip] = feature;
+        if (feature.geometry && feature.geometry.coordinates) {
+            const coords = feature.geometry.type === 'MultiPolygon' ? feature.geometry.coordinates[0][0] : feature.geometry.coordinates[0];
+            if (coords && coords.length > 0) {
+                let sumLat = 0, sumLon = 0;
+                coords.forEach(c => { sumLon += c[0]; sumLat += c[1]; });
+                zipCentroids[zip] = [sumLat / coords.length, sumLon / coords.length];
+            }
+        }
+
+        // ── ZIP density choropleth ──
+        L.geoJSON(feature, {
+            style: { fillColor: color, fillOpacity: opacity, color: count > 0 ? color : '#555', weight: count >= cfg.densityThresholds[1] ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3 },
+            onEachFeature: (feat, layer) => {
+                layer.on('mouseover', function() { this.setStyle({ weight: 3, opacity: 1, fillOpacity: opacity + 0.15 }); this.bringToFront(); });
+                layer.on('mouseout', function() { this.setStyle({ weight: count >= cfg.densityThresholds[1] ? 2 : 1, opacity: count > 0 ? 0.7 : 0.3, fillOpacity: opacity }); });
+
+                let popup = `<b>ZIP ${zip}</b>`;
+                if (cities) popup += `<br>${cities}`;
+                popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+                if (demo && demo.inc > 0) {
+                    popup += `<br>Income: <b style="color:${getIncomeColor(demo.inc)};">$${demo.inc.toLocaleString()}</b>`;
+                    const rDom = getRaceDominant(demo);
+                    popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
+                }
+                if (dac) popup += `<br><span style="color:#ff66aa;font-weight:bold;">DAC Zone (${dac.pct}%)</span>`;
+                if (lmi) popup += `<br><span style="color:${lmi.util === 'Pepco' ? '#00aaff' : '#ff8800'};font-weight:bold;">${lmi.util}</span>`;
+                layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
+
+                layer.on('click', () => showZipDetail(zip, count, cities, demo, dac, lmi));
+            }
+        }).addTo(fg.zipZones);
+
+        // ── Income overlay ──
+        if (demo && demo.inc > 0) {
+            L.geoJSON(feature, {
+                style: { fillColor: getIncomeColor(demo.inc), fillOpacity: 0.35, color: getIncomeColor(demo.inc), weight: 1, opacity: 0.5 }
+            }).addTo(fg.incomeOverlay);
+        }
+
+        // ── Race overlay ──
+        if (demo) {
+            const rDom = getRaceDominant(demo);
+            L.geoJSON(feature, {
+                style: { fillColor: rDom.color, fillOpacity: rDom.isDiverse ? 0.25 : 0.20, color: rDom.color, weight: 1, opacity: 0.4 }
+            }).addTo(fg.raceOverlay);
+        }
+
+        // ── Electric Heat zones ──
+        if (demo && demo.ehp >= cfg.ehThreshold && demo.pop >= 1000) {
+            const ehIntensity = demo.ehp >= cfg.ehCritical ? 0.35 : 0.20;
+            const ehColor = demo.ehp >= cfg.ehCritical ? '#ff3333' : '#ff6644';
+            L.geoJSON(feature, {
+                style: { fillColor: ehColor, fillOpacity: ehIntensity, color: ehColor, weight: 2, opacity: 0.6 }
+            }).addTo(fg.ehZones);
+        }
+
+        // ── DAC zones overlay ──
+        if (dac) {
+            const dacOpacity = dac.pct >= 80 ? 0.35 : dac.pct >= 50 ? 0.25 : 0.15;
+            L.geoJSON(feature, {
+                style: { fillColor: '#ff66aa', fillOpacity: dacOpacity, color: '#ff66aa', weight: 2, opacity: 0.6, dashArray: dac.approx ? '5, 3' : null }
+            }).addTo(fg.dacZones);
+        }
+    });
+}
+
+async function loadSalesData() {
+    const cfg = STATE_CONFIG[currentState];
+    updateLoading('Loading sales data...', 50);
+    try {
+        const resp = await fetch(`${cfg.dataPrefix}_sales.json`);
+        if (!resp.ok) return;
+        salesData = await resp.json();
+        updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins...`, 65);
+
+        salesData.forEach(d => {
+            const marker = L.circleMarker([d[0], d[1]], {
+                radius: 3, fillColor: '#ff8800', color: '#ff8800', weight: 0, fillOpacity: 0.5
+            });
+            marker.bindPopup(`<b>${d[2]}</b><br>ZIP: ${d[3]}<br>Date: ${d[4] || 'N/A'}`);
+            marker.addTo(fg.salesCluster);
+        });
+    } catch (e) {
+        console.warn('Sales data load failed:', e);
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// ██  UTILITY TERRITORIES                          ██
+// ═══════════════════════════════════════════════════
+function loadUtilityTerritories() {
+    const cfg = STATE_CONFIG[currentState];
+    updateLoading('Drawing utility territories...', 80);
+
+    Object.entries(cfg.utilities).forEach(([name, u]) => {
+        const groupId = 'util_' + name;
+        L.polygon(u.coords, {
+            color: u.color, weight: 3, opacity: 0.6,
+            fillColor: u.color, fillOpacity: 0.04, dashArray: '10, 6'
+        })
+        .bindPopup(`<b style="color:${u.color}">${name}</b><br>${u.desc}<br>Parent: ${u.parent}`)
+        .addTo(fg[groupId]);
+
+        L.marker(u.label, {
+            icon: L.divIcon({
+                className: 'zone-label',
+                html: `<span style="color:${u.color};font-size:14px;font-weight:700;">${name.toUpperCase()}</span>`,
+                iconSize: [140, 20], iconAnchor: [70, 10]
+            })
+        }).addTo(fg[groupId]);
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// ██  DAC ZONES                                    ██
+// ═══════════════════════════════════════════════════
+function loadDACZones() {
+    // DAC polygons already rendered in loadZipBoundaries
+    // This is called for any additional DAC processing
+    const dacCount = Object.keys(dacData).length;
+    if (dacCount > 0) {
+        updateLoading(`DAC zones: ${dacCount} ZIPs identified...`, 83);
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// ██  MD-SPECIFIC: LMI OUTLINES + HOUSING PINS    ██
+// ═══════════════════════════════════════════════════
+function loadLMIOutlines() {
+    const cfg = STATE_CONFIG[currentState];
+    if (!cfg.lmiData) return;
+
+    Object.entries(cfg.lmiData).forEach(([zip, lmi]) => {
+        const feature = zipGeoFeatures[zip];
+        if (!feature) return;
+        const isCritical = lmi.lmi >= 70;
+        L.geoJSON(feature, {
+            style: {
+                fillColor: 'transparent', fillOpacity: 0,
+                color: lmi.util === 'Pepco' ? '#00aaff' : '#ff8800',
+                weight: 3, opacity: 0.8,
+                dashArray: isCritical ? null : '8, 4'
+            }
+        }).addTo(fg.lmiOutlines);
+    });
+}
+
+function loadHousingPins() {
+    const cfg = STATE_CONFIG[currentState];
+    if (!cfg.housingPins) return;
+    updateLoading('Loading housing database...', 85);
+
+    const tc = { 'LIHTC':'#aa66ff','Public Housing':'#ff6666','Section 8':'#66aaff','Senior Housing':'#ffcc66','Mobile Home':'#00ddff' };
+    const te = { 'LIHTC':'🏢','Public Housing':'🏘','Section 8':'🏠','Senior Housing':'👴','Mobile Home':'🏕' };
+
+    cfg.housingPins.forEach(x => {
+        const col = tc[x.t] || '#888';
+        const zipDeals = zipSalesData[x.z] ? zipSalesData[x.z].n : 0;
+        const lmi = cfg.lmiData ? cfg.lmiData[x.z] : null;
+        const ehPct = lmi ? lmi.eh : 0;
+
+        if (x.eh && ehPct >= cfg.ehThreshold) {
+            L.circleMarker([x.la, x.lo], {
+                radius: Math.max(10, Math.min(20, Math.sqrt(x.u) / 1.5)) + 4,
+                fillColor: 'transparent', color: '#ff3333',
+                weight: 3, opacity: 0.8, fillOpacity: 0,
+                dashArray: '3, 2', className: 'eh-pulse'
+            }).addTo(fg.housingPins);
+        }
+
+        const marker = L.circleMarker([x.la, x.lo], {
+            radius: Math.max(8, Math.min(18, Math.sqrt(x.u) / 1.5)),
+            fillColor: col, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
+        });
+        const ehBadge = x.eh && ehPct >= cfg.ehThreshold ? `<br><span style="color:#ff3333;">🔥 Electric Heat: ${ehPct}%</span>` : '';
+        marker.bindPopup(`<b>${te[x.t]||'📍'} ${x.n}</b><br>${x.t} | ${x.c}<br>Units: <b>${x.u}</b>${ehBadge}<br>Deals in ZIP: <b style="color:#ff8800;">${zipDeals}</b>`);
+        marker.addTo(fg.housingPins);
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// ██  PRIORITY SCORING ENGINE (Per Utility)        ██
+// ═══════════════════════════════════════════════════
+function loadTargetZones() {
+    const cfg = STATE_CONFIG[currentState];
+    updateLoading('Running priority scoring engine...', 90);
+
+    // Step 1: Compute state median income (population-weighted)
+    const incomeEntries = [];
+    let totalPop = 0;
+    for (const [zip, d] of Object.entries(demoData)) {
+        if (d.pop >= 200 && d.inc > 0) {
+            incomeEntries.push({ inc: d.inc, pop: d.pop });
+            totalPop += d.pop;
+        }
+    }
+    incomeEntries.sort((a, b) => a.inc - b.inc);
+    let cumPop = 0, stateMedianIncome = 45000;
+    for (const e of incomeEntries) {
+        cumPop += e.pop;
+        if (cumPop >= totalPop / 2) { stateMedianIncome = e.inc; break; }
+    }
+    const lmiThreshold = stateMedianIncome * 0.80;
+
+    // Step 2: Score each ZIP
+    const scored = [];
+    let maxSales = 0;
+    Object.values(zipSalesData).forEach(d => { if (d.n > maxSales) maxSales = d.n; });
+    const satNorm = maxSales > 0 ? maxSales * 0.7 : 100;
+
+    for (const [zip, d] of Object.entries(demoData)) {
+        if (d.pop < 500 || d.inc <= 0) continue;
+        const sales = zipSalesData[zip] ? zipSalesData[zip].n : 0;
+        const cities = zipSalesData[zip] ? zipSalesData[zip].c : '';
+        const centroid = zipCentroids[zip];
+        if (!centroid) continue;
+        const utility = getUtilityForZip(centroid[0], centroid[1]);
+
+        // Income gap score (0-30): how far below LMI threshold
+        const incGap = Math.max(0, (lmiThreshold - d.inc) / lmiThreshold);
+        const incScore = Math.min(30, incGap * 40);
+
+        // Saturation gap (0-25): lower sales = more opportunity
+        const satRate = sales / (d.pop / 1000);
+        const satScore = Math.max(0, 25 - (satRate / 10) * 25);
+
+        // Electric heat intensity (0-25)
+        const ehScore = Math.min(25, (d.ehp || 0) / 3);
+
+        // Population density (0-10)
+        const popScore = Math.min(10, d.pop / 5000 * 10);
+
+        // Proven sales (0-10)
+        const provenScore = Math.min(10, sales / satNorm * 10);
+
+        // DAC bonus (0-5)
+        const dacBonus = dacData[zip] ? Math.min(5, dacData[zip].pct / 20) : 0;
+
+        const total = Math.round(incScore + satScore + ehScore + popScore + provenScore + dacBonus);
+
+        if (total >= 15) {
+            scored.push({
+                zip, city: cities || 'N/A', utility, score: total,
+                inc: d.inc, pop: d.pop, sales, ehp: d.ehp || 0,
+                dac: !!dacData[zip],
+                incS: Math.round(incScore), satS: Math.round(satScore),
+                ehS: Math.round(ehScore), popS: Math.round(popScore),
+                provenS: Math.round(provenScore)
+            });
+        }
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+
+    // Step 3: Group by utility
+    priorityData = {};
+    Object.keys(cfg.utilities).forEach(u => priorityData[u] = []);
+    priorityData['Other'] = [];
+
+    scored.forEach(s => {
+        if (!priorityData[s.utility]) priorityData[s.utility] = [];
+        priorityData[s.utility].push(s);
+    });
+
+    // Step 4: Add target pins + priority highlights for top ZIPs per utility
+    let globalRank = 0;
+    Object.entries(priorityData).forEach(([utilName, items]) => {
+        const utilColor = cfg.utilities[utilName] ? cfg.utilities[utilName].color : '#888';
+        items.slice(0, 30).forEach((s, i) => {
+            globalRank++;
+            const centroid = zipCentroids[s.zip];
+            if (!centroid) return;
+
+            // Target pin
+            const pinColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#ff8800' : '#ffcc44';
+            const marker = L.circleMarker(centroid, {
+                radius: Math.max(6, Math.min(14, s.score / 8)),
+                fillColor: pinColor, color: '#fff', weight: 2, fillOpacity: 0.85
+            });
+            marker.bindPopup(`<b>🎯 #${i + 1} ${s.city}</b><br>ZIP: ${s.zip}<br>Score: <b style="color:${pinColor}">${s.score}/100</b><br>Utility: <span style="color:${utilColor}">${utilName}</span><br>${s.dac ? '<span style="color:#ff66aa;">DAC Zone</span><br>' : ''}Income: $${s.inc.toLocaleString()} | EH: ${s.ehp}%`);
+            marker.addTo(fg.targetZones);
+
+            // Priority highlight (top 25 globally)
+            if (globalRank <= 25) {
+                const feature = zipGeoFeatures[s.zip];
+                if (feature) {
+                    L.geoJSON(feature, {
+                        style: { fillColor: '#00ff88', fillOpacity: 0.25, color: '#00ff88', weight: 3, opacity: 0.8 }
+                    }).addTo(fg.priorityHighlight);
+                }
+            }
+        });
+    });
+
+    renderPriorityPanel();
+}
+
+// ═══════════════════════════════════════════════════
+// ██  PRIORITY PANEL (Per Utility Tabs)            ██
+// ═══════════════════════════════════════════════════
+function renderPriorityPanel() {
+    const cfg = STATE_CONFIG[currentState];
+    const tabs = document.getElementById('priority-tabs');
+    const body = document.getElementById('priority-body');
+
+    // Build tabs for each utility
+    let tabsHtml = '';
+    const utilNames = Object.keys(cfg.utilities);
+    utilNames.forEach((name, i) => {
+        const count = priorityData[name] ? priorityData[name].length : 0;
+        tabsHtml += `<button class="${i === 0 ? 'active' : ''}" onclick="showPriorityTab('${name}',this)">${name} (${count})</button>`;
+    });
+    // Add "All" tab
+    const allCount = Object.values(priorityData).reduce((s, a) => s + a.length, 0);
+    tabsHtml += `<button onclick="showPriorityTab('__all__',this)">All (${allCount})</button>`;
+    tabs.innerHTML = tabsHtml;
+
+    // Show first utility by default
+    if (utilNames.length > 0) showPriorityTab(utilNames[0]);
+}
+
+function showPriorityTab(utilName, btn) {
+    const cfg = STATE_CONFIG[currentState];
+    // Update active tab
+    if (btn) {
+        document.querySelectorAll('#priority-tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    const body = document.getElementById('priority-body');
+    let items;
+    if (utilName === '__all__') {
+        items = [];
+        Object.values(priorityData).forEach(a => items.push(...a));
+        items.sort((a, b) => b.score - a.score);
+    } else {
+        items = priorityData[utilName] || [];
+    }
+
+    if (items.length === 0) {
+        body.innerHTML = '<div style="padding:20px;text-align:center;color:#666;">No priority ZIPs in this territory</div>';
+        return;
+    }
+
+    let html = '';
+    items.slice(0, 50).forEach((s, i) => {
+        const scoreColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#ff8800' : '#ffcc44';
+        const utilColor = cfg.utilities[s.utility] ? cfg.utilities[s.utility].color : '#888';
+        html += `<div class="priority-row" onclick="focusZip('${s.zip}')">
+            <span class="priority-rank">${i + 1}</span>
+            <span class="priority-zip">${s.zip}</span>
+            <span class="priority-city">${s.city}</span>
+            <span class="priority-badges">
+                ${s.dac ? '<span style="background:#ff66aa22;color:#ff66aa;">DAC</span>' : ''}
+                ${s.ehp >= cfg.ehThreshold ? '<span style="background:#ff333322;color:#ff3333;">EH</span>' : ''}
+                <span style="background:${utilColor}22;color:${utilColor};font-size:8px;">${s.utility}</span>
+            </span>
+            <span class="priority-score" style="color:${scoreColor}">${s.score}</span>
+        </div>`;
+    });
+    body.innerHTML = html;
+}
+
+function togglePriority() {
+    const panel = document.getElementById('priority-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function focusZip(zip) {
+    const centroid = zipCentroids[zip];
+    if (centroid) {
+        map.setView(centroid, 13);
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// ██  ZIP DETAIL PANEL                             ██
+// ═══════════════════════════════════════════════════
+function showZipDetail(zip, count, cities, demo, dac, lmi) {
+    const cfg = STATE_CONFIG[currentState];
+    const color = getDensityColor(count);
+    let html = `
+        <div class="info-section-title">Sales Activity</div>
+        <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
+        ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
+
+    if (demo) {
+        const raceBar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;margin:4px 0;">
+            <div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>
+            <div style="width:${demo.rb}%;background:#4a90d9;" title="Black ${demo.rb}%"></div>
+            <div style="width:${demo.rh}%;background:#e67e22;" title="Hispanic ${demo.rh}%"></div>
+            <div style="width:${demo.ra}%;background:#27ae60;" title="Asian ${demo.ra}%"></div>
+            <div style="width:${demo.ro}%;background:#95a5a6;" title="Other ${demo.ro}%"></div>
+        </div>`;
+        html += `
+            <div class="info-section">
+                <div class="info-section-title">Demographics (Census ACS)</div>
+                ${raceBar}
+                <div style="display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;margin-top:4px;">
+                    <span><span style="color:#e8d4a8;">●</span> White <b>${demo.rw}%</b></span>
+                    <span><span style="color:#4a90d9;">●</span> Black <b>${demo.rb}%</b></span>
+                    <span><span style="color:#e67e22;">●</span> Hispanic <b>${demo.rh}%</b></span>
+                    <span><span style="color:#27ae60;">●</span> Asian <b>${demo.ra}%</b></span>
+                    <span><span style="color:#95a5a6;">●</span> Other <b>${demo.ro}%</b></span>
+                </div>
+            </div>
+            <div class="info-section">
+                <div class="info-section-title">Population & Income</div>
+                <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${demo.pop.toLocaleString()}</span></div>
+                <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value" style="color:${getIncomeColor(demo.inc)};">$${demo.inc.toLocaleString()}</span></div>
+                <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${demo.age}</span></div>
+                <div class="info-row"><span class="info-label">Household Size:</span><span class="info-value">${demo.hhs}</span></div>
+            </div>
+            <div class="info-section">
+                <div class="info-section-title">Electric Heating</div>
+                <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value" style="color:#ff3333;">${demo.ehe ? demo.ehe.toLocaleString() : 'N/A'}</span></div>
+                <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= cfg.ehCritical ? '#ff3333' : demo.ehp >= cfg.ehThreshold ? '#ffaa44' : '#aaa'};">${demo.ehp}%</span></div>
+                <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
+                    <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= cfg.ehCritical ? '#ff3333' : demo.ehp >= cfg.ehThreshold ? '#ffaa44' : '#666'};"></div>
+                </div>
+            </div>`;
+    }
+
+    if (dac) {
+        html += `<div class="info-section">
+            <div class="info-section-title">DAC Status</div>
+            <div class="info-row"><span class="info-label">DAC Coverage:</span><span class="info-value" style="color:#ff66aa;">${dac.pct}%</span></div>
+            ${dac.approx ? '<div style="font-size:10px;color:#666;margin-top:4px;">Approximate (CEJST-equivalent criteria)</div>' : '<div style="font-size:10px;color:#666;margin-top:4px;">Source: CEJST / Justice40</div>'}
+        </div>`;
+    }
+
+    if (lmi) {
+        const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
+        html += `<div class="info-section">
+            <div class="info-section-title">LMI Target Intel</div>
+            <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:${uc}">${lmi.util}</span></div>
+            <div class="info-row"><span class="info-label">LMI %:</span><span class="info-value">${lmi.lmi}%</span></div>
+            <div class="info-row"><span class="info-label">Housing Type:</span><span class="info-value">${lmi.type}</span></div>
+        </div>`;
+    }
+
+    // Utility territory
+    const centroid = zipCentroids[zip];
+    if (centroid) {
+        const util = getUtilityForZip(centroid[0], centroid[1]);
+        if (util !== 'Other') {
+            const utilColor = STATE_CONFIG[currentState].utilities[util] ? STATE_CONFIG[currentState].utilities[util].color : '#888';
+            html += `<div class="info-section">
+                <div class="info-row"><span class="info-label">Utility Territory:</span><span class="info-value" style="color:${utilColor}">${util}</span></div>
+            </div>`;
+        }
+    }
+
+    showInfoPanel(`ZIP ${zip} — ${cities || (lmi ? lmi.city : currentState)}`, html);
+}
+
+// ═══════════════════════════════════════════════════
+// ██  SEARCH                                       ██
+// ═══════════════════════════════════════════════════
+function searchZip(query) {
+    if (!query) return;
+    query = query.trim().toUpperCase();
+
+    // Direct ZIP match
+    if (zipCentroids[query]) {
+        map.setView(zipCentroids[query], 14);
+        const sales = zipSalesData[query] || { n: 0, c: '' };
+        const demo = demoData[query];
+        const dac = dacData[query];
+        const lmi = STATE_CONFIG[currentState].lmiData ? STATE_CONFIG[currentState].lmiData[query] : null;
+        showZipDetail(query, sales.n, sales.c, demo, dac, lmi);
+        return;
+    }
+
+    // City name search
+    for (const [zip, data] of Object.entries(zipSalesData)) {
+        if (data.c && data.c.toUpperCase().includes(query)) {
+            const centroid = zipCentroids[zip];
+            if (centroid) {
+                map.setView(centroid, 12);
+                const demo = demoData[zip];
+                const dac = dacData[zip];
+                const lmi = STATE_CONFIG[currentState].lmiData ? STATE_CONFIG[currentState].lmiData[zip] : null;
+                showZipDetail(zip, data.n, data.c, demo, dac, lmi);
+                return;
+            }
+        }
+    }
+    alert('No matching ZIP or city found for: ' + query);
+}
+
+// ═══════════════════════════════════════════════════
+// ██  UPLOAD ENGINE                                ██
+// ═══════════════════════════════════════════════════
+let uploadColumns = [];
+let uploadRows = [];
+
+function openUpload() {
+    document.getElementById('upload-overlay').style.display = 'flex';
+    document.getElementById('upload-status').style.display = 'none';
+    document.getElementById('upload-mapping').style.display = 'none';
+}
+function closeUpload() {
+    document.getElementById('upload-overlay').style.display = 'none';
+}
+
+// Drag & drop
+const uploadBox = document.getElementById('upload-box');
+uploadBox.addEventListener('dragover', e => { e.preventDefault(); uploadBox.classList.add('drag-over'); });
+uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('drag-over'));
+uploadBox.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadBox.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+});
+
+function handleFileSelect(file) {
+    if (!file) return;
+    const status = document.getElementById('upload-status');
+    status.style.display = 'block';
+    status.textContent = `Parsing ${file.name}...`;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'csv') {
+        const reader = new FileReader();
+        reader.onload = e => parseCSV(e.target.result);
+        reader.readAsText(file);
+    } else if (['xlsx', 'xls'].includes(ext)) {
+        const reader = new FileReader();
+        reader.onload = e => parseXLSX(e.target.result);
+        reader.readAsArrayBuffer(file);
+    } else {
+        status.textContent = 'Unsupported format. Use CSV, XLSX, or XLS.';
+    }
+}
+
+function parseCSV(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    uploadColumns = lines[0].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    uploadRows = lines.slice(1).map(l => {
+        const vals = [];
+        let current = '', inQuote = false;
+        for (const ch of l) {
+            if (ch === '"') inQuote = !inQuote;
+            else if (ch === ',' && !inQuote) { vals.push(current.trim()); current = ''; }
+            else current += ch;
+        }
+        vals.push(current.trim());
+        return vals;
+    });
+    showColumnMapping();
+}
+
+function parseXLSX(data) {
+    try {
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        if (rows.length < 2) return;
+        uploadColumns = rows[0].map(c => String(c || '').trim());
+        uploadRows = rows.slice(1).map(r => r.map(c => String(c || '').trim()));
+        showColumnMapping();
+    } catch (e) {
+        document.getElementById('upload-status').textContent = 'Error parsing file: ' + e.message;
+    }
+}
+
+function autoDetectColumn(target) {
+    const patterns = {
+        lat: /^(lat|latitude|y|lat_|geo_lat)/i,
+        lon: /^(lon|lng|longitude|x|lon_|geo_lon|long)/i,
+        zip: /^(zip|zipcode|zip_code|postal|postalcode)/i,
+        city: /^(city|town|municipality|place)/i,
+        address: /^(address|addr|street|location|full_addr)/i,
+        date: /^(date|created|signed|enrollment|install)/i,
+        name: /^(name|customer|first|last|full_name)/i
+    };
+    const re = patterns[target];
+    if (!re) return -1;
+    return uploadColumns.findIndex(c => re.test(c));
+}
+
+function showColumnMapping() {
+    const status = document.getElementById('upload-status');
+    status.textContent = `Found ${uploadRows.length} rows, ${uploadColumns.length} columns.`;
+
+    const mapping = document.getElementById('upload-mapping');
+    mapping.style.display = 'block';
+
+    const fields = [
+        { key: 'lat', label: 'Latitude', required: false },
+        { key: 'lon', label: 'Longitude', required: false },
+        { key: 'zip', label: 'ZIP Code', required: false },
+        { key: 'city', label: 'City', required: false },
+        { key: 'date', label: 'Date', required: false }
+    ];
+
+    let html = '<div style="font-size:12px;color:#00aaff;margin-bottom:8px;">Map columns:</div>';
+    fields.forEach(f => {
+        const detected = autoDetectColumn(f.key);
+        html += `<label>${f.label}: <select id="map-${f.key}">`;
+        html += '<option value="-1">— skip —</option>';
+        uploadColumns.forEach((c, i) => {
+            html += `<option value="${i}" ${i === detected ? 'selected' : ''}>${c}</option>`;
+        });
+        html += '</select></label>';
+    });
+    html += `<button id="upload-apply" onclick="processUpload()">Apply ${uploadRows.length} Records</button>`;
+    mapping.innerHTML = html;
+}
+
+function processUpload() {
+    const getCol = key => parseInt(document.getElementById('map-' + key).value);
+    const latIdx = getCol('lat');
+    const lonIdx = getCol('lon');
+    const zipIdx = getCol('zip');
+    const cityIdx = getCol('city');
+    const dateIdx = getCol('date');
+
+    const status = document.getElementById('upload-status');
+    status.textContent = 'Processing...';
+
+    const points = [];
+    let needGeocode = 0;
+
+    uploadRows.forEach(row => {
+        let lat = latIdx >= 0 ? parseFloat(row[latIdx]) : NaN;
+        let lon = lonIdx >= 0 ? parseFloat(row[lonIdx]) : NaN;
+        const zip = zipIdx >= 0 ? String(row[zipIdx] || '').replace(/\D/g, '').slice(0, 5) : '';
+        const city = cityIdx >= 0 ? (row[cityIdx] || '') : '';
+        const date = dateIdx >= 0 ? (row[dateIdx] || '') : '';
+
+        if (isNaN(lat) || isNaN(lon)) {
+            // Try to geocode from ZIP using boundary centroids
+            if (zip && zipCentroids[zip]) {
+                const c = zipCentroids[zip];
+                lat = c[0]; lon = c[1];
+            } else if (zip && boundaryFeatures) {
+                // Reverse geocode: find ZIP in boundaries
+                for (const f of boundaryFeatures) {
+                    if (f.properties.zip === zip) {
+                        const coords = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
+                        if (coords && coords.length) {
+                            let sLat = 0, sLon = 0;
+                            coords.forEach(c => { sLon += c[0]; sLat += c[1]; });
+                            lat = sLat / coords.length;
+                            lon = sLon / coords.length;
+                        }
+                        break;
+                    }
+                }
+            }
+            if (isNaN(lat) || isNaN(lon)) { needGeocode++; return; }
+        }
+
+        points.push([lat, lon, city, zip, date]);
+    });
+
+    // Add to sales cluster
+    points.forEach(d => {
+        const marker = L.circleMarker([d[0], d[1]], {
+            radius: 4, fillColor: '#00ff88', color: '#00ff88', weight: 0, fillOpacity: 0.7
+        });
+        marker.bindPopup(`<b style="color:#00ff88;">📂 Uploaded</b><br>${d[2]}<br>ZIP: ${d[3]}<br>${d[4]}`);
+        marker.addTo(fg.salesCluster);
+    });
+
+    // Enable cluster layer
+    if (!map.hasLayer(fg.salesCluster)) {
+        map.addLayer(fg.salesCluster);
+        const tog = document.getElementById('tog-salesCluster');
+        if (tog) tog.checked = true;
+    }
+
+    status.textContent = `✅ Added ${points.length} points.${needGeocode > 0 ? ` ${needGeocode} couldn't be geocoded.` : ''}`;
+    document.getElementById('upload-mapping').style.display = 'none';
+
+    setTimeout(closeUpload, 2000);
+}
+
+// ═══════════════════════════════════════════════════
+// ██  INIT                                         ██
+// ═══════════════════════════════════════════════════
+function initMap() {
+    map = L.map('map', {
+        center: [42.85, -75.80],
+        zoom: 7,
+        zoomControl: true,
+        preferCanvas: true,
+        maxZoom: 18,
+        minZoom: 5
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Default to NY
+    switchState('NY');
+}
+
+initMap();
+</script>
+</body>
+</html>
