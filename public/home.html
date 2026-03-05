@@ -3,468 +3,194 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Territory Intelligence Engine</title>
+<title>EMG Territory Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{
-    --bg:#000;--text:#f5f5f7;--text2:rgba(255,255,255,.56);--text3:rgba(255,255,255,.3);
-    --border:rgba(255,255,255,.06);--surface:rgba(255,255,255,.03);
-    --blue:#0a84ff;--green:#30d158;--orange:#ff9f0a;--red:#ff453a;
-}
-html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#000;color:#fff;min-height:100vh;overflow:hidden;}
 
-/* ═══ FULL-SCREEN MAP LAYOUT ═══ */
-.app{display:grid;grid-template-columns:380px 1fr;min-height:100vh}
+.container{display:flex;height:100vh;width:100vw;}
 
-/* ═══ LEFT PANEL ═══ */
-.panel{
-    background:rgba(10,10,14,0.95);
-    border-right:1px solid var(--border);
-    display:flex;flex-direction:column;
-    padding:0;z-index:10;
-    backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-}
-.panel-header{
-    padding:40px 32px 0;
-}
-.brand{display:flex;align-items:center;gap:10px;margin-bottom:40px}
-.brand-icon{
-    width:32px;height:32px;border-radius:8px;
-    background:linear-gradient(135deg,var(--blue),#5e5ce6);
-    display:flex;align-items:center;justify-content:center;
-    font-size:15px;font-weight:700;color:#fff;
-}
-.brand-text{font-size:13px;font-weight:600;letter-spacing:.01em}
-.brand-sub{font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
-.hero-title{
-    font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.1;
-    margin-bottom:12px;
-}
-.hero-title span{
-    background:linear-gradient(135deg,#fff 30%,rgba(255,255,255,.5));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.hero-desc{font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:32px}
+/* Left Panel */
+.left{width:420px;min-width:380px;display:flex;flex-direction:column;padding:48px 40px;background:rgba(255,255,255,0.02);border-right:1px solid rgba(255,255,255,0.06);z-index:2;}
+.logo{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px;font-weight:600;}
+h1{font-size:32px;font-weight:800;letter-spacing:-0.5px;margin-bottom:6px;background:linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.5));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.subtitle{font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:48px;font-weight:400;}
 
-/* ═══ STATE LIST ═══ */
-.state-list{padding:0 32px;flex:1}
-.state-list-label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.state-list{flex:1;display:flex;flex-direction:column;gap:12px;}
 
-.state-item{
-    display:flex;align-items:center;gap:14px;
-    padding:16px;border-radius:14px;
-    background:transparent;border:1px solid transparent;
-    cursor:pointer;transition:all .3s ease;
-    margin-bottom:6px;text-decoration:none;color:inherit;
+.state-card{
+  display:flex;align-items:center;gap:16px;
+  padding:20px 24px;border-radius:16px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  cursor:pointer;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+  text-decoration:none;color:#fff;position:relative;overflow:hidden;
 }
-.state-item:hover,.state-item.active{
-    background:var(--surface);border-color:var(--border);
-}
-.state-item.active{border-color:rgba(255,255,255,.12)}
+.state-card::before{content:'';position:absolute;inset:0;border-radius:16px;opacity:0;transition:opacity 0.3s;}
+.state-card:hover{transform:translateX(4px);border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);}
+.state-card:hover::before{opacity:1;}
+.state-card:hover .arrow{opacity:1;transform:translateX(0);}
 
-.state-icon{
-    width:44px;height:44px;border-radius:12px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:20px;flex-shrink:0;
-    transition:transform .3s ease;
-}
-.state-item:hover .state-icon{transform:scale(1.08)}
-.state-icon.ny{background:rgba(10,132,255,.1);border:1px solid rgba(10,132,255,.18)}
-.state-icon.md{background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.18)}
-.state-icon.va{background:rgba(255,159,10,.1);border:1px solid rgba(255,159,10,.18)}
+.state-dot{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;position:relative;z-index:1;}
+.state-info{flex:1;position:relative;z-index:1;}
+.state-name{font-size:17px;font-weight:700;letter-spacing:-0.2px;}
+.state-meta{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;font-weight:400;}
+.arrow{font-size:18px;color:rgba(255,255,255,0.3);opacity:0;transform:translateX(-8px);transition:all 0.3s;position:relative;z-index:1;}
 
-.state-info{flex:1;min-width:0}
-.state-name{font-size:15px;font-weight:600;letter-spacing:-.01em}
-.state-meta{font-size:11px;color:var(--text3);margin-top:2px}
+/* NY card */
+.card-ny .state-dot{background:rgba(10,132,255,0.15);color:#0a84ff;}
+.card-ny::before{background:linear-gradient(135deg,rgba(10,132,255,0.08),transparent 60%);}
+.card-ny:hover{border-color:rgba(10,132,255,0.3);}
 
-.state-stats{display:flex;gap:12px;align-items:center}
-.state-stat{text-align:right}
-.state-stat-val{font-size:14px;font-weight:700;letter-spacing:-.01em}
-.state-stat-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+/* MD card */
+.card-md .state-dot{background:rgba(48,209,88,0.15);color:#30d158;}
+.card-md::before{background:linear-gradient(135deg,rgba(48,209,88,0.08),transparent 60%);}
+.card-md:hover{border-color:rgba(48,209,88,0.3);}
 
-.state-arrow{
-    width:28px;height:28px;border-radius:50%;
-    background:rgba(255,255,255,.04);
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;transition:all .3s ease;
-}
-.state-item:hover .state-arrow{background:rgba(255,255,255,.1)}
-.state-arrow svg{width:12px;height:12px;stroke:var(--text3);stroke-width:2;fill:none;transition:stroke .3s}
-.state-item:hover .state-arrow svg{stroke:var(--text)}
+/* VA card */
+.card-va .state-dot{background:rgba(255,159,10,0.15);color:#ff9f0a;}
+.card-va::before{background:linear-gradient(135deg,rgba(255,159,10,0.08),transparent 60%);}
+.card-va:hover{border-color:rgba(255,159,10,0.3);}
 
-/* ═══ PANEL FOOTER ═══ */
-.panel-footer{
-    padding:20px 32px;border-top:1px solid var(--border);
-    display:flex;gap:20px;
-}
-.panel-footer .kpi{text-align:center;flex:1}
-.panel-footer .kpi-val{font-size:18px;font-weight:700;letter-spacing:-.01em}
-.panel-footer .kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.footer{margin-top:auto;padding-top:32px;font-size:11px;color:rgba(255,255,255,0.2);line-height:1.5;}
 
-/* ═══ MAP CANVAS (RIGHT) ═══ */
-.map-canvas{
-    position:relative;overflow:hidden;
-    background:radial-gradient(ellipse at 60% 50%, #0a0e1a 0%, #000 70%);
-}
-.map-svg{width:100%;height:100%;position:absolute;inset:0}
+/* Right Panel - Map */
+.right{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:radial-gradient(ellipse at 60% 50%,rgba(255,255,255,0.02),transparent 70%);}
 
-/* State polygons */
-.state-poly{
-    fill:rgba(255,255,255,.02);
-    stroke:rgba(255,255,255,.12);
-    stroke-width:1.5;
-    cursor:pointer;
-    transition:all .4s ease;
-}
-.state-poly:hover,.state-poly.highlight{
-    stroke-width:2.5;
-    filter:url(#glow);
-}
-.state-poly.ny:hover,.state-poly.ny.highlight{fill:rgba(10,132,255,.12);stroke:var(--blue)}
-.state-poly.md:hover,.state-poly.md.highlight{fill:rgba(48,209,88,.12);stroke:var(--green)}
-.state-poly.va:hover,.state-poly.va.highlight{fill:rgba(255,159,10,.12);stroke:var(--orange)}
+.map-container{position:relative;width:700px;height:700px;}
 
-/* Animated scan lines */
-.map-canvas::before{
-    content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-    background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.008) 3px,rgba(255,255,255,.008) 4px);
-}
+svg{width:100%;height:100%;}
 
-/* Grid overlay */
-.grid-overlay{
-    position:absolute;inset:0;pointer-events:none;z-index:0;
-    background-image:
-        linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
-    background-size:80px 80px;
+.state-shape{
+  fill:rgba(255,255,255,0.03);stroke:rgba(255,255,255,0.12);stroke-width:1.5;
+  cursor:pointer;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
 }
+.state-shape:hover,.state-shape.active{stroke-width:2.5;}
 
-/* State label on map */
-.map-label{
-    position:absolute;pointer-events:none;z-index:5;
-    text-align:center;opacity:0;transition:all .4s ease;
-    transform:translateY(4px);
-}
-.map-label.show{opacity:1;transform:translateY(0)}
-.map-label-name{font-size:18px;font-weight:700;letter-spacing:-.02em;text-shadow:0 2px 20px rgba(0,0,0,.8)}
-.map-label-stat{font-size:11px;color:var(--text2);margin-top:4px;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+.state-shape.ny{stroke:rgba(10,132,255,0.4);}
+.state-shape.ny:hover,.state-shape.ny.active{fill:rgba(10,132,255,0.12);stroke:rgba(10,132,255,0.8);filter:drop-shadow(0 0 20px rgba(10,132,255,0.3));}
 
-/* Pulse dot on map */
-.pulse-dot{
-    position:absolute;z-index:4;pointer-events:none;
-    width:8px;height:8px;border-radius:50%;
-    opacity:0;transition:opacity .4s ease;
-}
-.pulse-dot.show{opacity:1}
-.pulse-dot::after{
-    content:'';position:absolute;inset:-6px;border-radius:50%;
-    border:1.5px solid currentColor;opacity:.4;
-    animation:pulse-ring 2s ease-out infinite;
-}
-@keyframes pulse-ring{
-    0%{transform:scale(.6);opacity:.6}
-    100%{transform:scale(2);opacity:0}
-}
+.state-shape.md{stroke:rgba(48,209,88,0.4);}
+.state-shape.md:hover,.state-shape.md.active{fill:rgba(48,209,88,0.12);stroke:rgba(48,209,88,0.8);filter:drop-shadow(0 0 20px rgba(48,209,88,0.3));}
 
-/* ═══ TOOLTIP ═══ */
-.tooltip{
-    position:fixed;z-index:100;pointer-events:none;
-    background:rgba(20,20,28,.92);
-    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:12px;padding:14px 18px;
-    opacity:0;transition:opacity .2s ease;
-    min-width:180px;
-}
-.tooltip.show{opacity:1}
-.tooltip-title{font-size:14px;font-weight:600;margin-bottom:6px}
-.tooltip-row{display:flex;justify-content:space-between;gap:16px;font-size:11px;color:var(--text2);padding:2px 0}
-.tooltip-row b{color:var(--text);font-weight:600}
+.state-shape.va{stroke:rgba(255,159,10,0.4);}
+.state-shape.va:hover,.state-shape.va.active{fill:rgba(255,159,10,0.12);stroke:rgba(255,159,10,0.8);filter:drop-shadow(0 0 20px rgba(255,159,10,0.3));}
 
-/* ═══ RESPONSIVE ═══ */
+.state-label{fill:rgba(255,255,255,0.5);font-size:14px;font-weight:700;font-family:'Inter',sans-serif;pointer-events:none;text-anchor:middle;transition:fill 0.3s;}
+.state-label.active{fill:rgba(255,255,255,0.9);}
+
+/* Mobile */
 @media(max-width:900px){
-    .app{grid-template-columns:1fr;grid-template-rows:auto 50vh}
-    .panel{border-right:none;border-bottom:1px solid var(--border)}
-    .panel-header{padding:24px 20px 0}
-    .state-list{padding:0 20px}
-    .hero-title{font-size:26px}
-    .panel-footer{padding:16px 20px}
-}
-@media(max-width:480px){
-    .app{grid-template-rows:auto 40vh}
-    .state-stats{display:none}
+  .container{flex-direction:column;}
+  .left{width:100%;min-width:auto;padding:28px 24px;border-right:none;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .right{min-height:300px;}
+  .map-container{width:90%;height:300px;}
+  h1{font-size:24px;}
+  .state-list{flex-direction:row;flex-wrap:wrap;}
+  .state-card{flex:1;min-width:140px;}
 }
 </style>
 </head>
 <body>
-
-<div class="app">
-
-<!-- LEFT PANEL -->
-<div class="panel">
-    <div class="panel-header">
-        <div class="brand">
-            <div class="brand-icon">T</div>
-            <div>
-                <div class="brand-text">Territory Intel</div>
-                <div class="brand-sub">Intelligence Engine</div>
-            </div>
-        </div>
-        <div class="hero-title"><span>Select a<br>Territory.</span></div>
-        <p class="hero-desc">Real-time sales density, demographics, priority scoring, and LMI qualification data — choose a territory to begin.</p>
-    </div>
+<div class="container">
+  <div class="left">
+    <div class="logo">EMG Operations</div>
+    <h1>Territory Intelligence</h1>
+    <p class="subtitle">Community Solar — Field Operations</p>
 
     <div class="state-list">
-        <div class="state-list-label">Active Territories</div>
+      <a href="map-ny.html" class="state-card card-ny" data-state="ny" onmouseenter="highlight('ny')" onmouseleave="unhighlight('ny')">
+        <div class="state-dot">NY</div>
+        <div class="state-info">
+          <div class="state-name">New York</div>
+          <div class="state-meta">140K+ sales · 5 utilities · Census demographics</div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
 
-        <a class="state-item" href="map-unified.html?state=NY" data-state="ny"
-           onmouseenter="highlightState('ny')" onmouseleave="clearHighlight()">
-            <div class="state-icon ny">🗽</div>
-            <div class="state-info">
-                <div class="state-name">New York</div>
-                <div class="state-meta">5 utility territories</div>
-            </div>
-            <div class="state-stats">
-                <div class="state-stat">
-                    <div class="state-stat-val" style="color:var(--blue)">140K</div>
-                    <div class="state-stat-label">Sales</div>
-                </div>
-                <div class="state-stat">
-                    <div class="state-stat-val">1,222</div>
-                    <div class="state-stat-label">ZIPs</div>
-                </div>
-            </div>
-            <div class="state-arrow"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-        </a>
+      <a href="map-md.html" class="state-card card-md" data-state="md" onmouseenter="highlight('md')" onmouseleave="unhighlight('md')">
+        <div class="state-dot">MD</div>
+        <div class="state-info">
+          <div class="state-name">Maryland</div>
+          <div class="state-meta">ZIP boundaries · LMI zones · Priority scoring</div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
 
-        <a class="state-item" href="map-unified.html?state=MD" data-state="md"
-           onmouseenter="highlightState('md')" onmouseleave="clearHighlight()">
-            <div class="state-icon md">🦀</div>
-            <div class="state-info">
-                <div class="state-name">Maryland</div>
-                <div class="state-meta">4 utility territories</div>
-            </div>
-            <div class="state-stats">
-                <div class="state-stat">
-                    <div class="state-stat-val" style="color:var(--green)">25.8K</div>
-                    <div class="state-stat-label">Sales</div>
-                </div>
-                <div class="state-stat">
-                    <div class="state-stat-val">351</div>
-                    <div class="state-stat-label">ZIPs</div>
-                </div>
-            </div>
-            <div class="state-arrow"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-        </a>
-
-        <a class="state-item" href="map-unified.html?state=VA" data-state="va"
-           onmouseenter="highlightState('va')" onmouseleave="clearHighlight()">
-            <div class="state-icon va">⚡</div>
-            <div class="state-info">
-                <div class="state-name">Virginia</div>
-                <div class="state-meta">Dominion Energy · Arcadia LMI</div>
-            </div>
-            <div class="state-stats">
-                <div class="state-stat">
-                    <div class="state-stat-val" style="color:var(--orange)">6.3K</div>
-                    <div class="state-stat-label">Orders</div>
-                </div>
-                <div class="state-stat">
-                    <div class="state-stat-val">214</div>
-                    <div class="state-stat-label">ZIPs</div>
-                </div>
-            </div>
-            <div class="state-arrow"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-        </a>
+      <a href="map.html" class="state-card card-va" data-state="va" onmouseenter="highlight('va')" onmouseleave="unhighlight('va')">
+        <div class="state-dot">VA</div>
+        <div class="state-info">
+          <div class="state-name">Virginia</div>
+          <div class="state-meta">Dominion Energy · Arcadia LMI · 6.3K orders</div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
     </div>
 
-    <div class="panel-footer">
-        <div class="kpi"><div class="kpi-val">201K+</div><div class="kpi-label">Total Records</div></div>
-        <div class="kpi"><div class="kpi-val">1,787</div><div class="kpi-label">ZIP Zones</div></div>
-        <div class="kpi"><div class="kpi-val">3</div><div class="kpi-label">Territories</div></div>
+    <div class="footer">
+      Real-time territory analytics<br>
+      Census ACS · TIGER/Line · LMI verification
     </div>
-</div>
+  </div>
 
-<!-- MAP CANVAS -->
-<div class="map-canvas" id="mapCanvas">
-    <div class="grid-overlay"></div>
-
-    <svg class="map-svg" id="mapSvg" viewBox="0 0 1000 1024" preserveAspectRatio="xMidYMid meet">
-        <defs>
-            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="8" result="blur"/>
-                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-            </filter>
-            <filter id="glow-strong" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="16" result="blur"/>
-                <feFlood flood-color="currentColor" flood-opacity="0.3"/>
-                <feComposite in2="blur" operator="in"/>
-                <feComposite in="SourceGraphic"/>
-            </filter>
-        </defs>
-
+  <div class="right">
+    <div class="map-container">
+      <svg viewBox="0 0 1000 1050" xmlns="http://www.w3.org/2000/svg">
         <!-- NY -->
-        <polygon class="state-poly ny" data-state="ny" data-href="map-unified.html?state=NY"
-            points="342.7,327.2 342.7,354.5 407.9,354.5 477.1,354.5 562.5,354.5 636.4,354.5 684.5,354.5 704.7,355.5 733.5,412.0 773.9,442.3 811.2,445.3 811.2,492.8 943.3,455.4 961.1,451.4 811.2,497.9 789.4,505.9 770.8,503.9 776.2,585.7 720.3,664.5 708.6,637.2 700.9,568.6 734.3,541.3 771.6,503.9 794.1,480.7 798.0,458.5 819.7,449.4 830.6,349.4 840.7,303.0 846.2,278.7 846.9,267.6 848.5,226.2 844.6,189.9 838.4,184.8 836.8,147.4 841.5,128.3 837.6,110.1 841.5,82.8 841.5,71.7 837.6,52.5 840.7,50.5 788.7,52.5 731.2,51.5 707.1,58.6 692.3,65.6 672.1,81.8 653.5,100.0 634.8,117.1 621.6,128.3 611.5,132.3 607.6,139.4 599.1,146.4 580.4,175.7 574.2,189.9 561.0,226.2 579.6,251.5 607.6,253.5 613.8,277.7 342.7,299.9 342.7,327.2"/>
+        <a href="map-ny.html">
+        <polygon class="state-shape ny" id="shape-ny"
+          points="342.7,327.2 342.7,354.5 407.9,354.5 477.1,354.5 562.5,354.5 636.4,354.5 684.5,354.5 704.7,355.5 733.5,412.0 773.9,442.3 811.2,445.3 811.2,492.8 943.3,455.4 961.1,451.4 811.2,497.9 789.4,505.9 770.8,503.9 776.2,585.7 720.3,664.5 708.6,637.2 700.9,568.6 734.3,541.3 771.6,503.9 794.1,480.7 798.0,458.5 819.7,449.4 830.6,349.4 840.7,303.0 846.2,278.7 846.9,267.6 848.5,226.2 844.6,189.9 838.4,184.8 836.8,147.4 841.5,128.3 837.6,110.1 841.5,82.8 841.5,71.7 837.6,52.5 840.7,50.5 788.7,52.5 731.2,51.5 707.1,58.6 692.3,65.6 672.1,81.8 653.5,100.0 634.8,117.1 621.6,128.3 611.5,132.3 607.6,139.4 599.1,146.4 580.4,175.7 574.2,189.9 561.0,226.2 579.6,251.5 607.6,253.5 613.8,277.7 342.7,299.9 342.7,327.2" />
+        </a>
+        <text class="state-label" id="label-ny" x="673.7" y="263.6">NEW YORK</text>
 
         <!-- MD -->
-        <polygon class="state-poly md" data-state="md" data-href="map-unified.html?state=MD"
-            points="364.4,584.7 364.4,636.2 394.7,610.0 446.0,594.8 491.8,596.8 501.2,625.1 512.8,627.1 521.4,634.2 531.5,625.1 547.8,629.1 554.0,656.4 557.9,672.6 554.0,678.6 550.1,689.7 553.2,719.0 539.2,724.1 532.2,720.0 536.9,703.9 550.9,686.7 553.2,673.6 564.1,668.5 578.9,702.9 594.4,704.9 607.6,708.9 609.2,750.3 616.2,769.5 630.9,755.4 632.5,731.1 645.7,722.1 656.6,713.0 657.3,701.9 665.9,712.0 683.0,757.4 705.5,725.1 708.6,713.0 697.7,698.8 683.8,684.7 665.1,682.7 650.3,619.0 652.7,606.9 658.1,596.8 661.2,587.7 662.8,572.6 651.1,584.7 634.8,584.7 616.2,584.7 590.5,584.7 573.4,584.7 551.7,584.7 520.6,584.7 494.9,584.7 471.6,584.7 452.2,584.7 432.8,584.7 407.1,584.7 386.2,584.7 364.4,584.7"/>
+        <a href="map-md.html">
+        <polygon class="state-shape md" id="shape-md"
+          points="364.4,584.7 364.4,636.2 394.7,610.0 446.0,594.8 491.8,596.8 501.2,625.1 512.8,627.1 521.4,634.2 531.5,625.1 547.8,629.1 554.0,656.4 557.9,672.6 554.0,678.6 550.1,689.7 553.2,719.0 539.2,724.1 532.2,720.0 536.9,703.9 550.9,686.7 553.2,673.6 564.1,668.5 578.9,702.9 594.4,704.9 607.6,708.9 609.2,750.3 616.2,769.5 630.9,755.4 632.5,731.1 645.7,722.1 656.6,713.0 657.3,701.9 665.9,712.0 683.0,757.4 705.5,725.1 708.6,713.0 697.7,698.8 683.8,684.7 665.1,682.7 650.3,619.0 652.7,606.9 658.1,596.8 661.2,587.7 662.8,572.6 651.1,584.7 634.8,584.7 616.2,584.7 590.5,584.7 573.4,584.7 551.7,584.7 520.6,584.7 494.9,584.7 471.6,584.7 452.2,584.7 432.8,584.7 407.1,584.7 386.2,584.7 364.4,584.7" />
+        </a>
+        <text class="state-label" id="label-md" x="580.4" y="657.4">MARYLAND</text>
 
         <!-- VA -->
-        <polygon class="state-poly va" data-state="va" data-href="map-unified.html?state=VA"
-            points="38.9,899.8 80.0,900.8 121.2,900.8 166.3,905.8 193.5,900.8 219.1,902.8 258.7,903.8 300.7,905.8 326.3,905.8 362.1,905.8 420.4,905.8 455.3,905.8 498.8,905.8 544.7,904.8 589.0,904.8 633.3,904.8 644.9,904.8 651.9,938.2 668.2,973.5 637.1,924.0 631.7,918.0 603.7,901.8 588.2,862.4 613.8,846.3 603.7,836.2 616.9,826.1 592.9,797.8 608.4,789.7 611.5,774.6 587.4,743.3 593.6,705.9 578.9,701.9 564.1,668.5 553.2,673.6 550.9,686.7 536.9,703.9 532.2,720.0 539.2,724.1 553.2,719.0 550.1,689.7 554.0,678.6 557.9,672.6 554.0,656.4 547.8,629.1 531.5,625.1 521.4,634.2 512.8,627.1 501.2,625.1 491.8,596.8 446.0,594.8 394.7,610.0 364.4,636.2 364.4,584.7 283.6,584.7 283.6,491.8 310.0,505.9 321.7,560.5 332.6,580.7 350.4,617.0 366.7,627.1 375.3,619.0 386.2,626.1 392.4,691.8 360.5,710.9 351.2,723.1 329.4,740.2 313.1,773.6 292.9,787.7 286.7,817.0 257.2,825.1 256.4,839.2 229.2,835.2 219.1,825.1 202.8,838.2 193.5,839.2 176.4,823.0 174.0,807.9 145.3,830.1 125.9,839.2 111.9,847.3 101.0,870.5 85.5,874.5 80.0,885.6 49.7,893.7 38.9,899.8"/>
-    </svg>
-
-    <!-- Labels that appear on hover -->
-    <div class="map-label" id="label-ny" style="color:var(--blue)">
-        <div class="map-label-name">New York</div>
-        <div class="map-label-stat">140,843 sales · 1,222 ZIPs</div>
+        <a href="map.html">
+        <polygon class="state-shape va" id="shape-va"
+          points="38.9,899.8 80.0,900.8 121.2,900.8 166.3,905.8 193.5,900.8 219.1,902.8 258.7,903.8 300.7,905.8 326.3,905.8 362.1,905.8 420.4,905.8 455.3,905.8 498.8,905.8 544.7,904.8 589.0,904.8 633.3,904.8 644.9,904.8 651.9,938.2 668.2,973.5 637.1,924.0 631.7,918.0 603.7,901.8 588.2,862.4 613.8,846.3 603.7,836.2 616.9,826.1 592.9,797.8 608.4,789.7 611.5,774.6 587.4,743.3 593.6,705.9 578.9,701.9 564.1,668.5 553.2,673.6 550.9,686.7 536.9,703.9 532.2,720.0 539.2,724.1 553.2,719.0 550.1,689.7 554.0,678.6 557.9,672.6 554.0,656.4 547.8,629.1 531.5,625.1 521.4,634.2 512.8,627.1 501.2,625.1 491.8,596.8 446.0,594.8 394.7,610.0 364.4,636.2 364.4,584.7 283.6,584.7 283.6,491.8 310.0,505.9 321.7,560.5 332.6,580.7 350.4,617.0 366.7,627.1 375.3,619.0 386.2,626.1 392.4,691.8 360.5,710.9 351.2,723.1 329.4,740.2 313.1,773.6 292.9,787.7 286.7,817.0 257.2,825.1 256.4,839.2 229.2,835.2 219.1,825.1 202.8,838.2 193.5,839.2 176.4,823.0 174.0,807.9 145.3,830.1 125.9,839.2 111.9,847.3 101.0,870.5 85.5,874.5 80.0,885.6 49.7,893.7 38.9,899.8" />
+        </a>
+        <text class="state-label" id="label-va" x="417.2" y="778.6">VIRGINIA</text>
+      </svg>
     </div>
-    <div class="map-label" id="label-md" style="color:var(--green)">
-        <div class="map-label-name">Maryland</div>
-        <div class="map-label-stat">25,846 sales · 351 ZIPs</div>
-    </div>
-    <div class="map-label" id="label-va" style="color:var(--orange)">
-        <div class="map-label-name">Virginia</div>
-        <div class="map-label-stat">34,768 sales · 6,322 orders</div>
-    </div>
-
-    <!-- Pulse dots at state centers -->
-    <div class="pulse-dot" id="dot-ny" style="color:var(--blue);background:var(--blue)"></div>
-    <div class="pulse-dot" id="dot-md" style="color:var(--green);background:var(--green)"></div>
-    <div class="pulse-dot" id="dot-va" style="color:var(--orange);background:var(--orange)"></div>
-
-    <!-- Tooltip -->
-    <div class="tooltip" id="tooltip"></div>
-</div>
-
+  </div>
 </div>
 
 <script>
-// ═══ STATE MAP DATA ═══
-const stateData = {
-    ny: { center: [673.7, 263.6], label: 'New York', color: 'var(--blue)',
-          stats: { Sales: '140,843', ZIPs: '1,222', Utilities: '5', Status: 'Active' } },
-    md: { center: [580.4, 657.4], label: 'Maryland', color: 'var(--green)',
-          stats: { Sales: '25,846', ZIPs: '351', Utilities: '4', Status: 'Active' } },
-    va: { center: [417.2, 778.6], label: 'Virginia', color: 'var(--orange)',
-          stats: { Sales: '34,768', Orders: '6,322', ZIPs: '214', Status: 'Active' } }
-};
-
-const svg = document.getElementById('mapSvg');
-const canvas = document.getElementById('mapCanvas');
-const tooltip = document.getElementById('tooltip');
-
-// Position labels and dots based on SVG coordinates
-function positionOverlays() {
-    const rect = svg.getBoundingClientRect();
-    const vb = svg.viewBox.baseVal;
-    const sx = rect.width / vb.width;
-    const sy = rect.height / vb.height;
-    const scale = Math.min(sx, sy);
-    const ox = rect.left + (rect.width - vb.width * scale) / 2;
-    const oy = rect.top + (rect.height - vb.height * scale) / 2;
-
-    Object.entries(stateData).forEach(([key, d]) => {
-        const px = ox + d.center[0] * scale - canvas.getBoundingClientRect().left;
-        const py = oy + d.center[1] * scale - canvas.getBoundingClientRect().top;
-
-        const label = document.getElementById('label-' + key);
-        label.style.left = px + 'px';
-        label.style.top = (py - 30) + 'px';
-        label.style.transform = 'translate(-50%, -100%)';
-
-        const dot = document.getElementById('dot-' + key);
-        dot.style.left = (px - 4) + 'px';
-        dot.style.top = (py - 4) + 'px';
-    });
+function highlight(state) {
+  document.getElementById('shape-' + state).classList.add('active');
+  document.getElementById('label-' + state).classList.add('active');
+}
+function unhighlight(state) {
+  document.getElementById('shape-' + state).classList.remove('active');
+  document.getElementById('label-' + state).classList.remove('active');
 }
 
-window.addEventListener('resize', positionOverlays);
-setTimeout(positionOverlays, 50);
-
-// ═══ HOVER INTERACTIONS ═══
-let activeState = null;
-
-function highlightState(key) {
-    activeState = key;
-    // Highlight polygon
-    document.querySelectorAll('.state-poly').forEach(p => p.classList.remove('highlight'));
-    const poly = document.querySelector('.state-poly.' + key);
-    if (poly) poly.classList.add('highlight');
-
-    // Show label + dot
-    document.querySelectorAll('.map-label').forEach(l => l.classList.remove('show'));
-    document.querySelectorAll('.pulse-dot').forEach(d => d.classList.remove('show'));
-    document.getElementById('label-' + key).classList.add('show');
-    document.getElementById('dot-' + key).classList.add('show');
-
-    // Highlight list item
-    document.querySelectorAll('.state-item').forEach(i => i.classList.remove('active'));
-    const item = document.querySelector('.state-item[data-state="' + key + '"]');
-    if (item) item.classList.add('active');
-}
-
-function clearHighlight() {
-    activeState = null;
-    document.querySelectorAll('.state-poly').forEach(p => p.classList.remove('highlight'));
-    document.querySelectorAll('.map-label').forEach(l => l.classList.remove('show'));
-    document.querySelectorAll('.pulse-dot').forEach(d => d.classList.remove('show'));
-    document.querySelectorAll('.state-item').forEach(i => i.classList.remove('active'));
-}
-
-// SVG polygon hover/click
-document.querySelectorAll('.state-poly').forEach(poly => {
-    poly.addEventListener('mouseenter', () => {
-        highlightState(poly.dataset.state);
-    });
-    poly.addEventListener('mouseleave', () => {
-        clearHighlight();
-    });
-    poly.addEventListener('click', () => {
-        window.location.href = poly.dataset.href;
-    });
-
-    // Tooltip on move
-    poly.addEventListener('mousemove', (e) => {
-        const d = stateData[poly.dataset.state];
-        let html = `<div class="tooltip-title" style="color:${d.color}">${d.label}</div>`;
-        Object.entries(d.stats).forEach(([k, v]) => {
-            html += `<div class="tooltip-row"><span>${k}</span><b>${v}</b></div>`;
-        });
-        html += `<div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">Click to open →</div>`;
-        tooltip.innerHTML = html;
-        tooltip.style.left = (e.clientX + 16) + 'px';
-        tooltip.style.top = (e.clientY - 10) + 'px';
-        tooltip.classList.add('show');
-    });
+// Cross-highlight: hovering SVG highlights the card too
+['ny','md','va'].forEach(s => {
+  const shape = document.getElementById('shape-' + s);
+  const cards = document.querySelectorAll(`[data-state="${s}"]`);
+  shape.addEventListener('mouseenter', () => {
+    cards.forEach(c => c.classList.add('hover'));
+    highlight(s);
+  });
+  shape.addEventListener('mouseleave', () => {
+    cards.forEach(c => c.classList.remove('hover'));
+    unhighlight(s);
+  });
 });
 
-canvas.addEventListener('mouseleave', () => {
-    tooltip.classList.remove('show');
-    if (!activeState) clearHighlight();
-});
-canvas.addEventListener('mousemove', (e) => {
-    if (!e.target.classList.contains('state-poly')) {
-        tooltip.classList.remove('show');
-    }
-});
-
-// Initial gentle pulse animation
-function animateEntry() {
-    const keys = ['ny', 'md', 'va'];
-    keys.forEach((key, i) => {
-        setTimeout(() => {
-            highlightState(key);
-            setTimeout(() => { if (activeState === key) clearHighlight(); }, 800);
-        }, 400 + i * 600);
-    });
-}
-setTimeout(animateEntry, 300);
+// Add hover class styling dynamically
+const style = document.createElement('style');
+style.textContent = `.state-card.hover{transform:translateX(4px);border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);} .state-card.hover .arrow{opacity:1;transform:translateX(0);}`;
+document.head.appendChild(style);
 </script>
-
 </body>
 </html>

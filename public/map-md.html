@@ -568,6 +568,7 @@
                             if (isTarget) {
                                 const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
                                 popup += `<br><span style="color:${uc};font-weight:bold;">${lmi.util}</span>`;
+                                popup += `<br>LMI: ${lmi.lmi}% | EH: ${lmi.eh}% | Income: $${lmi.income.toLocaleString()}`;
                             }
                             layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
 
