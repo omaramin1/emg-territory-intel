@@ -175,10 +175,11 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffa726;"></div><span class="toggle-label">💰 Income Per Capita</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (≤80% AMI)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('countyRoutes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffffff;"></div><span class="toggle-label">🗺 County Boundaries</span></label>
             </div>
 
             <div class="toggle-section">
@@ -245,12 +246,9 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">💰 Income Per Capita (toggle on)</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f;"></div> &lt;$20K — Critical</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#f57c00;"></div> $28-35K — Low</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#ffcc02;"></div> $42-50K — Near Avg</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#66bb6a;"></div> $60-75K — Above Avg</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#1b5e20;"></div> $100K+ — Very High</div>
+                <div class="legend-section-title">💰 LMI Income (≤80% AMI)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e53935;"></div> ≤$31,073 — LMI-Eligible</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#1e88e5;"></div> &gt;$31,073 — Above Threshold</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
@@ -264,6 +262,10 @@
                 <div class="legend-section-title">EH Zones</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ff2222;border-width:4px;border-style:dashed;"></div> EH ≥ 50% — Critical</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ff6644;border-style:dashed;"></div> EH 35–49% — High</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">County Boundaries</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ffffff;border-style:dashed;"></div> County lines (white)</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">Utility Territories</div>
@@ -310,7 +312,8 @@
             oruArea: L.featureGroup(),
             rgeArea: L.featureGroup(),
             targetZones: L.featureGroup(),
-            priorityHighlight: L.featureGroup()
+            priorityHighlight: L.featureGroup(),
+            countyRoutes: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -326,14 +329,14 @@
         });
 
         // All ON except income/race overlays
-        const defaultOffLayers = ['incomeOverlay', 'raceOverlay'];
+        const defaultOffLayers = ['raceOverlay'];
         Object.entries(fg).forEach(([name, g]) => { if (!defaultOffLayers.includes(name)) g.addTo(map); });
         salesCluster.addTo(map);
 
         const layerMap = {
             zipZones: fg.zipZones, incomeOverlay: fg.incomeOverlay, raceOverlay: fg.raceOverlay,
             ehZones: fg.ehZones, sales: salesCluster, targets: fg.targetZones,
-            priorityHighlight: fg.priorityHighlight,
+            priorityHighlight: fg.priorityHighlight, countyRoutes: fg.countyRoutes,
             nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
             oru: fg.oruArea, rge: fg.rgeArea
         };
@@ -355,13 +358,19 @@
         function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
 
         // ── Color functions ──
+        const LMI_THRESHOLD = 31073;
         function getIncomeColor(inc) {
             if (inc <= 0) return '#555';
-            if (inc < 20000) return '#d32f2f'; if (inc < 28000) return '#e64a19';
-            if (inc < 35000) return '#f57c00'; if (inc < 42000) return '#ffa726';
-            if (inc < 50000) return '#ffcc02'; if (inc < 60000) return '#c0ca33';
-            if (inc < 75000) return '#66bb6a'; if (inc < 100000) return '#2e7d32';
-            return '#1b5e20';
+            return inc <= LMI_THRESHOLD ? '#e53935' : '#1e88e5';
+        }
+
+        function getIncomeOpacity(inc) {
+            return inc > 0 ? 0.50 : 0;
+        }
+
+        function getIncomeLabel(inc) {
+            if (inc <= 0) return 'No data';
+            return inc <= LMI_THRESHOLD ? '🔴 LMI-Eligible (≤80% AMI)' : '🔵 Above 80% AMI';
         }
 
         function getRaceDominant(d) {
@@ -568,6 +577,27 @@
             }
         }
 
+        // ── LOAD COUNTY BOUNDARIES ──
+        async function loadCountyBoundaries() {
+            try {
+                const resp = await fetch('ny_counties.geojson');
+                if (!resp.ok) return;
+                const counties = await resp.json();
+                L.geoJSON(counties, {
+                    style: { fillColor: 'transparent', fillOpacity: 0, color: '#ffffff', weight: 1.8, opacity: 0.55, dashArray: '6, 4' },
+                    onEachFeature: (feature, layer) => {
+                        const name = feature.properties.NAME || '';
+                        const bounds = layer.getBounds();
+                        const center = bounds.getCenter();
+                        L.marker(center, {
+                            icon: L.divIcon({ className: 'zone-label', html: '<span style="color:#fff;font-size:11px;opacity:0.7;background:rgba(0,0,0,0.5);padding:1px 5px;border-radius:3px;font-weight:600;">' + name + '</span>', iconSize: [100, 16], iconAnchor: [50, 8] }),
+                            interactive: false
+                        }).addTo(fg.countyRoutes);
+                    }
+                }).addTo(fg.countyRoutes);
+            } catch(e) { console.error('County boundaries error:', e); }
+        }
+
         // ── LOAD SALES DATA ──
         async function loadSalesData() {
             try {
@@ -756,6 +786,7 @@
             try {
                 loadUtilityTerritories();
                 await loadZipBoundaries();
+                await loadCountyBoundaries();
                 await loadSalesData();
                 loadTargetZones();
                 updateLoading('Complete', 100);

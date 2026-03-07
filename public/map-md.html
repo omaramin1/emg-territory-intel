@@ -199,11 +199,12 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffa726;"></div><span class="toggle-label">💰 Income Per Capita</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (≤80% AMI)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('countyRoutes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffffff;"></div><span class="toggle-label">🗺 County Boundaries</span></label>
             </div>
 
             <div class="toggle-section">
@@ -272,12 +273,10 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">💰 Income Per Capita (toggle on)</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f;"></div> &lt;$20K — Critical</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#f57c00;"></div> $28-35K — Low</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#ffcc02;"></div> $42-50K — Near Avg</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#66bb6a;"></div> $60-75K — Above Avg</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#1b5e20;"></div> $100K+ — Very High</div>
+                <div class="legend-section-title">💰 LMI Income (≤80% AMI)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e53935;"></div> ≤80% AMI — LMI-Eligible ($≤40K)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#1e88e5;"></div> &gt;80% AMI — Above Threshold</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#555;"></div> No income data</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
@@ -301,6 +300,10 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#66aaff;"></div> Section 8</div>
                 <div class="legend-item"><div class="legend-circle" style="background:#ffcc66;"></div> Senior Housing</div>
                 <div class="legend-item"><div class="legend-circle" style="background:#00ddff;"></div> Mobile Home</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">County Boundaries</div>
+                <div class="legend-item"><div class="legend-line" style="border-color:#ffffff;border-width:1px;"></div> County lines + labels</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">Utility Territories</div>
@@ -356,7 +359,8 @@
             hldArea: L.featureGroup(),
             housingPins: L.featureGroup(),
             targetZones: L.featureGroup(),
-            priorityHighlight: L.featureGroup()
+            priorityHighlight: L.featureGroup(),
+            countyRoutes: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -376,7 +380,7 @@
         });
 
         // All on by default EXCEPT data overlays (income, race) — user toggles these
-        const defaultOffLayers = ['incomeOverlay', 'raceOverlay'];
+        const defaultOffLayers = ['raceOverlay'];
         Object.entries(fg).forEach(([name, g]) => {
             if (!defaultOffLayers.includes(name)) g.addTo(map);
         });
@@ -398,7 +402,8 @@
             potomac: fg.potomacArea,
             delmarva: fg.delmarvaArea,
             smeco: fg.smecoArea,
-            hld: fg.hldArea
+            hld: fg.hldArea,
+            countyRoutes: fg.countyRoutes
         };
 
         function toggleLayer(name, on) {
@@ -423,35 +428,20 @@
         function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('active'); }
         function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
 
-        // ── Income Per Capita Color Ramp ──
-        // Sequential ramp: deep red (very low) → orange → yellow → green → bright green (high)
+        // ── LMI Income Threshold (Binary 80% AMI) ──
+        // MD median per capita income: $50,140 → 80% threshold: $40,112
+        const LMI_THRESHOLD = 40112;
         function getIncomeColor(inc) {
             if (inc <= 0) return '#555';
-            if (inc < 20000) return '#d32f2f';     // < $20K — critical poverty
-            if (inc < 28000) return '#e64a19';     // $20-28K — very low
-            if (inc < 35000) return '#f57c00';     // $28-35K — low
-            if (inc < 42000) return '#ffa726';     // $35-42K — below average
-            if (inc < 50000) return '#ffcc02';     // $42-50K — approaching average
-            if (inc < 60000) return '#c0ca33';     // $50-60K — moderate
-            if (inc < 75000) return '#66bb6a';     // $60-75K — above average
-            if (inc < 100000) return '#2e7d32';    // $75-100K — high
-            return '#1b5e20';                       // $100K+ — very high
+            return inc <= LMI_THRESHOLD ? '#e53935' : '#1e88e5';  // Red = LMI-eligible, Blue = above threshold
         }
         function getIncomeOpacity(inc) {
             if (inc <= 0) return 0.05;
-            return 0.45;
+            return 0.50;
         }
         function getIncomeLabel(inc) {
             if (inc <= 0) return 'No data';
-            if (inc < 20000) return '🔴 Critical (<$20K)';
-            if (inc < 28000) return '🟠 Very Low ($20-28K)';
-            if (inc < 35000) return '🟠 Low ($28-35K)';
-            if (inc < 42000) return '🟡 Below Avg ($35-42K)';
-            if (inc < 50000) return '🟡 Near Avg ($42-50K)';
-            if (inc < 60000) return '🟢 Moderate ($50-60K)';
-            if (inc < 75000) return '🟢 Above Avg ($60-75K)';
-            if (inc < 100000) return '💚 High ($75-100K)';
-            return '💎 Very High ($100K+)';
+            return inc <= LMI_THRESHOLD ? '🔴 LMI-Eligible (≤80% AMI)' : '🔵 Above 80% AMI';
         }
 
         // ── Race/Ethnicity Dominant Group ──
@@ -1289,6 +1279,7 @@
                 await loadSalesData();
                 loadHousingPins();
                 loadTargetZones();
+                loadCountyBoundaries();
                 updateLoading('Complete', 100);
                 setTimeout(hideLoading, 500);
             } catch (e) {
@@ -1298,6 +1289,40 @@
         }
         loadAllData();
         document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
+
+        // ── LOAD COUNTY BOUNDARIES ──
+        async function loadCountyBoundaries() {
+            try {
+                const resp = await fetch('md_counties.geojson');
+                if (!resp.ok) return;
+                const counties = await resp.json();
+                L.geoJSON(counties, {
+                    style: {
+                        fillColor: 'transparent',
+                        fillOpacity: 0,
+                        color: '#ffffff',
+                        weight: 1.8,
+                        opacity: 0.55,
+                        dashArray: '6, 4'
+                    },
+                    onEachFeature: (feature, layer) => {
+                        const name = feature.properties.NAME || '';
+                        const bounds = layer.getBounds();
+                        const center = bounds.getCenter();
+                        L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'zone-label',
+                                html: '<span style="color:#fff;font-size:11px;opacity:0.7;background:rgba(0,0,0,0.5);padding:1px 5px;border-radius:3px;font-weight:600;">' + name + '</span>',
+                                iconSize: [100, 16],
+                                iconAnchor: [50, 8]
+                            }),
+                            interactive: false
+                        }).addTo(fg.countyRoutes);
+                    }
+                }).addTo(fg.countyRoutes);
+                console.log('County boundaries loaded:', counties.features.length);
+            } catch(e) { console.error('County boundaries error:', e); }
+        }
     </script>
 </body>
 </html>
