@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMG Targeting Map - Maryland Territory</title>
+    <title>EMG Targeting Map - Maryland / DC Territory</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
@@ -171,7 +171,7 @@
     <div id="map"></div>
 
     <div class="header">
-        <h1>EMG Targeting Map — Maryland</h1>
+        <h1>EMG Targeting Map — Maryland / DC</h1>
         <div class="sub">
             <span class="utility-badge badge-pepco">PEPCO</span>
             <span class="utility-badge badge-bge">BGE</span>
@@ -316,7 +316,7 @@
 
     <div class="loading-screen" id="loadingScreen">
         <div class="spinner"></div>
-        <div class="loading-text">Loading Maryland territory data...</div>
+        <div class="loading-text">Loading Maryland / DC territory data...</div>
         <div class="loading-progress"><div class="loading-bar" id="loadingBar"></div></div>
         <div class="loading-text" id="loadingStatus">Initializing...</div>
     </div>
@@ -753,7 +753,7 @@
         // ── LOAD SALES DATA ──
         async function loadSalesData() {
             try {
-                updateLoading('Loading 25,000+ sales records...', 40);
+                updateLoading('Loading 25,900+ sales records...', 40);
                 const resp = await fetch('md_sales.json');
                 if (!resp.ok) throw new Error('No sales data');
                 salesData = await resp.json();
