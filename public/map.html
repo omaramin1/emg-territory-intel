@@ -501,7 +501,8 @@
             allElectricPins: L.featureGroup(),
             countyRoutes: L.featureGroup(),
             autoQualifyZones: L.featureGroup(),
-            housingConcentration: L.featureGroup()
+            housingConcentration: L.featureGroup(),
+            canvassingRoutes: L.featureGroup()
         };
 
         // LMI Thresholds by ZIP code
@@ -524,7 +525,8 @@
                 'High Usage Areas': featureGroups.highUsage,
                 'County Boundaries': featureGroups.countyRoutes,
                 '🎯 Auto-Qualify Tracts': featureGroups.autoQualifyZones,
-                '🏢 Apt/Mobile Concentrations': featureGroups.housingConcentration
+                '🏢 Apt/Mobile Concentrations': featureGroups.housingConcentration,
+                '🚶 Canvassing Routes': featureGroups.canvassingRoutes
             },
             { position: 'bottomright' }
         );
@@ -540,6 +542,7 @@
         featureGroups.salesOrders.addTo(map);
         featureGroups.autoQualifyZones.addTo(map);
         featureGroups.housingConcentration.addTo(map);
+        featureGroups.canvassingRoutes.addTo(map);
 
         // Loading functions
         function updateLoading(status, progress) {
@@ -1143,6 +1146,59 @@
         // Load County Boundaries
 
 
+
+        async function loadCanvassingRoutes() {
+            try {
+                const resp = await fetch('va_routes.geojson');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        const p = feature.properties;
+                        const score = p.sc || 0;
+                        // Color by score: green=high, yellow=medium, red=low
+                        let color = '#ff5252';
+                        if (score >= 70) color = '#00c853';
+                        else if (score >= 50) color = '#ffab00';
+                        else if (score >= 30) color = '#ff6d00';
+                        return {
+                            fillColor: color,
+                            fillOpacity: 0.25,
+                            color: color,
+                            weight: 1.5,
+                            opacity: 0.7
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const p = feature.properties;
+                        const loc = p.loc || '';
+                        const score = p.sc || 0;
+                        const hh = p.hh || 0;
+                        const lmi = p.lm || 0;
+                        const eh = p.eh || 0;
+                        const coverage = p.cv || 0;
+                        const kw = p.kw || 0;
+                        const priority = p.p === 'A' ? 'A - Top' : p.p === 'B' ? 'B - High' : p.p === 'C' ? 'C - Medium' : p.p || '';
+                        layer.bindPopup(
+                            '<div style="font-size:12px;line-height:1.5;">' +
+                            '<b style="color:#00c853;">🚶 CANVASSING ROUTE ' + (p.id || '') + '</b><br>' +
+                            '<b>Type:</b> ' + loc + '<br>' +
+                            '<b>Score:</b> ' + score + '/100<br>' +
+                            '<b>Households:</b> ' + hh.toLocaleString() + '<br>' +
+                            '<b>LMI %:</b> ' + lmi + '%<br>' +
+                            '<b>Electric Heat %:</b> ' + eh + '%<br>' +
+                            '<b>Coverage:</b> ' + coverage + '%<br>' +
+                            '<b>Est. kWh:</b> ' + kw.toLocaleString() + '<br>' +
+                            '<b>Priority:</b> ' + priority +
+                            '</div>',
+                            { maxWidth: 280 }
+                        );
+                    }
+                }).addTo(featureGroups.canvassingRoutes);
+                console.log('Canvassing routes loaded: ' + data.features.length + ' routes');
+            } catch(e) { console.error('Routes error:', e); }
+        }
+
         async function loadHousingConcentration() {
             try {
                 const resp = await fetch('va_housing_pins.geojson');
@@ -1274,6 +1330,7 @@
                 await loadSalesZones();
                 await loadSalesOrders();
                 await loadHighUsage();
+                await loadCanvassingRoutes();
                 await loadHousingConcentration();
                 await loadAutoQualifyZones();
                 await loadCountyBoundaries();

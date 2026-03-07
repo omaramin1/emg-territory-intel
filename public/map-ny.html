@@ -178,6 +178,7 @@
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Auto-Qualify Tracts</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('dacZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">⚖️ NY DAC Zones</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
@@ -317,7 +318,8 @@
             priorityHighlight: L.featureGroup(),
             countyRoutes: L.featureGroup(),
             autoQualifyZones: L.featureGroup(),
-            housingConcentration: L.featureGroup()
+            housingConcentration: L.featureGroup(),
+            dacZones: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -343,6 +345,7 @@
             priorityHighlight: fg.priorityHighlight, countyRoutes: fg.countyRoutes,
             autoQualifyZones: fg.autoQualifyZones,
             housingConcentration: fg.housingConcentration,
+            dacZones: fg.dacZones,
             nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
             oru: fg.oruArea, rge: fg.rgeArea
         };
@@ -594,6 +597,47 @@
 
         // ── LOAD COUNTY BOUNDARIES ──
 
+
+
+        async function loadDACZones() {
+            try {
+                const resp = await fetch('ny_dac_zones.geojson');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        const score = feature.properties.score || 0;
+                        const opacity = Math.min(0.5, 0.2 + score / 200);
+                        return {
+                            fillColor: '#9c27b0',
+                            fillOpacity: opacity,
+                            color: '#9c27b0',
+                            weight: 0.8,
+                            opacity: 0.6
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const p = feature.properties;
+                        layer.bindPopup(
+                            '<div style="font-size:12px;line-height:1.5;">' +
+                            '<b style="color:#9c27b0;">⚖️ DISADVANTAGED COMMUNITY</b><br>' +
+                            '<b>County:</b> ' + (p.county || '') + '<br>' +
+                            '<b>City/Town:</b> ' + (p.city || '') + '<br>' +
+                            '<b>Region:</b> ' + (p.region || '') + '<br>' +
+                            '<b>Type:</b> ' + (p.urban_rural || '') + '<br>' +
+                            '<b>Combined Score:</b> ' + (p.score || 0) + '<br>' +
+                            '<b>Environmental Burden:</b> ' + (p.burden || 0) + '<br>' +
+                            '<b>Vulnerability:</b> ' + (p.vulnerability || 0) + '<br>' +
+                            '<b>LMI % (80% AMI):</b> ' + (p.lmi_pct || 0) + '%<br>' +
+                            '<b>Population:</b> ' + (p.pop || 0).toLocaleString() +
+                            '</div>',
+                            { maxWidth: 280 }
+                        );
+                    }
+                }).addTo(fg.dacZones);
+                console.log('NY DAC zones loaded: ' + data.features.length + ' tracts');
+            } catch(e) { console.error('DAC zones error:', e); }
+        }
 
         async function loadHousingConcentration() {
             try {
@@ -880,6 +924,7 @@
             try {
                 loadUtilityTerritories();
                 await loadZipBoundaries();
+                await loadDACZones();
                 await loadHousingConcentration();
                 await loadAutoQualifyZones();
                 await loadCountyBoundaries();
