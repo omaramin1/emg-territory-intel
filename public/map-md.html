@@ -199,7 +199,7 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (≤80% AMI)</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
@@ -273,9 +273,9 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">💰 LMI Income (≤80% AMI)</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#e53935;"></div> ≤80% AMI — LMI-Eligible ($≤40K)</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#1e88e5;"></div> &gt;80% AMI — Above Threshold</div>
+                <div class="legend-section-title">💰 LMI Income (≤80% County AMI)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#e53935;"></div> ≤80% of County Median — LMI</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#1e88e5;"></div> &gt;80% of County Median</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#555;"></div> No income data</div>
             </div>
             <div class="legend-section">
@@ -428,20 +428,31 @@
         function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('active'); }
         function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
 
-        // ── LMI Income Threshold (Binary 80% AMI) ──
-        // MD median per capita income: $50,140 → 80% threshold: $40,112
-        const LMI_THRESHOLD = 40112;
-        function getIncomeColor(inc) {
+        // ── LMI Income Threshold (Binary 80% of COUNTY Median) ──
+        // Each ZIP's threshold = 80% of its county's median per capita income
+        // Loaded from md_lmi_thresholds.json: { zip: { c: countyName, t: threshold } }
+        let lmiThresholds = {};  // Populated on load
+        function getZipThreshold(zip) {
+            const entry = lmiThresholds[zip];
+            return entry ? entry.t : 40112;  // fallback to state-level if no county data
+        }
+        function getIncomeColor(inc, zip) {
             if (inc <= 0) return '#555';
-            return inc <= LMI_THRESHOLD ? '#e53935' : '#1e88e5';  // Red = LMI-eligible, Blue = above threshold
+            const threshold = getZipThreshold(zip);
+            return inc <= threshold ? '#e53935' : '#1e88e5';
         }
         function getIncomeOpacity(inc) {
             if (inc <= 0) return 0.05;
             return 0.50;
         }
-        function getIncomeLabel(inc) {
+        function getIncomeLabel(inc, zip) {
             if (inc <= 0) return 'No data';
-            return inc <= LMI_THRESHOLD ? '🔴 LMI-Eligible (≤80% AMI)' : '🔵 Above 80% AMI';
+            const threshold = getZipThreshold(zip);
+            const entry = lmiThresholds[zip];
+            const county = entry ? entry.c : '';
+            return inc <= threshold
+                ? '🔴 LMI-Eligible (≤80% of ' + county + ' median)'
+                : '🔵 Above 80% AMI (' + county + ')';
         }
 
         // ── Race/Ethnicity Dominant Group ──
@@ -530,15 +541,17 @@
         async function loadZipBoundaries() {
             try {
                 updateLoading('Loading ZIP code boundaries...', 10);
-                const [geoResp, dataResp, demoResp] = await Promise.all([
+                const [geoResp, dataResp, demoResp, lmiResp] = await Promise.all([
                     fetch('md_zip_boundaries.geojson'),
                     fetch('md_zip_data.json'),
-                    fetch('md_demographics.json')
+                    fetch('md_demographics.json'),
+                    fetch('md_lmi_thresholds.json')
                 ]);
                 if (!geoResp.ok) throw new Error('Failed to load boundaries');
                 const boundaries = await geoResp.json();
                 zipSalesData = dataResp.ok ? await dataResp.json() : {};
                 demoData = demoResp.ok ? await demoResp.json() : {};
+                lmiThresholds = lmiResp.ok ? await lmiResp.json() : {};
 
                 updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
 
@@ -572,7 +585,7 @@
                             if (cities) popup += `<br>${cities}`;
                             popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
                             if (dTip && dTip.inc > 0) {
-                                const incCol = getIncomeColor(dTip.inc);
+                                const incCol = getIncomeColor(dTip.inc, zip);
                                 popup += `<br>Income/capita: <b style="color:${incCol};">$${dTip.inc.toLocaleString()}</b>`;
                                 const rDom = getRaceDominant(dTip);
                                 popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
@@ -653,7 +666,7 @@
                     // Income Per Capita choropleth overlay
                     const demo = demoData[zip];
                     if (demo && demo.inc > 0) {
-                        const incColor = getIncomeColor(demo.inc);
+                        const incColor = getIncomeColor(demo.inc, zip);
                         L.geoJSON(feature, {
                             interactive: false,
                             style: {
@@ -670,7 +683,7 @@
                             L.marker(zipCentroids[zip], {
                                 icon: L.divIcon({
                                     className: 'zone-label',
-                                    html: `<span style="color:${incColor};font-size:10px;background:rgba(0,0,0,0.75);padding:1px 4px;border-radius:3px;">$${(demo.inc/1000).toFixed(0)}K</span>`,
+                                    html: `<span style="color:${incColor};font-size:10px;background:rgba(0,0,0,0.75);padding:1px 4px;border-radius:3px;">$${(demo.inc/1000).toFixed(0)}K${lmiThresholds[zip] ? ' / ' + lmiThresholds[zip].c.substring(0,10) : ''}</span>`,
                                     iconSize: [50, 14], iconAnchor: [25, 7]
                                 })
                             }).addTo(fg.incomeOverlay);
