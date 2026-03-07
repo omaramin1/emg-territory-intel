@@ -200,6 +200,8 @@
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Auto-Qualify Tracts</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
@@ -360,7 +362,9 @@
             housingPins: L.featureGroup(),
             targetZones: L.featureGroup(),
             priorityHighlight: L.featureGroup(),
-            countyRoutes: L.featureGroup()
+            countyRoutes: L.featureGroup(),
+            autoQualifyZones: L.featureGroup(),
+            housingConcentration: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -403,7 +407,9 @@
             delmarva: fg.delmarvaArea,
             smeco: fg.smecoArea,
             hld: fg.hldArea,
-            countyRoutes: fg.countyRoutes
+            countyRoutes: fg.countyRoutes,
+            autoQualifyZones: fg.autoQualifyZones,
+            housingConcentration: fg.housingConcentration
         };
 
         function toggleLayer(name, on) {
@@ -1292,6 +1298,8 @@
                 await loadSalesData();
                 loadHousingPins();
                 loadTargetZones();
+                loadHousingConcentration();
+                loadAutoQualifyZones();
                 loadCountyBoundaries();
                 updateLoading('Complete', 100);
                 setTimeout(hideLoading, 500);
@@ -1304,6 +1312,85 @@
         document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
 
         // ── LOAD COUNTY BOUNDARIES ──
+
+
+        async function loadHousingConcentration() {
+            try {
+                const resp = await fetch('md_housing_pins.geojson');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                data.features.forEach(feat => {
+                    const p = feat.properties;
+                    const lat = feat.geometry.coordinates[1];
+                    const lon = feat.geometry.coordinates[0];
+                    const isApt = p.type === 'apt';
+                    const icon = L.divIcon({
+                        className: 'housing-pin',
+                        html: '<div style="font-size:14px;text-shadow:0 0 3px #000;">' + (isApt ? '🏢' : '🏘️') + '</div>',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+                    const marker = L.marker([lat, lon], { icon: icon });
+                    const label = isApt ? 'Apartment Complex Zone' : 'Mobile Home Zone';
+                    const pct = isApt ? p.apt_pct + '% apartments' : p.mobile_pct + '% mobile homes';
+                    marker.bindPopup(
+                        '<div style="font-size:12px;line-height:1.5;">' +
+                        '<b style="color:#ff6d00;">' + (isApt ? '🏢' : '🏘️') + ' ' + label + '</b><br>' +
+                        '<b>Tract:</b> ' + p.GEOID + '<br>' +
+                        '<b>Housing Mix:</b> ' + pct + '<br>' +
+                        '<b>Total Units:</b> ' + (p.total_units || 0).toLocaleString() + '<br>' +
+                        '<span style="color:#ff6d00;font-weight:bold;">HIGH-DENSITY TARGET</span>' +
+                        '</div>',
+                        { maxWidth: 250 }
+                    );
+                    marker.addTo(fg.housingConcentration);
+                });
+                console.log('Housing concentration pins loaded: ' + data.features.length);
+            } catch(e) { console.error('Housing pins error:', e); }
+        }
+
+        async function loadAutoQualifyZones() {
+            try {
+                const resp = await fetch('md_auto_qualify.geojson');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        const pct = feature.properties.pct_of_median || 80;
+                        // Deeper color = lower income relative to county median
+                        const opacity = Math.min(0.55, 0.25 + (80 - pct) / 100);
+                        return {
+                            fillColor: '#ff6d00',
+                            fillOpacity: opacity,
+                            color: '#ff6d00',
+                            weight: 1.2,
+                            opacity: 0.7
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const p = feature.properties;
+                        const inc = p.inc ? '$' + p.inc.toLocaleString() : 'N/A';
+                        const thresh = p.threshold ? '$' + p.threshold.toLocaleString() : 'N/A';
+                        const pct = p.pct_of_median ? p.pct_of_median + '%' : 'N/A';
+                        const pop = p.pop ? p.pop.toLocaleString() : 'N/A';
+                        layer.bindPopup(
+                            '<div style="font-size:12px;line-height:1.5;">' +
+                            '<b style="color:#ff6d00;">AUTO-QUALIFY TRACT</b><br>' +
+                            '<b>County:</b> ' + (p.county || 'Unknown') + '<br>' +
+                            '<b>Tract:</b> ' + (p.GEOID || '') + '<br>' +
+                            '<b>Per Capita Income:</b> ' + inc + '<br>' +
+                            '<b>County 80% Threshold:</b> ' + thresh + '<br>' +
+                            '<b>% of County Median:</b> ' + pct + '<br>' +
+                            '<b>Population:</b> ' + pop +
+                            '</div>',
+                            { maxWidth: 280 }
+                        );
+                    }
+                }).addTo(fg.autoQualifyZones);
+                console.log('Auto-qualify zones loaded: ' + data.features.length + ' tracts');
+            } catch(e) { console.error('Auto-qualify zones error:', e); }
+        }
+
         async function loadCountyBoundaries() {
             try {
                 const resp = await fetch('md_counties.geojson');
