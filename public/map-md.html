@@ -200,7 +200,7 @@
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Auto-Qualify Tracts</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
@@ -279,6 +279,13 @@
                 <div class="legend-item"><div class="legend-swatch" style="background:#e53935;"></div> ≤80% of County Median — LMI</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#1e88e5;"></div> &gt;80% of County Median</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#555;"></div> No income data</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">🎯 Target Zones — Rep Assignment</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff6d00;"></div> 🟠 Hispanic — Spanish rep</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#7c4dff;"></div> 🟣 Black — Black rep</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#2196f3;"></div> 🔵 White — White rep</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffd600;"></div> 🟡 Mixed — Bilingual rep</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
@@ -1355,14 +1362,19 @@
                 if (!resp.ok) return;
                 const data = await resp.json();
                 L.geoJSON(data, {
+
                     style: function(feature) {
+                        const demo = feature.properties.demo || 'mixed';
+                        let fillColor = '#ffd600'; // mixed default
+                        if (demo === 'hispanic') fillColor = '#ff6d00';
+                        else if (demo === 'black') fillColor = '#7c4dff';
+                        else if (demo === 'white') fillColor = '#2196f3';
                         const pct = feature.properties.pct_of_median || 80;
-                        // Deeper color = lower income relative to county median
                         const opacity = Math.min(0.55, 0.25 + (80 - pct) / 100);
                         return {
-                            fillColor: '#ff6d00',
+                            fillColor: fillColor,
                             fillOpacity: opacity,
-                            color: '#ff6d00',
+                            color: fillColor,
                             weight: 1.2,
                             opacity: 0.7
                         };
@@ -1373,9 +1385,20 @@
                         const thresh = p.threshold ? '$' + p.threshold.toLocaleString() : 'N/A';
                         const pct = p.pct_of_median ? p.pct_of_median + '%' : 'N/A';
                         const pop = p.pop ? p.pop.toLocaleString() : 'N/A';
+                        const demo = p.demo || 'mixed';
+                        const demoLabel = demo === 'hispanic' ? '🟠 HISPANIC/SPANISH' :
+                                          demo === 'black' ? '🟣 BLACK/AA' :
+                                          demo === 'white' ? '🔵 WHITE' : '🟡 MIXED';
+                        const repType = demo === 'hispanic' ? 'Spanish-speaking rep' :
+                                        demo === 'black' ? 'Black rep' :
+                                        demo === 'white' ? 'White rep' : 'Bilingual/diverse rep';
                         layer.bindPopup(
                             '<div style="font-size:12px;line-height:1.5;">' +
-                            '<b style="color:#ff6d00;">AUTO-QUALIFY TRACT</b><br>' +
+                            '<b style="color:' + (demo==='hispanic'?'#ff6d00':demo==='black'?'#7c4dff':demo==='white'?'#2196f3':'#ffd600') + ';">AUTO-QUALIFY TRACT</b><br>' +
+                            '<b>Demographics:</b> ' + demoLabel + '<br>' +
+                            '<b>Hispanic:</b> ' + (p.h_pct || 0) + '% | <b>Black:</b> ' + (p.b_pct || 0) + '% | <b>White:</b> ' + (p.w_pct || 0) + '%<br>' +
+                            '<b>Send:</b> <span style="font-weight:bold;color:#00e676;">' + repType + '</span><br>' +
+                            '<hr style="margin:4px 0;border-color:#444;">' +
                             '<b>County:</b> ' + (p.county || 'Unknown') + '<br>' +
                             '<b>Tract:</b> ' + (p.GEOID || '') + '<br>' +
                             '<b>Per Capita Income:</b> ' + inc + '<br>' +
@@ -1383,7 +1406,7 @@
                             '<b>% of County Median:</b> ' + pct + '<br>' +
                             '<b>Population:</b> ' + pop +
                             '</div>',
-                            { maxWidth: 280 }
+                            { maxWidth: 300 }
                         );
                     }
                 }).addTo(fg.autoQualifyZones);
