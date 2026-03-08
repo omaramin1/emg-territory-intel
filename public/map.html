@@ -125,6 +125,19 @@
             box-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
         }
 
+        /* ── TARGET SUMMARY PANEL ── */
+        .target-summary { position: absolute; right: 10px; bottom: 60px; z-index: 1100; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #00bcd4; backdrop-filter: blur(10px); width: 280px; max-height: 380px; overflow-y: auto; }
+        .target-summary h4 { color: #00bcd4; font-size: 12px; cursor: pointer; user-select: none; margin: 0; display: flex; justify-content: space-between; align-items: center; }
+        .target-summary h4 .arrow { transition: transform 0.2s; font-size: 10px; }
+        .target-summary.panel-minimized h4 .arrow { transform: rotate(-90deg); }
+        .target-summary .panel-body { margin-top: 8px; }
+        .util-group { margin-bottom: 8px; }
+        .util-header { color: #00bcd4; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 6px; background: rgba(0,188,212,0.1); border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .util-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; padding: 2px 6px; font-size: 10px; color: #bbb; }
+        .util-stats b { color: #fff; }
+        .demo-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 4px 6px; }
+        .demo-bar div { transition: width 0.3s; }
+
         .legend-panel {
             position: absolute;
             bottom: 10px;
@@ -342,6 +355,12 @@
         <h3>Lock Area Search</h3>
         <input type="text" id="searchInput" placeholder="Search by city name...">
         <button class="lock-area-button" onclick="searchZones()">Search Zones</button>
+    </div>
+
+    <!-- ── TARGET ZONE SUMMARY (by County) ── -->
+    <div class="target-summary" id="targetSummary" style="display:none;">
+        <h4 onclick="document.getElementById('targetSummary').classList.toggle('panel-minimized')">📊 Target Zones by County <span class="arrow">▼</span></h4>
+        <div class="panel-body" id="targetSummaryBody"></div>
     </div>
 
     <div class="legend-panel" id="legendPanel">
@@ -1252,62 +1271,110 @@
             } catch(e) { console.error('Housing pins error:', e); }
         }
 
+
+        function buildFullReport(p, utilityName) {
+            const demo = p.demo || 'mixed';
+            const demoColor = demo==='hispanic'?'#ff6d00':demo==='black'?'#7c4dff':demo==='white'?'#2196f3':'#ffd600';
+            const repType = demo==='hispanic'?'Spanish-speaking rep':demo==='black'?'Black rep':demo==='white'?'White rep':'Bilingual/diverse rep';
+            const fmt = (v) => v != null ? v.toLocaleString() : '—';
+            const fmtD = (v) => v != null ? '$' + v.toLocaleString() : '—';
+            const fmtP = (v) => v != null ? v + '%' : '—';
+            const ehScore = Math.min((p.eh_pct || 0) / 50 * 30, 30);
+            const incScore = Math.min(Math.max(80 - (p.pct_of_median || 80), 0) / 40 * 25, 25);
+            const rentScore = Math.min((p.rent_pct || 0) / 80 * 20, 20);
+            const popScore = Math.min((p.hh || 0) / 3000 * 15, 15);
+            const aptScore = Math.min((p.apt_pct || 0) / 50 * 10, 10);
+            const totalScore = Math.round(ehScore + incScore + rentScore + popScore + aptScore);
+            const scoreColor = totalScore >= 70 ? '#00e676' : totalScore >= 50 ? '#ffab00' : totalScore >= 30 ? '#ff6d00' : '#ff1744';
+            const scoreLabel = totalScore >= 70 ? 'A — TOP TARGET' : totalScore >= 50 ? 'B — STRONG' : totalScore >= 30 ? 'C — MODERATE' : 'D — LOW';
+            return '<div style="font-size:11px;line-height:1.4;min-width:280px;max-width:320px;">' +
+                '<div style="background:' + demoColor + ';color:#fff;padding:6px 10px;margin:-14px -20px 8px -20px;border-radius:4px 4px 0 0;font-weight:bold;font-size:13px;">AREA INTEL REPORT</div>' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                '<div style="background:#1a1a2e;border:2px solid ' + scoreColor + ';border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                '<span style="color:' + scoreColor + ';font-weight:bold;font-size:16px;">' + totalScore + '</span></div>' +
+                '<div><b style="color:' + scoreColor + ';">' + scoreLabel + '</b><br>' +
+                '<span style="color:#888;font-size:10px;">Composite targeting score</span></div></div>' +
+                '<div style="background:#111;padding:5px 8px;border-radius:4px;margin-bottom:6px;">' +
+                '<b>' + (p.county || 'Unknown') + '</b> — Tract ' + (p.GEOID || '') +
+                (utilityName ? '<br><b style="color:#00bcd4;">' + utilityName + '</b>' : '') + '</div>' +
+                '<div style="background:rgba(' + (demo==='hispanic'?'255,109,0':demo==='black'?'124,77,255':demo==='white'?'33,150,243':'255,214,0') + ',0.15);padding:5px 8px;border-radius:4px;margin-bottom:6px;">' +
+                '<b>Send:</b> <span style="color:' + demoColor + ';font-weight:bold;">' + repType + '</span><br>' +
+                '<span style="font-size:10px;">Hispanic ' + (p.h_pct||0) + '% | Black ' + (p.b_pct||0) + '% | White ' + (p.w_pct||0) + '%</span></div>' +
+                '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+                '<tr style="border-bottom:1px solid #333;"><td style="padding:3px 0;"><b>Households</b></td><td style="text-align:right;">' + fmt(p.hh) + '</td>' +
+                '<td style="padding:3px 0 3px 12px;"><b>Housing Units</b></td><td style="text-align:right;">' + fmt(p.hu) + '</td></tr>' +
+                '<tr style="border-bottom:1px solid #333;"><td style="padding:3px 0;"><b>Population</b></td><td style="text-align:right;">' + fmt(p.pop) + '</td>' +
+                '<td style="padding:3px 0 3px 12px;"><b>Med HH Income</b></td><td style="text-align:right;">' + fmtD(p.med_inc) + '</td></tr>' +
+                '<tr style="border-bottom:1px solid #333;"><td style="padding:3px 0;"><b>Electric Heat</b></td><td style="text-align:right;color:' + ((p.eh_pct||0)>=30?'#ff4444':'#ccc') + ';font-weight:bold;">' + fmtP(p.eh_pct) + '</td>' +
+                '<td style="padding:3px 0 3px 12px;"><b>EH Homes</b></td><td style="text-align:right;">' + fmt(p.eh_n) + '</td></tr>' +
+                '<tr style="border-bottom:1px solid #333;"><td style="padding:3px 0;"><b>Owner</b></td><td style="text-align:right;">' + fmtP(p.own_pct) + '</td>' +
+                '<td style="padding:3px 0 3px 12px;"><b>Renter</b></td><td style="text-align:right;">' + fmtP(p.rent_pct) + '</td></tr>' +
+                '<tr style="border-bottom:1px solid #333;"><td style="padding:3px 0;"><b>Per Cap Income</b></td><td style="text-align:right;">' + fmtD(p.inc) + '</td>' +
+                '<td style="padding:3px 0 3px 12px;"><b>% of Median</b></td><td style="text-align:right;color:#ff4444;">' + fmtP(p.pct_of_median) + '</td></tr>' +
+                '<tr><td style="padding:3px 0;"><b>Apartments</b></td><td style="text-align:right;">' + fmtP(p.apt_pct) + '</td>' +
+                '<td style="padding:3px 0 3px 12px;"><b>Mobile Homes</b></td><td style="text-align:right;">' + fmtP(p.mobile_pct) + '</td></tr>' +
+                '</table>' +
+                '<div style="background:#1a1a2e;padding:4px 8px;border-radius:4px;margin-top:6px;text-align:center;">' +
+                '<span style="color:#ff4444;">AUTO-QUALIFY</span> — Below ' + fmtD(p.threshold) + ' county 80% AMI</div></div>';
+        }
+
+        function getUtilityForPoint(latlng) {
+            // VA utility territories not loaded as separate layers
+            // Could be enhanced with Dominion/APCO boundary data
+            return null;
+        }
+
         async function loadAutoQualifyZones() {
             try {
                 const resp = await fetch('va_auto_qualify.geojson');
                 if (!resp.ok) return;
                 const data = await resp.json();
                 L.geoJSON(data, {
-
                     style: function(feature) {
                         const demo = feature.properties.demo || 'mixed';
-                        let fillColor = '#ffd600'; // mixed default
+                        let fillColor = '#ffd600';
                         if (demo === 'hispanic') fillColor = '#ff6d00';
                         else if (demo === 'black') fillColor = '#7c4dff';
                         else if (demo === 'white') fillColor = '#2196f3';
-                        const pct = feature.properties.pct_of_median || 80;
-                        const opacity = Math.min(0.55, 0.25 + (80 - pct) / 100);
-                        return {
-                            fillColor: fillColor,
-                            fillOpacity: opacity,
-                            color: fillColor,
-                            weight: 1.2,
-                            opacity: 0.7
-                        };
+                        return { fillColor: fillColor, fillOpacity: 0.4, color: fillColor, weight: 1.2, opacity: 0.7 };
                     },
                     onEachFeature: function(feature, layer) {
                         const p = feature.properties;
-                        const inc = p.inc ? '$' + p.inc.toLocaleString() : 'N/A';
-                        const thresh = p.threshold ? '$' + p.threshold.toLocaleString() : 'N/A';
-                        const pct = p.pct_of_median ? p.pct_of_median + '%' : 'N/A';
-                        const pop = p.pop ? p.pop.toLocaleString() : 'N/A';
-                        const demo = p.demo || 'mixed';
-                        const demoLabel = demo === 'hispanic' ? '🟠 HISPANIC/SPANISH' :
-                                          demo === 'black' ? '🟣 BLACK/AA' :
-                                          demo === 'white' ? '🔵 WHITE' : '🟡 MIXED';
-                        const repType = demo === 'hispanic' ? 'Spanish-speaking rep' :
-                                        demo === 'black' ? 'Black rep' :
-                                        demo === 'white' ? 'White rep' : 'Bilingual/diverse rep';
-                        layer.bindPopup(
-                            '<div style="font-size:12px;line-height:1.5;">' +
-                            '<b style="color:' + (demo==='hispanic'?'#ff6d00':demo==='black'?'#7c4dff':demo==='white'?'#2196f3':'#ffd600') + ';">AUTO-QUALIFY TRACT</b><br>' +
-                            '<b>Demographics:</b> ' + demoLabel + '<br>' +
-                            '<b>Hispanic:</b> ' + (p.h_pct || 0) + '% | <b>Black:</b> ' + (p.b_pct || 0) + '% | <b>White:</b> ' + (p.w_pct || 0) + '%<br>' +
-                            '<b>Send:</b> <span style="font-weight:bold;color:#00e676;">' + repType + '</span><br>' +
-                            '<hr style="margin:4px 0;border-color:#444;">' +
-                            '<b>County:</b> ' + (p.county || 'Unknown') + '<br>' +
-                            '<b>Tract:</b> ' + (p.GEOID || '') + '<br>' +
-                            '<b>Per Capita Income:</b> ' + inc + '<br>' +
-                            '<b>County 80% Threshold:</b> ' + thresh + '<br>' +
-                            '<b>% of County Median:</b> ' + pct + '<br>' +
-                            '<b>Population:</b> ' + pop +
-                            '</div>',
-                            { maxWidth: 300 }
-                        );
+                        layer.on('click', function(e) {
+                            const util = getUtilityForPoint(e.latlng);
+                            const html = buildFullReport(p, util);
+                            layer.bindPopup(html, { maxWidth: 340 }).openPopup();
+                        });
                     }
                 }).addTo(featureGroups.autoQualifyZones);
                 console.log('Auto-qualify zones loaded: ' + data.features.length + ' tracts');
+                buildTargetSummary(data.features);
             } catch(e) { console.error('Auto-qualify zones error:', e); }
+        }
+
+        function buildTargetSummary(features) {
+            const groups = {};
+            features.forEach(f => {
+                const p = f.properties;
+                const county = p.county || 'Unknown';
+                if (!groups[county]) groups[county] = { tracts:0, hh:0, eh:0, pop:0, hisp:0, black:0, white:0, mixed:0 };
+                const g = groups[county];
+                g.tracts++; g.hh += p.hh||0; g.eh += p.eh_n||0; g.pop += p.pop||0;
+                if (p.demo==='hispanic') g.hisp++; else if (p.demo==='black') g.black++; else if (p.demo==='white') g.white++; else g.mixed++;
+            });
+            // Sort by tract count descending
+            const sorted = Object.entries(groups).sort((a,b) => b[1].tracts - a[1].tracts);
+            let html = '';
+            sorted.forEach(([cName, g]) => {
+                const total = g.tracts;
+                const hPct = Math.round(g.hisp/total*100), bPct = Math.round(g.black/total*100), wPct = Math.round(g.white/total*100), mPct = 100-hPct-bPct-wPct;
+                html += '<div class="util-group"><div class="util-header"><span>' + cName + '</span><span>' + total + ' zones</span></div>' +
+                    '<div class="demo-bar"><div style="width:' + hPct + '%;background:#ff6d00;"></div><div style="width:' + bPct + '%;background:#7c4dff;"></div><div style="width:' + wPct + '%;background:#2196f3;"></div><div style="width:' + mPct + '%;background:#ffd600;"></div></div>' +
+                    '<div class="util-stats"><span><b>' + g.hh.toLocaleString() + '</b> households</span><span><b>' + g.eh.toLocaleString() + '</b> EH homes</span>' +
+                    '<span><b>' + g.pop.toLocaleString() + '</b> population</span><span>🟠' + g.hisp + ' 🟣' + g.black + ' 🔵' + g.white + ' 🟡' + g.mixed + '</span></div></div>';
+            });
+            document.getElementById('targetSummaryBody').innerHTML = html;
+            document.getElementById('targetSummary').style.display = 'block';
         }
 
         async function loadCountyBoundaries() {
