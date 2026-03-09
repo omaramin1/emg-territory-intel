@@ -301,6 +301,7 @@
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label">🏦 80% AMI Zones Only</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('dacZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">⚖️ NY DAC Zones</span></label>
@@ -460,7 +461,8 @@
             countyRoutes: L.featureGroup(),
             autoQualifyZones: L.featureGroup(),
             housingConcentration: L.featureGroup(),
-            dacZones: L.featureGroup()
+            dacZones: L.featureGroup(),
+            lmiIncomeOnly: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -476,7 +478,7 @@
         });
 
         // All ON except income/race overlays
-        const defaultOffLayers = ['raceOverlay'];
+        const defaultOffLayers = ['raceOverlay', 'lmiIncomeOnly'];
         Object.entries(fg).forEach(([name, g]) => { if (!defaultOffLayers.includes(name)) g.addTo(map); });
         salesCluster.addTo(map);
 
@@ -487,6 +489,7 @@
             autoQualifyZones: fg.autoQualifyZones,
             housingConcentration: fg.housingConcentration,
             dacZones: fg.dacZones,
+            lmiIncomeOnly: fg.lmiIncomeOnly,
             nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
             oru: fg.oruArea, rge: fg.rgeArea
         };
@@ -1019,6 +1022,47 @@
                     }
                 }).addTo(fg.autoQualifyZones);
                 console.log('Auto-qualify zones loaded: ' + data.features.length + ' tracts');
+
+                // ── 80% AMI Income-Only Overlay ──
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        const pct = feature.properties.pct_of_median || 80;
+                        let r, g, b;
+                        if (pct <= 40) {
+                            const t = pct / 40;
+                            r = 183 + Math.round(72 * t); g = 28 + Math.round(83 * t); b = 28 - Math.round(28 * t);
+                        } else {
+                            const t = (pct - 40) / 40;
+                            r = 255; g = 111 + Math.round(105 * t); b = Math.round(53 * t);
+                        }
+                        return { fillColor: 'rgb(' + r + ',' + g + ',' + b + ')', fillOpacity: 0.55, color: '#fff', weight: 0.5, opacity: 0.3 };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const p = feature.properties;
+                        const pct = p.pct_of_median || 0;
+                        const severity = pct <= 40 ? '🔴 Deep Poverty' : pct <= 60 ? '🟠 Low Income' : '🟡 Moderate-Low';
+                        layer.on('click', function() {
+                            layer.bindPopup(
+                                '<div style="font-family:Segoe UI,sans-serif;">' +
+                                '<b style="font-size:14px;color:#ff6f00;">🏦 80% AMI Income Zone</b><br>' +
+                                '<div style="margin:6px 0;padding:6px;background:rgba(255,111,0,0.1);border-radius:4px;">' +
+                                '<b>' + severity + '</b><br>' +
+                                'Tract Income: <b>$' + (p.med_inc || p.inc || 0).toLocaleString() + '</b><br>' +
+                                'County Median: <b>$' + (p.county_median || 0).toLocaleString() + '</b><br>' +
+                                '80% Threshold: <b>$' + (p.threshold || 0).toLocaleString() + '</b><br>' +
+                                'Pct of Median: <b>' + pct + '%</b>' +
+                                '</div>' +
+                                '<div style="font-size:11px;color:#aaa;">' +
+                                'County: ' + (p.county || '—') + '<br>' +
+                                'Households: ' + (p.hh || 0).toLocaleString() + ' | Renters: ' + (p.rent_pct || 0) + '%<br>' +
+                                'GEOID: ' + (p.GEOID || '—') +
+                                '</div></div>',
+                                { maxWidth: 300 }
+                            ).openPopup();
+                        });
+                    }
+                }).addTo(fg.lmiIncomeOnly);
+
                 buildTargetSummary(data.features);
                 document.getElementById('filterCount').textContent = data.features.length + '/' + data.features.length + ' zones';
             } catch(e) { console.error('Auto-qualify zones error:', e); }

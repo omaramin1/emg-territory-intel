@@ -96,6 +96,13 @@
         .priority-tier-header { color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; margin: 8px 0 4px 0; letter-spacing: 0.5px; padding-bottom: 3px; border-bottom: 1px solid #333; }
         .priority-tier-header:first-child { margin-top: 0; }
 
+        /* ── UTILITY TABS ── */
+        .util-tabs { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
+        .util-tab { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid #444; color: #aaa; background: none; transition: all 0.2s; white-space: nowrap; }
+        .util-tab:hover { border-color: #00ff88; color: #fff; }
+        .util-tab.active { background: #00ff88; color: #0a0a12; border-color: #00ff88; }
+        .util-tab .tab-count { font-weight: 400; opacity: 0.7; margin-left: 2px; }
+
         /* ── TARGET SUMMARY PANEL ── */
         .target-summary { position: absolute; right: 10px; bottom: 60px; z-index: 1100; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #00bcd4; backdrop-filter: blur(10px); width: 280px; max-height: 380px; overflow-y: auto; }
         .target-summary h4 { color: #00bcd4; font-size: 12px; cursor: pointer; user-select: none; margin: 0; display: flex; justify-content: space-between; align-items: center; }
@@ -319,6 +326,7 @@
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label">🏦 80% AMI Zones Only</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
@@ -367,10 +375,13 @@
         <div id="infoPanelContent"></div>
     </div>
 
-    <!-- ── PRIORITY RANKING PANEL (collapsible) ── -->
+    <!-- ── PRIORITY RANKING PANEL (by utility) ── -->
     <div class="priority-panel" id="priorityPanel" style="display:none;">
         <h4 onclick="document.getElementById('priorityPanel').classList.toggle('panel-minimized')">📌 Priority Rankings <span class="arrow">▼</span></h4>
-        <div class="panel-body" id="priorityList"></div>
+        <div class="panel-body">
+            <div class="util-tabs" id="utilTabs"></div>
+            <div id="priorityList"></div>
+        </div>
     </div>
 
     <!-- ── TARGET ZONE SUMMARY (by Utility) ── -->
@@ -496,7 +507,8 @@
             priorityHighlight: L.featureGroup(),
             countyRoutes: L.featureGroup(),
             autoQualifyZones: L.featureGroup(),
-            housingConcentration: L.featureGroup()
+            housingConcentration: L.featureGroup(),
+            lmiIncomeOnly: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -516,7 +528,7 @@
         });
 
         // All on by default EXCEPT data overlays (income, race) — user toggles these
-        const defaultOffLayers = ['raceOverlay'];
+        const defaultOffLayers = ['raceOverlay', 'lmiIncomeOnly'];
         Object.entries(fg).forEach(([name, g]) => {
             if (!defaultOffLayers.includes(name)) g.addTo(map);
         });
@@ -541,7 +553,8 @@
             hld: fg.hldArea,
             countyRoutes: fg.countyRoutes,
             autoQualifyZones: fg.autoQualifyZones,
-            housingConcentration: fg.housingConcentration
+            housingConcentration: fg.housingConcentration,
+            lmiIncomeOnly: fg.lmiIncomeOnly
         };
 
         function toggleLayer(name, on) {
@@ -1202,10 +1215,13 @@
                 if (sales > 0 && sales < 50) reasons.push(`${sales} early sales`);
                 else if (sales >= 50) reasons.push(`${sales} proven sales`);
 
+                // Detect utility territory for this ZIP
+                const utilName = getUtilityForPoint(L.latLng(coords[0], coords[1])) || 'Unknown';
+
                 scored.push({
                     zip, city: city || '', la: coords[0], lo: coords[1],
                     tier, tierColor, tierLabel,
-                    score: compositeScore,
+                    score: compositeScore, utility: utilName,
                     pop: d.pop, inc: d.inc, ehp: d.ehp, ehe: d.ehe,
                     sales, age: d.age, fam: d.fam || d.hhs, hhs: d.hhs,
                     satRate: satRate.toFixed(1), satLevel, satLabel,
@@ -1318,34 +1334,71 @@
                 }
             });
 
-            // ── Step 5: Build priority ranking panel ──
-            let panelHtml = '';
-            let currentTier = 0;
-            const tierNames = { 1: '🔥 Tier 1 — Top Priority (LMI + Low Sat + High kWh)', 2: '⬆ Tier 2 — High Value', 3: '📊 Tier 3 — Moderate Opportunity', 4: '🔹 Tier 4 — Growth Potential' };
+            // ── Step 5: Build priority ranking panel (grouped by utility) ──
+            const tierNames = { 1: '🔥 Tier 1 — Top Priority', 2: '⬆ Tier 2 — High Value', 3: '📊 Tier 3 — Moderate', 4: '🔹 Tier 4 — Growth' };
 
-            priorityTargets.forEach((t, i) => {
-                if (t.tier !== currentTier) {
-                    currentTier = t.tier;
-                    panelHtml += `<div class="priority-tier-header">${tierNames[t.tier] || 'Other'}</div>`;
-                }
-                panelHtml += `<div class="priority-item" onclick="map.setView([${t.la},${t.lo}],13)">
-                    <div class="priority-rank" style="background:${t.tierColor};">${i + 1}</div>
-                    <div class="priority-info">
-                        <div class="priority-zip">${t.zip} <span style="color:#aaa;font-weight:400;">${t.city}</span></div>
-                        <div class="priority-city">${t.why}</div>
-                    </div>
-                    <div class="priority-score" style="color:${t.tierColor};">${t.score.toFixed(0)}</div>
-                </div>`;
+            // Group targets by utility
+            const utilityGroups = {};
+            priorityTargets.forEach(t => {
+                const u = t.utility || 'Unknown';
+                if (!utilityGroups[u]) utilityGroups[u] = [];
+                utilityGroups[u].push(t);
             });
 
-            document.getElementById('priorityList').innerHTML = panelHtml;
+            // Build utility tabs
+            const utilOrder = ['PEPCO','BGE','Potomac Edison','Delmarva Power','SMECO','HLD','Unknown'];
+            const utilColors = { 'PEPCO':'#00aaff', 'BGE':'#44cc44', 'Potomac Edison':'#ff8800', 'Delmarva Power':'#ff5555', 'SMECO':'#ffcc00', 'HLD':'#e040fb', 'Unknown':'#888' };
+            let tabsHtml = '<div class="util-tab active" onclick="showUtilPriority(\'ALL\',this)">ALL<span class="tab-count">(' + priorityTargets.length + ')</span></div>';
+            utilOrder.forEach(u => {
+                if (utilityGroups[u] && utilityGroups[u].length > 0) {
+                    tabsHtml += '<div class="util-tab" style="border-color:' + (utilColors[u]||'#888') + ';" onclick="showUtilPriority(\'' + u + '\',this)">' + u + '<span class="tab-count">(' + utilityGroups[u].length + ')</span></div>';
+                }
+            });
+            document.getElementById('utilTabs').innerHTML = tabsHtml;
+
+            // Store for tab switching
+            window._priorityByUtil = utilityGroups;
+            window._allPriorityTargets = priorityTargets;
+
+            function renderPriorityList(targets) {
+                let html = '';
+                let currentTier = 0;
+                targets.forEach((t, i) => {
+                    if (t.tier !== currentTier) {
+                        currentTier = t.tier;
+                        html += '<div class="priority-tier-header">' + (tierNames[t.tier] || 'Other') + '</div>';
+                    }
+                    html += '<div class="priority-item" onclick="map.setView([' + t.la + ',' + t.lo + '],13)">' +
+                        '<div class="priority-rank" style="background:' + t.tierColor + ';">' + (i + 1) + '</div>' +
+                        '<div class="priority-info">' +
+                        '<div class="priority-zip">' + t.zip + ' <span style="color:#aaa;font-weight:400;">' + t.city + '</span>' +
+                        ' <span style="color:' + (utilColors[t.utility]||'#888') + ';font-size:9px;">⚡' + (t.utility||'') + '</span></div>' +
+                        '<div class="priority-city">' + t.why + '</div>' +
+                        '</div>' +
+                        '<div class="priority-score" style="color:' + t.tierColor + ';">' + t.score.toFixed(0) + '</div>' +
+                        '</div>';
+                });
+                return html;
+            }
+
+            window.showUtilPriority = function(util, tabEl) {
+                // Update active tab
+                document.querySelectorAll('.util-tab').forEach(t => t.classList.remove('active'));
+                if (tabEl) tabEl.classList.add('active');
+                // Render filtered list
+                const targets = util === 'ALL' ? window._allPriorityTargets : (window._priorityByUtil[util] || []);
+                document.getElementById('priorityList').innerHTML = renderPriorityList(targets);
+            };
+
+            // Show ALL by default
+            document.getElementById('priorityList').innerHTML = renderPriorityList(priorityTargets);
             document.getElementById('priorityPanel').style.display = 'block';
 
             const tierCounts = {};
             priorityTargets.forEach(t => { tierCounts[t.tier] = (tierCounts[t.tier] || 0) + 1; });
             document.getElementById('statTargets').textContent = `${priorityTargets.length} (T1:${tierCounts[1]||0} T2:${tierCounts[2]||0} T3:${tierCounts[3]||0} T4:${tierCounts[4]||0})`;
 
-            console.log('Priority scoring complete:', { stateMedianIncome, lmiThreshold, total: priorityTargets.length, tierCounts });
+            console.log('Priority scoring complete:', { stateMedianIncome, lmiThreshold, total: priorityTargets.length, tierCounts, byUtility: Object.keys(utilityGroups).map(u => u + ':' + utilityGroups[u].length) });
         }
 
         // ── Search ──
@@ -1692,6 +1745,55 @@
                     }
                 }).addTo(fg.autoQualifyZones);
                 console.log('Auto-qualify zones loaded: ' + data.features.length + ' tracts');
+
+                // ── 80% AMI Income-Only Overlay (single gradient, no demographics) ──
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        const pct = feature.properties.pct_of_median || 80;
+                        // Gradient: deep red (very low) → orange → yellow (near 80%)
+                        let r, g, b;
+                        if (pct <= 40) {
+                            // Deep red to orange (4-40%)
+                            const t = pct / 40;
+                            r = 183 + Math.round(72 * t);  // 183→255
+                            g = 28 + Math.round(83 * t);    // 28→111
+                            b = 28 - Math.round(28 * t);    // 28→0
+                        } else {
+                            // Orange to yellow (40-80%)
+                            const t = (pct - 40) / 40;
+                            r = 255;
+                            g = 111 + Math.round(105 * t);  // 111→216
+                            b = Math.round(53 * t);          // 0→53
+                        }
+                        const color = 'rgb(' + r + ',' + g + ',' + b + ')';
+                        return { fillColor: color, fillOpacity: 0.55, color: '#fff', weight: 0.5, opacity: 0.3 };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const p = feature.properties;
+                        const pct = p.pct_of_median || 0;
+                        const severity = pct <= 40 ? '🔴 Deep Poverty' : pct <= 60 ? '🟠 Low Income' : '🟡 Moderate-Low';
+                        layer.on('click', function() {
+                            layer.bindPopup(
+                                '<div style="font-family:Segoe UI,sans-serif;">' +
+                                '<b style="font-size:14px;color:#ff6f00;">🏦 80% AMI Income Zone</b><br>' +
+                                '<div style="margin:6px 0;padding:6px;background:rgba(255,111,0,0.1);border-radius:4px;">' +
+                                '<b>' + severity + '</b><br>' +
+                                'Tract Income: <b>$' + (p.med_inc || p.inc || 0).toLocaleString() + '</b><br>' +
+                                'County Median: <b>$' + (p.county_median || 0).toLocaleString() + '</b><br>' +
+                                '80% Threshold: <b>$' + (p.threshold || 0).toLocaleString() + '</b><br>' +
+                                'Pct of Median: <b>' + pct + '%</b>' +
+                                '</div>' +
+                                '<div style="font-size:11px;color:#aaa;">' +
+                                'County: ' + (p.county || '—') + '<br>' +
+                                'Households: ' + (p.hh || 0).toLocaleString() + ' | Renters: ' + (p.rent_pct || 0) + '%<br>' +
+                                'GEOID: ' + (p.GEOID || '—') +
+                                '</div></div>',
+                                { maxWidth: 300 }
+                            ).openPopup();
+                        });
+                    }
+                }).addTo(fg.lmiIncomeOnly);
+
                 buildTargetSummary(data.features);
                 document.getElementById('filterCount').textContent = data.features.length + '/' + data.features.length + ' zones';
             } catch(e) { console.error('Auto-qualify zones error:', e); }

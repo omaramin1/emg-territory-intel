@@ -645,7 +645,8 @@
             countyRoutes: L.featureGroup(),
             autoQualifyZones: L.featureGroup(),
             housingConcentration: L.featureGroup(),
-            canvassingRoutes: L.featureGroup()
+            canvassingRoutes: L.featureGroup(),
+            lmiIncomeOnly: L.featureGroup()
         };
 
         // LMI Thresholds by ZIP code
@@ -669,7 +670,8 @@
                 'County Boundaries': featureGroups.countyRoutes,
                 '🎯 Auto-Qualify Tracts': featureGroups.autoQualifyZones,
                 '🏢 Apt/Mobile Concentrations': featureGroups.housingConcentration,
-                '🚶 Canvassing Routes': featureGroups.canvassingRoutes
+                '🚶 Canvassing Routes': featureGroups.canvassingRoutes,
+                '🏦 80% AMI Zones Only': featureGroups.lmiIncomeOnly
             },
             { position: 'bottomright' }
         );
@@ -1565,6 +1567,47 @@
                     }
                 }).addTo(featureGroups.autoQualifyZones);
                 console.log('Auto-qualify zones loaded: ' + data.features.length + ' tracts');
+
+                // ── 80% AMI Income-Only Overlay ──
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        const pct = feature.properties.pct_of_median || 80;
+                        let r, g, b;
+                        if (pct <= 40) {
+                            const t = pct / 40;
+                            r = 183 + Math.round(72 * t); g = 28 + Math.round(83 * t); b = 28 - Math.round(28 * t);
+                        } else {
+                            const t = (pct - 40) / 40;
+                            r = 255; g = 111 + Math.round(105 * t); b = Math.round(53 * t);
+                        }
+                        return { fillColor: 'rgb(' + r + ',' + g + ',' + b + ')', fillOpacity: 0.55, color: '#fff', weight: 0.5, opacity: 0.3 };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const p = feature.properties;
+                        const pct = p.pct_of_median || 0;
+                        const severity = pct <= 40 ? '🔴 Deep Poverty' : pct <= 60 ? '🟠 Low Income' : '🟡 Moderate-Low';
+                        layer.on('click', function() {
+                            layer.bindPopup(
+                                '<div style="font-family:Segoe UI,sans-serif;">' +
+                                '<b style="font-size:14px;color:#ff6f00;">🏦 80% AMI Income Zone</b><br>' +
+                                '<div style="margin:6px 0;padding:6px;background:rgba(255,111,0,0.1);border-radius:4px;">' +
+                                '<b>' + severity + '</b><br>' +
+                                'Tract Income: <b>$' + (p.med_inc || p.inc || 0).toLocaleString() + '</b><br>' +
+                                'County Median: <b>$' + (p.county_median || 0).toLocaleString() + '</b><br>' +
+                                '80% Threshold: <b>$' + (p.threshold || 0).toLocaleString() + '</b><br>' +
+                                'Pct of Median: <b>' + pct + '%</b>' +
+                                '</div>' +
+                                '<div style="font-size:11px;color:#aaa;">' +
+                                'County: ' + (p.county || '—') + '<br>' +
+                                'Households: ' + (p.hh || 0).toLocaleString() + ' | Renters: ' + (p.rent_pct || 0) + '%<br>' +
+                                'GEOID: ' + (p.GEOID || '—') +
+                                '</div></div>',
+                                { maxWidth: 300 }
+                            ).openPopup();
+                        });
+                    }
+                }).addTo(featureGroups.lmiIncomeOnly);
+
                 buildTargetSummary(data.features);
                 document.getElementById('filterCount').textContent = data.features.length + '/' + data.features.length + ' zones';
             } catch(e) { console.error('Auto-qualify zones error:', e); }
