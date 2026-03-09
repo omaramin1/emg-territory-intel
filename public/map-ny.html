@@ -116,6 +116,12 @@
         .priority-city { font-size: 10px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .priority-score { font-size: 13px; font-weight: 700; margin-left: 6px; }
 
+        .util-tabs { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; padding: 0 10px; }
+        .util-tab { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid #444; color: #aaa; background: none; transition: all 0.2s; white-space: nowrap; }
+        .util-tab:hover { border-color: #ff8800; color: #fff; }
+        .util-tab.active { background: #ff8800; color: #0a0a12; border-color: #ff8800; }
+        .util-tab .tab-count { font-weight: 400; opacity: 0.7; margin-left: 2px; }
+
         /* ── MAP LEGEND ── */
         .legend { position: absolute; bottom: 20px; right: 10px; z-index: 1100; background: rgba(10,10,18,0.97); padding: 10px 12px; border-radius: 8px; border: 1px solid #555; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 80px); overflow-y: auto; transition: width 0.2s; }
         .legend h4 { color: #ff8800; font-size: 12px; margin-bottom: 8px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
@@ -341,10 +347,13 @@
         <div id="infoPanelContent"></div>
     </div>
 
-    <!-- ── PRIORITY RANKING PANEL (collapsible) ── -->
+    <!-- ── PRIORITY RANKING PANEL (by utility) ── -->
     <div class="priority-panel" id="priorityPanel" style="display:none;">
         <h4 onclick="document.getElementById('priorityPanel').classList.toggle('panel-minimized')">📌 Priority Rankings <span class="arrow">▼</span></h4>
-        <div class="panel-body" id="priorityList"></div>
+        <div class="panel-body">
+            <div class="util-tabs" id="utilTabs"></div>
+            <div id="priorityList"></div>
+        </div>
     </div>
 
     <!-- ── TARGET ZONE SUMMARY (by Utility) ── -->
@@ -1176,7 +1185,8 @@
                 if (sales > 0 && sales < 50) reasons.push(`${sales} early sales`);
                 else if (sales >= 50) reasons.push(`${sales} proven sales`);
 
-                scored.push({ zip, city: city || '', la: coords[0], lo: coords[1], tier, tierColor, tierLabel, score: compositeScore,
+                const utilName = getUtilityForPoint(L.latLng(coords[0], coords[1])) || 'Unknown';
+                scored.push({ zip, city: city || '', la: coords[0], lo: coords[1], tier, tierColor, tierLabel, score: compositeScore, utility: utilName,
                     pop: d.pop, inc: d.inc, ehp: d.ehp, ehe: d.ehe, sales, age: d.age, hhs: d.hhs,
                     satRate: satRate.toFixed(1), satLevel, satLabel, incomeRatio: (incomeRatio * 100).toFixed(0),
                     why: reasons.slice(0, 4).join(' · ') || 'General opportunity', rw: d.rw, rb: d.rb, rh: d.rh, ra: d.ra, ro: d.ro });
@@ -1226,14 +1236,62 @@
                 }
             });
 
-            // Build priority panel
-            let panelHtml = ''; let currentTier = 0;
+            // ── Build priority panel (grouped by utility) ──
             const tierNames = { 1: '🔥 Tier 1 — Top Priority', 2: '⬆ Tier 2 — High Value', 3: '📊 Tier 3 — Moderate', 4: '🔹 Tier 4 — Growth' };
-            priorityTargets.forEach((t, i) => {
-                if (t.tier !== currentTier) { currentTier = t.tier; panelHtml += `<div class="priority-tier-header">${tierNames[t.tier] || 'Other'}</div>`; }
-                panelHtml += `<div class="priority-item" onclick="map.setView([${t.la},${t.lo}],13)"><div class="priority-rank" style="background:${t.tierColor};">${i + 1}</div><div class="priority-info"><div class="priority-zip">${t.zip} <span style="color:#aaa;font-weight:400;">${t.city}</span></div><div class="priority-city">${t.why}</div></div><div class="priority-score" style="color:${t.tierColor};">${t.score.toFixed(0)}</div></div>`;
+
+            // Group targets by utility
+            const utilityGroups = {};
+            priorityTargets.forEach(t => {
+                const u = t.utility || 'Unknown';
+                if (!utilityGroups[u]) utilityGroups[u] = [];
+                utilityGroups[u].push(t);
             });
-            document.getElementById('priorityList').innerHTML = panelHtml;
+
+            // Build utility tabs
+            const utilOrder = ['NYSEG','National Grid','Central Hudson','ORU','RGE','Unknown'];
+            const utilColors = { 'NYSEG':'#00cc88', 'National Grid':'#4a90d9', 'Central Hudson':'#ff6644', 'ORU':'#aa66ff', 'RGE':'#ffcc00', 'Unknown':'#888' };
+            let tabsHtml = '<div class="util-tab active" onclick="showUtilPriority(\'ALL\',this)">ALL<span class="tab-count">(' + priorityTargets.length + ')</span></div>';
+            utilOrder.forEach(u => {
+                if (utilityGroups[u] && utilityGroups[u].length > 0) {
+                    tabsHtml += '<div class="util-tab" style="border-color:' + (utilColors[u]||'#888') + ';" onclick="showUtilPriority(\'' + u.replace(/'/g,"\\'") + '\',this)">' + u + '<span class="tab-count">(' + utilityGroups[u].length + ')</span></div>';
+                }
+            });
+            document.getElementById('utilTabs').innerHTML = tabsHtml;
+
+            // Store for tab switching
+            window._priorityByUtil = utilityGroups;
+            window._allPriorityTargets = priorityTargets;
+
+            function renderPriorityList(targets) {
+                let html = '';
+                let currentTier = 0;
+                targets.forEach((t, i) => {
+                    if (t.tier !== currentTier) {
+                        currentTier = t.tier;
+                        html += '<div class="priority-tier-header">' + (tierNames[t.tier] || 'Other') + '</div>';
+                    }
+                    html += '<div class="priority-item" onclick="map.setView([' + t.la + ',' + t.lo + '],13)">' +
+                        '<div class="priority-rank" style="background:' + t.tierColor + ';">' + (i + 1) + '</div>' +
+                        '<div class="priority-info">' +
+                        '<div class="priority-zip">' + t.zip + ' <span style="color:#aaa;font-weight:400;">' + t.city + '</span>' +
+                        ' <span style="color:' + (utilColors[t.utility]||'#888') + ';font-size:9px;">⚡' + (t.utility||'') + '</span></div>' +
+                        '<div class="priority-city">' + t.why + '</div>' +
+                        '</div>' +
+                        '<div class="priority-score" style="color:' + t.tierColor + ';">' + t.score.toFixed(0) + '</div>' +
+                        '</div>';
+                });
+                return html;
+            }
+
+            window.showUtilPriority = function(util, tabEl) {
+                document.querySelectorAll('#utilTabs .util-tab').forEach(t => t.classList.remove('active'));
+                if (tabEl) tabEl.classList.add('active');
+                const targets = util === 'ALL' ? window._allPriorityTargets : (window._priorityByUtil[util] || []);
+                document.getElementById('priorityList').innerHTML = renderPriorityList(targets);
+            };
+
+            // Show ALL by default
+            document.getElementById('priorityList').innerHTML = renderPriorityList(priorityTargets);
             document.getElementById('priorityPanel').style.display = 'block';
 
             const tierCounts = {};
