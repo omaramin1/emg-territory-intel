@@ -155,6 +155,54 @@
             .legend { width: 160px; }
             .search-panel input { width: 110px; }
         }
+
+        /* ── FILTER BAR ── */
+        .filter-bar { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1200; background: rgba(10,10,18,0.97); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,136,0,0.5); backdrop-filter: blur(10px); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; max-width: 95vw; }
+        .filter-bar.collapsed .filter-body { display: none; }
+        .filter-bar .filter-toggle { color: #ff8800; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .filter-bar .filter-toggle .arrow { font-size: 9px; transition: transform 0.2s; }
+        .filter-bar.collapsed .filter-toggle .arrow { transform: rotate(-90deg); }
+        .filter-body { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 4px; width: 100%; }
+        .filter-group { display: flex; flex-direction: column; gap: 2px; }
+        .filter-group label { color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
+        .filter-group select, .filter-group input { background: rgba(255,255,255,0.08); border: 1px solid #444; color: #e0e0e0; padding: 4px 6px; border-radius: 4px; font-size: 11px; min-width: 80px; outline: none; }
+        .filter-group select:focus, .filter-group input:focus { border-color: #ff8800; }
+        .filter-group select option { background: #1a1a2e; color: #e0e0e0; }
+        .filter-count { color: #ff8800; font-size: 11px; font-weight: 700; white-space: nowrap; margin-left: 4px; }
+        .filter-reset { background: none; border: 1px solid #ff8800; color: #ff8800; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
+        .filter-reset:hover { background: #ff8800; color: #0a0a12; }
+
+        /* ── GPS LOCATE BUTTON ── */
+        .gps-btn { position: absolute; bottom: 80px; left: 10px; z-index: 1100; width: 36px; height: 36px; background: rgba(10,10,18,0.95); border: 1px solid #ff8800; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #ff8800; transition: all 0.2s; }
+        .gps-btn:hover { background: #ff8800; color: #0a0a12; }
+        .gps-btn.locating { animation: gpsPulse 1s infinite; }
+        @keyframes gpsPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,136,0,0.4); } 50% { box-shadow: 0 0 0 10px rgba(255,136,0,0); } }
+
+        /* ── CANVASS TIME BADGES ── */
+        .canvass-badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+        .canvass-anytime { background: #00e676; color: #000; }
+        .canvass-daytime { background: #ffab00; color: #000; }
+        .canvass-afternoon { background: #ff6d00; color: #fff; }
+        .canvass-evening { background: #7c4dff; color: #fff; }
+
+        /* ── ENHANCED MOBILE ── */
+        @media (max-width: 768px) {
+            .filter-bar { top: auto; bottom: 50px; left: 5px; right: 5px; transform: none; max-width: none; padding: 6px 10px; }
+            .filter-body { gap: 4px; }
+            .filter-group select, .filter-group input { min-width: 65px; font-size: 10px; padding: 3px 4px; }
+            .leaflet-popup-content-wrapper { max-width: 92vw !important; }
+            .leaflet-popup-content { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+            .gps-btn { bottom: 110px; width: 40px; height: 40px; font-size: 18px; }
+            .target-summary { display: none !important; }
+            .priority-panel { display: none !important; }
+            .header { max-width: 55vw; }
+        }
+        @media (max-width: 480px) {
+            .filter-bar { padding: 5px 8px; bottom: 45px; }
+            .filter-group label { font-size: 8px; }
+            .filter-group select, .filter-group input { min-width: 55px; font-size: 9px; }
+            .header { max-width: 45vw; }
+        }
     </style>
 </head>
 <body>
@@ -173,6 +221,64 @@
     </div>
 
     <div class="status-banner" id="statusBanner">Loading data layers...</div>
+    <!-- ── FILTER BAR ── -->
+    <div class="filter-bar" id="filterBar">
+        <div class="filter-toggle" onclick="document.getElementById('filterBar').classList.toggle('collapsed')">
+            🔍 Filter Zones <span class="arrow">▼</span> <span class="filter-count" id="filterCount"></span>
+        </div>
+        <div class="filter-body" id="filterBody">
+            <div class="filter-group">
+                <label>Score</label>
+                <select id="fScore" onchange="applyFilters()">
+                    <option value="">All</option>
+                    <option value="A">A (70+)</option>
+                    <option value="B">B (50+)</option>
+                    <option value="C">C (30+)</option>
+                    <option value="D">D (&lt;30)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Demo</label>
+                <select id="fDemo" onchange="applyFilters()">
+                    <option value="">All</option>
+                    <option value="hispanic">Hispanic</option>
+                    <option value="black">Black</option>
+                    <option value="white">White</option>
+                    <option value="mixed">Mixed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>County</label>
+                <select id="fCounty" onchange="applyFilters()">
+                    <option value="">All</option>
+                    <option value="Albany">Albany</option><option value="Allegany">Allegany</option><option value="Bronx">Bronx</option><option value="Broome">Broome</option><option value="Cattaraugus">Cattaraugus</option><option value="Cayuga">Cayuga</option><option value="Chautauqua">Chautauqua</option><option value="Chemung">Chemung</option><option value="Clinton">Clinton</option><option value="Columbia">Columbia</option><option value="Cortland">Cortland</option><option value="Delaware">Delaware</option><option value="Dutchess">Dutchess</option><option value="Erie">Erie</option><option value="Essex">Essex</option><option value="Franklin">Franklin</option><option value="Fulton">Fulton</option><option value="Genesee">Genesee</option><option value="Greene">Greene</option><option value="Hamilton">Hamilton</option><option value="Herkimer">Herkimer</option><option value="Jefferson">Jefferson</option><option value="Kings">Kings</option><option value="Livingston">Livingston</option><option value="Madison">Madison</option><option value="Monroe">Monroe</option><option value="Montgomery">Montgomery</option><option value="Nassau">Nassau</option><option value="New York">New York</option><option value="Niagara">Niagara</option><option value="Oneida">Oneida</option><option value="Onondaga">Onondaga</option><option value="Ontario">Ontario</option><option value="Orange">Orange</option><option value="Orleans">Orleans</option><option value="Oswego">Oswego</option><option value="Otsego">Otsego</option><option value="Putnam">Putnam</option><option value="Queens">Queens</option><option value="Rensselaer">Rensselaer</option><option value="Richmond">Richmond</option><option value="Rockland">Rockland</option><option value="Saratoga">Saratoga</option><option value="Schenectady">Schenectady</option><option value="Schoharie">Schoharie</option><option value="Seneca">Seneca</option><option value="St. Lawrence">St. Lawrence</option><option value="Steuben">Steuben</option><option value="Suffolk">Suffolk</option><option value="Sullivan">Sullivan</option><option value="Tompkins">Tompkins</option><option value="Ulster">Ulster</option><option value="Warren">Warren</option><option value="Washington">Washington</option><option value="Wayne">Wayne</option><option value="Westchester">Westchester</option><option value="Wyoming">Wyoming</option><option value="Yates">Yates</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Min EH%</label>
+                <input type="number" id="fEH" min="0" max="100" step="5" placeholder="0" onchange="applyFilters()" style="width:55px;">
+            </div>
+            <div class="filter-group">
+                <label>Min HH</label>
+                <input type="number" id="fHH" min="0" step="100" placeholder="0" onchange="applyFilters()" style="width:60px;">
+            </div>
+            <div class="filter-group">
+                <label>Best Time</label>
+                <select id="fTime" onchange="applyFilters()">
+                    <option value="">All</option>
+                    <option value="anytime">🟢 Anytime (WFH)</option>
+                    <option value="daytime">🟡 Daytime</option>
+                    <option value="afternoon">🟠 Afternoon</option>
+                    <option value="evening">🟣 Evening</option>
+                </select>
+            </div>
+            <button class="filter-reset" onclick="resetFilters()">Reset</button>
+        </div>
+    </div>
+
+    <!-- ── GPS LOCATE BUTTON ── -->
+    <div class="gps-btn" id="gpsBtn" onclick="gpsLocate()" title="Find my location">📍</div>
+
 
     <!-- ── CUSTOM TOGGLE PANEL (collapsible) ── -->
     <div class="toggle-panel" id="togglePanel">
@@ -742,6 +848,16 @@
                 '<td style="padding:3px 0 3px 12px;"><b>% of Median</b></td><td style="text-align:right;color:#ff4444;">' + fmtP(p.pct_of_median) + '</td></tr>' +
                 '<tr><td style="padding:3px 0;"><b>Apartments</b></td><td style="text-align:right;">' + fmtP(p.apt_pct) + '</td>' +
                 '<td style="padding:3px 0 3px 12px;"><b>Mobile Homes</b></td><td style="text-align:right;">' + fmtP(p.mobile_pct) + '</td></tr>' +
+
+                '<tr><td style="padding:3px 0;" colspan="4"><b>🕐 Best Canvass Time:</b> ' +
+                (function(bt, wfh, day) {
+                    if (bt === 'anytime') return '<span class="canvass-badge canvass-anytime">ANYTIME</span> <span style="color:#888;font-size:10px;">' + wfh + '% WFH</span>';
+                    if (bt === 'daytime') return '<span class="canvass-badge canvass-daytime">DAYTIME</span> <span style="color:#888;font-size:10px;">' + day + '% home daytime</span>';
+                    if (bt === 'afternoon') return '<span class="canvass-badge canvass-afternoon">AFTERNOON</span> <span style="color:#888;font-size:10px;">Early shift area</span>';
+                    return '<span class="canvass-badge canvass-evening">EVENING</span> <span style="color:#888;font-size:10px;">9-5 commuters</span>';
+                })(p.best_time || 'evening', p.wfh_pct || 0, p.daytime_home || 0) +
+                '</td></tr>' +
+
                 '</table>' +
                 '<div style="background:#1a1a2e;padding:4px 8px;border-radius:4px;margin-top:6px;text-align:center;">' +
                 '<span style="color:#ff4444;">AUTO-QUALIFY</span> — Below ' + fmtD(p.threshold) + ' county 80% AMI</div></div>';
@@ -769,6 +885,106 @@
             return null;
         }
 
+
+        // ═══════════════════════════════════════════
+        // FILTER ENGINE
+        // ═══════════════════════════════════════════
+        var allAutoQualifyLayers = [];
+        var allAutoQualifyData = null;
+
+        function computeScore(p) {
+            const ehScore = Math.min((p.eh_pct || 0) / 50 * 30, 30);
+            const incScore = Math.min(Math.max(80 - (p.pct_of_median || 80), 0) / 40 * 25, 25);
+            const rentScore = Math.min((p.rent_pct || 0) / 80 * 20, 20);
+            const popScore = Math.min((p.hh || 0) / 3000 * 15, 15);
+            const aptScore = Math.min((p.apt_pct || 0) / 50 * 10, 10);
+            return Math.round(ehScore + incScore + rentScore + popScore + aptScore);
+        }
+
+        function getScoreGrade(score) {
+            if (score >= 70) return 'A';
+            if (score >= 50) return 'B';
+            if (score >= 30) return 'C';
+            return 'D';
+        }
+
+        function applyFilters() {
+            const fScore = document.getElementById('fScore').value;
+            const fDemo = document.getElementById('fDemo').value;
+            const fCounty = document.getElementById('fCounty').value;
+            const fEH = parseFloat(document.getElementById('fEH').value) || 0;
+            const fHH = parseInt(document.getElementById('fHH').value) || 0;
+            const fTime = document.getElementById('fTime').value;
+
+            let shown = 0, total = allAutoQualifyLayers.length;
+            allAutoQualifyLayers.forEach(function(item) {
+                const p = item.feature.properties;
+                const score = computeScore(p);
+                const grade = getScoreGrade(score);
+                let visible = true;
+
+                if (fScore && grade !== fScore) {
+                    // For B, show B+A; for C, show C+B+A; etc.
+                    const order = ['A','B','C','D'];
+                    if (order.indexOf(grade) > order.indexOf(fScore)) visible = false;
+                }
+                if (fDemo && p.demo !== fDemo) visible = false;
+                if (fCounty && p.county !== fCounty) visible = false;
+                if (fEH > 0 && (p.eh_pct || 0) < fEH) visible = false;
+                if (fHH > 0 && (p.hh || 0) < fHH) visible = false;
+                if (fTime && p.best_time !== fTime) visible = false;
+
+                if (visible) {
+                    if (!fg.autoQualifyZones.hasLayer(item.layer)) {
+                        fg.autoQualifyZones.addLayer(item.layer);
+                    }
+                    shown++;
+                } else {
+                    if (fg.autoQualifyZones.hasLayer(item.layer)) {
+                        fg.autoQualifyZones.removeLayer(item.layer);
+                    }
+                }
+            });
+            document.getElementById('filterCount').textContent = shown + '/' + total + ' zones';
+        }
+
+        function resetFilters() {
+            document.getElementById('fScore').value = '';
+            document.getElementById('fDemo').value = '';
+            document.getElementById('fCounty').value = '';
+            document.getElementById('fEH').value = '';
+            document.getElementById('fHH').value = '';
+            document.getElementById('fTime').value = '';
+            applyFilters();
+        }
+
+        // ═══════════════════════════════════════════
+        // GPS LOCATE
+        // ═══════════════════════════════════════════
+        var gpsMarker = null;
+        function gpsLocate() {
+            const btn = document.getElementById('gpsBtn');
+            btn.classList.add('locating');
+            if (!navigator.geolocation) {
+                btn.classList.remove('locating');
+                alert('Geolocation not supported');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                btn.classList.remove('locating');
+                const latlng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                if (gpsMarker) map.removeLayer(gpsMarker);
+                gpsMarker = L.circleMarker(latlng, {
+                    radius: 10, fillColor: '#00ff88', fillOpacity: 0.8,
+                    color: '#fff', weight: 2
+                }).addTo(map).bindPopup('<b>📍 You are here</b>').openPopup();
+                map.setView(latlng, 13);
+            }, function(err) {
+                btn.classList.remove('locating');
+                alert('Location error: ' + err.message);
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        }
+
         async function loadAutoQualifyZones() {
             try {
                 const resp = await fetch('ny_auto_qualify.geojson');
@@ -785,6 +1001,7 @@
                     },
                     onEachFeature: function(feature, layer) {
                         const p = feature.properties;
+                        allAutoQualifyLayers.push({ feature: feature, layer: layer });
                         layer.on('click', function(e) {
                             const util = getUtilityForPoint(e.latlng);
                             const html = buildFullReport(p, util);
@@ -794,6 +1011,7 @@
                 }).addTo(fg.autoQualifyZones);
                 console.log('Auto-qualify zones loaded: ' + data.features.length + ' tracts');
                 buildTargetSummary(data.features);
+                document.getElementById('filterCount').textContent = data.features.length + '/' + data.features.length + ' zones';
             } catch(e) { console.error('Auto-qualify zones error:', e); }
         }
 
