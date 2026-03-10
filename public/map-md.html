@@ -186,6 +186,12 @@
             .search-panel input { width: 110px; }
         }
 
+        
+        /* ── TRAILER PARK MARKERS ── */
+        .trailer-marker { background: rgba(255, 87, 34, 0.9); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 2px solid #fff; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.5); cursor: pointer; text-align: center; line-height: 1.2; }
+        .trailer-marker:hover { background: #ff3d00; transform: scale(1.1); }
+        .trailer-cluster { background: rgba(255, 87, 34, 0.85); border: 2px solid #fff; border-radius: 50%; width: 32px !important; height: 32px !important; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
         /* ── FILTER BAR ── */
         .filter-bar { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1200; background: rgba(10,10,18,0.97); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,136,0,0.5); backdrop-filter: blur(10px); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; max-width: 95vw; }
         .filter-bar.collapsed .filter-body { display: none; }
@@ -329,6 +335,7 @@
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label">🏦 80% AMI Zones Only</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('trailerParks',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff5722;"></div><span class="toggle-label">🏘️ Trailer Parks</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
@@ -508,6 +515,7 @@
             countyRoutes: L.featureGroup(),
             autoQualifyZones: L.featureGroup(),
             housingConcentration: L.featureGroup(),
+            trailerParks: L.featureGroup(),
             lmiIncomeOnly: L.featureGroup()
         };
 
@@ -554,7 +562,8 @@
             countyRoutes: fg.countyRoutes,
             autoQualifyZones: fg.autoQualifyZones,
             housingConcentration: fg.housingConcentration,
-            lmiIncomeOnly: fg.lmiIncomeOnly
+            lmiIncomeOnly: fg.lmiIncomeOnly,
+            trailerParks: fg.trailerParks
         };
 
         function toggleLayer(name, on) {
@@ -1399,6 +1408,40 @@
             document.getElementById('statTargets').textContent = `${priorityTargets.length} (T1:${tierCounts[1]||0} T2:${tierCounts[2]||0} T3:${tierCounts[3]||0} T4:${tierCounts[4]||0})`;
 
             console.log('Priority scoring complete:', { stateMedianIncome, lmiThreshold, total: priorityTargets.length, tierCounts, byUtility: Object.keys(utilityGroups).map(u => u + ':' + utilityGroups[u].length) });
+        }
+
+
+        // ── Load Trailer Parks ──
+        async function loadTrailerParks() {
+            try {
+                const resp = await fetch('md_trailer_parks.json');
+                if (!resp.ok) return;
+                const parks = await resp.json();
+                parks.forEach(p => {
+                    const icon = L.divIcon({
+                        className: '',
+                        html: '<div class="trailer-marker">🏘️ ' + p.name.substring(0, 28) + (p.name.length > 28 ? '…' : '') + '</div>',
+                        iconSize: [160, 22],
+                        iconAnchor: [80, 11]
+                    });
+                    const marker = L.marker([p.lat, p.lon], { icon: icon });
+                    const popupHtml =
+                        '<div style="font-family:Segoe UI,sans-serif;">' +
+                        '<b style="font-size:14px;color:#ff5722;">🏘️ ' + p.name + '</b><br>' +
+                        '<div style="margin:4px 0;padding:5px;background:rgba(255,87,34,0.1);border-radius:4px;">' +
+                        (p.city ? '<b>City:</b> ' + p.city + '<br>' : '') +
+                        (p.zip ? '<b>ZIP:</b> ' + p.zip + '<br>' : '') +
+                        (p.operator ? '<b>Operator:</b> ' + p.operator + '<br>' : '') +
+                        (p.capacity ? '<b>Capacity:</b> ' + p.capacity + ' units<br>' : '') +
+                        '<b>Coords:</b> ' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) +
+                        '</div>' +
+                        '<div style="font-size:10px;color:#aaa;">Source: OpenStreetMap</div>' +
+                        '</div>';
+                    marker.bindPopup(popupHtml, { maxWidth: 280 });
+                    marker.addTo(fg.trailerParks);
+                });
+                console.log('Trailer parks loaded: ' + parks.length);
+            } catch(e) { console.error('Trailer parks error:', e); }
         }
 
         // ── Search ──
