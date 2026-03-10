@@ -164,9 +164,10 @@
 
         
         /* ── TRAILER PARK MARKERS ── */
-        .trailer-marker { background: rgba(255, 87, 34, 0.9); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 2px solid #fff; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.5); cursor: pointer; text-align: center; line-height: 1.2; }
-        .trailer-marker:hover { background: #ff3d00; transform: scale(1.1); }
-        .trailer-cluster { background: rgba(255, 87, 34, 0.85); border: 2px solid #fff; border-radius: 50%; width: 32px !important; height: 32px !important; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .trailer-marker { background: #ff5722; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 14px; border: 3px solid #fff; white-space: nowrap; box-shadow: 0 0 12px rgba(255,87,34,0.8), 0 3px 8px rgba(0,0,0,0.6); cursor: pointer; text-align: center; line-height: 1.3; z-index: 800 !important; position: relative; }
+        .trailer-marker:hover { background: #ff3d00; transform: scale(1.15); box-shadow: 0 0 20px rgba(255,87,34,1), 0 4px 12px rgba(0,0,0,0.7); }
+        @keyframes trailerPulse { 0%, 100% { box-shadow: 0 0 12px rgba(255,87,34,0.8), 0 3px 8px rgba(0,0,0,0.6); } 50% { box-shadow: 0 0 24px rgba(255,87,34,1), 0 3px 8px rgba(0,0,0,0.6); } }
+        .trailer-marker { animation: trailerPulse 3s ease-in-out infinite; }
 
         /* ── FILTER BAR ── */
         .filter-bar { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1200; background: rgba(10,10,18,0.97); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,136,0,0.5); backdrop-filter: blur(10px); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; max-width: 95vw; }
@@ -1363,11 +1364,11 @@
                 parks.forEach(p => {
                     const icon = L.divIcon({
                         className: '',
-                        html: '<div class="trailer-marker">🏘️ ' + p.name.substring(0, 28) + (p.name.length > 28 ? '…' : '') + '</div>',
-                        iconSize: [160, 22],
-                        iconAnchor: [80, 11]
+                        html: '<div class="trailer-marker">🏘️ ' + p.name.substring(0, 30) + (p.name.length > 30 ? '…' : '') + '</div>',
+                        iconSize: [200, 28],
+                        iconAnchor: [100, 14]
                     });
-                    const marker = L.marker([p.lat, p.lon], { icon: icon });
+                    const marker = L.marker([p.lat, p.lon], { icon: icon, zIndexOffset: 1000 });
                     const popupHtml =
                         '<div style="font-family:Segoe UI,sans-serif;">' +
                         '<b style="font-size:14px;color:#ff5722;">🏘️ ' + p.name + '</b><br>' +
