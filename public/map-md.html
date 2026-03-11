@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a12; color: #e0e0e0; overflow: hidden; }
@@ -240,6 +241,23 @@
             .filter-group select, .filter-group input { min-width: 55px; font-size: 9px; }
             .header { max-width: 45vw; }
         }
+    
+        /* ── CLAIM / DRAW TERRITORY ── */
+        .claim-panel { position: absolute; bottom: 60px; left: 10px; z-index: 1200; background: rgba(10,10,18,0.97); padding: 10px 14px; border-radius: 8px; border: 1px solid #00e676; backdrop-filter: blur(10px); width: 230px; max-height: 40vh; overflow-y: auto; }
+        .claim-panel h4 { color: #00e676; font-size: 12px; margin: 0 0 8px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; }
+        .claim-panel .claim-list { max-height: 200px; overflow-y: auto; }
+        .claim-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin: 2px 0; background: rgba(0,230,118,0.08); border-radius: 4px; font-size: 11px; color: #ccc; }
+        .claim-item .claim-name { flex: 1; cursor: pointer; }
+        .claim-item .claim-name:hover { color: #00e676; }
+        .claim-item .claim-del { color: #ff5555; cursor: pointer; font-size: 13px; margin-left: 6px; }
+        .claim-item .claim-del:hover { color: #ff0000; }
+        .claim-btn { background: #00e676; color: #0a0a12; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 6px; }
+        .claim-btn:hover { background: #00c853; }
+        .claim-btn.drawing { background: #ff5555; }
+        .claim-count { color: #888; font-size: 10px; margin-left: 4px; }
+        .leaflet-draw-toolbar { background: rgba(10,10,18,0.9) !important; border: 1px solid #00e676 !important; }
+        .leaflet-draw-toolbar a { background-color: rgba(10,10,18,0.9) !important; color: #00e676 !important; }
+
     </style>
 </head>
 <body>
@@ -337,6 +355,7 @@
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('trailerParks',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff5722;"></div><span class="toggle-label">🏘️ Trailer Parks</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('kwhHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#0000ff,#00ff00,#ff0000);"></div><span class="toggle-label">⚡ kWh Demand Heat</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('lmiOutlines',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">LMI Target Outlines</span></label>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
@@ -479,6 +498,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
         const map = L.map('map', { zoomControl: true }).setView([39.15, -76.85], 8);
 
@@ -517,6 +538,7 @@
             autoQualifyZones: L.featureGroup(),
             housingConcentration: L.featureGroup(),
             trailerParks: L.featureGroup(),
+            kwhHeat: L.featureGroup(),
             lmiIncomeOnly: L.featureGroup()
         };
 
@@ -537,7 +559,7 @@
         });
 
         // All on by default EXCEPT data overlays (income, race) — user toggles these
-        const defaultOffLayers = ['raceOverlay', 'lmiIncomeOnly'];
+        const defaultOffLayers = ['raceOverlay', 'lmiIncomeOnly', 'kwhHeat'];
         Object.entries(fg).forEach(([name, g]) => {
             if (!defaultOffLayers.includes(name)) g.addTo(map);
         });
@@ -564,7 +586,8 @@
             autoQualifyZones: fg.autoQualifyZones,
             housingConcentration: fg.housingConcentration,
             lmiIncomeOnly: fg.lmiIncomeOnly,
-            trailerParks: fg.trailerParks
+            trailerParks: fg.trailerParks,
+            kwhHeat: fg.kwhHeat
         };
 
         function toggleLayer(name, on) {
@@ -1445,6 +1468,48 @@
             } catch(e) { console.error('Trailer parks error:', e); }
         }
 
+        // ── kWh Demand Heat Map ──
+        // Proxy: electric_heat_households * inverse_income_factor
+        // More electric heat HH + lower income = higher likely kWh demand
+        function buildKwhHeatLayer(data) {
+            const heatPoints = [];
+            data.features.forEach(f => {
+                const p = f.properties;
+                if (!p.eh_n || !p.hh) return;
+                const ehCount = p.eh_n || 0;
+                const hh = p.hh || 1;
+                const ehPct = p.eh_pct || 0;
+                // Intensity: electric heat count weighted by % (higher % = more electric-dependent area)
+                const intensity = Math.min(ehCount * (ehPct / 100) * 0.1, 50);
+                if (intensity < 0.5) return;
+                // Get centroid of the feature
+                let coords;
+                try {
+                    const geom = f.geometry;
+                    if (geom.type === 'Polygon') {
+                        const ring = geom.coordinates[0];
+                        let cx = 0, cy = 0;
+                        ring.forEach(c => { cx += c[0]; cy += c[1]; });
+                        coords = [cy / ring.length, cx / ring.length];
+                    } else if (geom.type === 'MultiPolygon') {
+                        const ring = geom.coordinates[0][0];
+                        let cx = 0, cy = 0;
+                        ring.forEach(c => { cx += c[0]; cy += c[1]; });
+                        coords = [cy / ring.length, cx / ring.length];
+                    } else return;
+                } catch(e) { return; }
+                heatPoints.push([coords[0], coords[1], intensity]);
+            });
+            if (heatPoints.length) {
+                const heat = L.heatLayer(heatPoints, {
+                    radius: 28, blur: 22, maxZoom: 14, max: 30,
+                    gradient: { 0.2: '#0000ff', 0.4: '#00ffff', 0.55: '#00ff00', 0.7: '#ffff00', 0.85: '#ff8800', 1.0: '#ff0000' }
+                });
+                heat.addTo(fg.kwhHeat);
+            }
+        }
+
+
         // ── Search ──
         function searchLocation() {
             const term = document.getElementById('searchInput').value.trim();
@@ -1768,6 +1833,7 @@
                 const resp = await fetch('md_auto_qualify.geojson');
                 if (!resp.ok) return;
                 const data = await resp.json();
+                buildKwhHeatLayer(data);
                 // Sort features by utility territory for organized display
                 const features = data.features;
                 L.geoJSON(data, {
@@ -1932,6 +1998,138 @@
                 console.log('County boundaries loaded:', counties.features.length);
             } catch(e) { console.error('County boundaries error:', e); }
         }
+    
+        // ── CLAIM / DRAW TERRITORY ──
+        const claimedAreas = L.featureGroup().addTo(map);
+        const CLAIM_STORAGE_KEY = 'emg_claims_md';
+        let drawControl = null;
+        let isDrawing = false;
+
+        function loadClaims() {
+            try {
+                const saved = localStorage.getItem(CLAIM_STORAGE_KEY);
+                if (!saved) return;
+                const claims = JSON.parse(saved);
+                claims.forEach(c => addClaimFromGeoJSON(c));
+                updateClaimUI();
+            } catch(e) { console.error('Load claims error:', e); }
+        }
+
+        function addClaimFromGeoJSON(geojsonFeature) {
+            const layer = L.geoJSON(geojsonFeature, {
+                style: { color: '#00e676', fillColor: '#00e676', fillOpacity: 0.15, weight: 2, dashArray: '6,4' }
+            });
+            layer.eachLayer(l => {
+                l._claimName = geojsonFeature.properties?.name || 'Area ' + (claimedAreas.getLayers().length + 1);
+                l._claimDate = geojsonFeature.properties?.date || new Date().toLocaleDateString();
+                l.bindPopup('<div style="font-family:Segoe UI,sans-serif;"><b style="color:#00e676;">📐 ' + l._claimName + '</b><br><span style="color:#aaa;font-size:11px;">Claimed: ' + l._claimDate + '</span></div>');
+                claimedAreas.addLayer(l);
+            });
+        }
+
+        function saveClaims() {
+            const features = [];
+            claimedAreas.eachLayer(l => {
+                const gj = l.toGeoJSON();
+                gj.properties = { name: l._claimName || 'Unnamed', date: l._claimDate || '' };
+                features.push(gj);
+            });
+            localStorage.setItem(CLAIM_STORAGE_KEY, JSON.stringify(features));
+            updateClaimUI();
+        }
+
+        function updateClaimUI() {
+            const list = document.getElementById('claimList');
+            const count = document.getElementById('claimCount');
+            const layers = claimedAreas.getLayers();
+            count.textContent = '(' + layers.length + ')';
+            if (!layers.length) {
+                list.innerHTML = '<div style="color:#666;font-size:10px;">No areas claimed yet</div>';
+                return;
+            }
+            list.innerHTML = layers.map((l, i) => {
+                return '<div class="claim-item">' +
+                    '<span class="claim-name" onclick="zoomToClaim(' + i + ')">' + (l._claimName || 'Area ' + (i+1)) + '</span>' +
+                    '<span style="color:#666;font-size:9px;margin:0 4px;">' + (l._claimDate || '') + '</span>' +
+                    '<span class="claim-del" onclick="deleteClaim(' + i + ')">✕</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function zoomToClaim(idx) {
+            const layers = claimedAreas.getLayers();
+            if (layers[idx]) map.fitBounds(layers[idx].getBounds(), { padding: [50, 50] });
+        }
+
+        function deleteClaim(idx) {
+            const layers = claimedAreas.getLayers();
+            if (layers[idx]) {
+                claimedAreas.removeLayer(layers[idx]);
+                saveClaims();
+            }
+        }
+
+        function toggleDrawMode() {
+            const btn = document.getElementById('claimBtn');
+            if (isDrawing) {
+                if (drawControl) { map.removeControl(drawControl); drawControl = null; }
+                btn.textContent = '✏️ Draw to Claim';
+                btn.classList.remove('drawing');
+                isDrawing = false;
+            } else {
+                drawControl = new L.Control.Draw({
+                    position: 'topleft',
+                    draw: {
+                        polygon: { allowIntersection: false, shapeOptions: { color: '#00e676', fillColor: '#00e676', fillOpacity: 0.15, weight: 2, dashArray: '6,4' } },
+                        rectangle: { shapeOptions: { color: '#00e676', fillColor: '#00e676', fillOpacity: 0.15, weight: 2, dashArray: '6,4' } },
+                        circle: false, circlemarker: false, marker: false, polyline: false
+                    },
+                    edit: false
+                });
+                map.addControl(drawControl);
+                btn.textContent = '⛔ Cancel Drawing';
+                btn.classList.add('drawing');
+                isDrawing = true;
+            }
+        }
+
+        map.on(L.Draw.Event.CREATED, function(e) {
+            const layer = e.layer;
+            const name = prompt('Name this area (e.g., "Oak Hill Zone"):') || 'Area ' + (claimedAreas.getLayers().length + 1);
+            layer._claimName = name;
+            layer._claimDate = new Date().toLocaleDateString();
+            layer.setStyle({ color: '#00e676', fillColor: '#00e676', fillOpacity: 0.15, weight: 2, dashArray: '6,4' });
+            layer.bindPopup('<div style="font-family:Segoe UI,sans-serif;"><b style="color:#00e676;">📐 ' + name + '</b><br><span style="color:#aaa;font-size:11px;">Claimed: ' + layer._claimDate + '</span></div>');
+            claimedAreas.addLayer(layer);
+            saveClaims();
+            toggleDrawMode();
+        });
+
+        function exportClaims() {
+            const layers = claimedAreas.getLayers();
+            if (!layers.length) { alert('No areas claimed yet.'); return; }
+            let text = 'CLAIMED AREAS\n' + '='.repeat(40) + '\n';
+            layers.forEach((l, i) => {
+                const b = l.getBounds();
+                text += (i+1) + '. ' + (l._claimName || 'Unnamed') + '\n';
+                text += '   Claimed: ' + (l._claimDate || 'Unknown') + '\n';
+                text += '   Bounds: ' + b.getSouthWest().lat.toFixed(4) + ',' + b.getSouthWest().lng.toFixed(4) + ' to ' + b.getNorthEast().lat.toFixed(4) + ',' + b.getNorthEast().lng.toFixed(4) + '\n\n';
+            });
+            navigator.clipboard.writeText(text).then(() => alert('Copied ' + layers.length + ' areas to clipboard!')).catch(() => alert('Copy failed.'));
+        }
+
+        loadClaims();
+
     </script>
+
+        <div class="claim-panel" id="claimPanel">
+            <h4 onclick="document.getElementById('claimPanel').classList.toggle('panel-minimized')">📐 Claimed Areas <span class="claim-count" id="claimCount">(0)</span> <span class="arrow">▼</span></h4>
+            <div class="panel-body">
+                <div class="claim-list" id="claimList"><div style="color:#666;font-size:10px;">No areas claimed yet</div></div>
+                <button class="claim-btn" id="claimBtn" onclick="toggleDrawMode()">✏️ Draw to Claim</button>
+                <button class="claim-btn" style="background:#ff8800;margin-top:4px;" onclick="exportClaims()">📋 Copy All to Clipboard</button>
+            </div>
+        </div>
+
 </body>
 </html>
