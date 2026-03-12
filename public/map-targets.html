@@ -118,9 +118,9 @@
         <div class="section-divider"></div>
         <h3>📍 Overlays</h3>
         <div class="toggle-row"><input type="checkbox" id="tog-sales" checked><label for="tog-sales">💰 Proven Sales Zones</label></div>
-        <div class="toggle-row"><input type="checkbox" id="tog-indiv-sales"><label for="tog-indiv-sales">📌 Individual Sales</label><span class="count" id="cnt-indiv"></span></div>
         <div class="toggle-row"><input type="checkbox" id="tog-radius"><label for="tog-radius">⭕ 2hr Drive Radius</label></div>
         <div class="toggle-row"><input type="checkbox" id="tog-heatmap" checked><label for="tog-heatmap">🔥 Conversion Heatmap</label></div>
+        <div class="toggle-row"><input type="checkbox" id="tog-individual"><label for="tog-individual">📌 Individual Sales</label><span class="count" id="cnt-individual"></span></div>
     </div>
 
     <!-- Legend -->
@@ -146,9 +146,6 @@
             <h4>OVERLAYS</h4>
             <div class="legend-row"><div class="legend-dot" style="background:#00c853"></div>Proven Sales (high conv.)</div>
             <div class="legend-row"><div class="legend-dot" style="background:#ff1744"></div>Proven Sales (low conv.)</div>
-            <div class="legend-row"><div class="legend-dot" style="background:#00e676;width:6px;height:6px"></div>Individual (Payable)</div>
-            <div class="legend-row"><div class="legend-dot" style="background:#ff5252;width:6px;height:6px"></div>Individual (Bad)</div>
-            <div class="legend-row"><div class="legend-dot" style="background:#ffc107;width:6px;height:6px"></div>Individual (Pending)</div>
         </div>
     </div>
 
@@ -175,12 +172,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
     (async function() {
-
-    // Cache bust to prevent stale data
-    var CB = '?v=' + Date.now();
 
     // ═══ CONFIG ═══
     const REP_COLORS = {
@@ -222,15 +215,16 @@
     }).addTo(map).bindPopup('<b style="color:#ff8800">📍 Annapolis HQ</b><br>Operations Center');
 
     // ═══ LOAD DATA ═══
+    var CB = '?v=' + Date.now();
     const [pins, hotspots, gapPins, trailerData, mdSales, vaSales] = await Promise.all([
         fetch('target_pins.json' + CB).then(r => r.json()),
         fetch('sales_hotspots.json' + CB).then(r => r.json()),
         fetch('gap_pins.json' + CB).then(r => r.json()),
         fetch('target_trailers.json' + CB).then(r => r.json()),
-        fetch('md_sales.json' + CB).then(r => r.json()),
-        fetch('va_sales.json' + CB).then(r => r.json())
+        fetch('md_sales.json' + CB).then(r => r.json()).catch(() => []),
+        fetch('va_sales.json' + CB).then(r => r.json()).catch(() => [])
     ]);
-    var allSales = mdSales.concat(vaSales);
+    const allSales = mdSales.concat(vaSales);
 
     // ═══ COUNT STATS ═══
     const repCounts = {};
@@ -470,68 +464,29 @@
         trailerLayer.addLayer(m);
     });
 
-    // ═══ HEATMAP (real sales density via leaflet-heat) ═══
-    var heatPoints = [];
-    allSales.forEach(function(s) {
-        if (!s[0] || !s[1]) return;
-        var status = s[5] || '';
-        if (status === 'Payable' || status === 'Processed') {
-            heatPoints.push([s[0], s[1], 1.0]);
-        } else if (status === 'Sent' || status === 'Awaiting Client Update' || status === 'TPV Not Complete') {
-            heatPoints.push([s[0], s[1], 0.4]);
-        } else if (status === 'Cannot Process' || status === 'Duplicate' || status === 'Denied') {
-            heatPoints.push([s[0], s[1], 0.15]);
-        }
-    });
-    pins.forEach(function(p) {
-        if (p.score >= 60) heatPoints.push([p.lat, p.lng, (p.score / 100) * 0.3]);
-    });
-    var heatLayer = L.heatLayer(heatPoints, {
-        radius: 28, blur: 20, maxZoom: 14, max: 1.0, minOpacity: 0.15,
-        gradient: { 0.1: '#0d47a1', 0.25: '#1565c0', 0.4: '#2e7d32', 0.55: '#ffc107', 0.7: '#ff8800', 0.85: '#ff5722', 1.0: '#ff1744' }
+    // ═══ HEATMAP (simple circle overlay for conversion density) ═══
+    const heatLayer = L.layerGroup();
+    hotspots.filter(h => h.rate >= 40 && h.payable >= 2).forEach(h => {
+        L.circle([h.lat, h.lng], {
+            radius: 8000,
+            color: 'transparent',
+            fillColor: '#ff8800',
+            fillOpacity: 0.08 + (h.rate / 100) * 0.12,
+            weight: 0
+        }).addTo(heatLayer);
     });
     heatLayer.addTo(map);
 
-    // ═══ INDIVIDUAL SALES PINS (clustered) ═══
-    var STATUS_COLORS = {
-        'Payable': '#00e676', 'Processed': '#00e676',
-        'Cannot Process': '#ff5252', 'Duplicate': '#ff5252', 'Denied': '#ff5252',
-        'Chargeback': '#ff5252', 'Failed - Agent Phone Number': '#ff5252',
-        'Sent': '#ffc107', 'Awaiting Client Update': '#ffc107',
-        'TPV Not Complete': '#ffc107', 'Compliance Review': '#ffc107',
-        'Incomplete': '#ffc107', 'Test': '#888'
-    };
-    var STATUS_LABELS = { '#00e676': 'Payable', '#ff5252': 'Bad', '#ffc107': 'Pending', '#888': 'Test' };
-
-    var indivCluster = L.markerClusterGroup({
-        maxClusterRadius: 40, spiderfyOnMaxZoom: true, showCoverageOnHover: false,
-        iconCreateFunction: function(cluster) {
-            var children = cluster.getAllChildMarkers();
-            var payable = 0;
-            children.forEach(function(m) { if (m.options.fillColor === '#00e676') payable++; });
-            var pct = Math.round(payable / children.length * 100);
-            var bg = pct >= 50 ? 'rgba(0,230,118,0.7)' : pct >= 25 ? 'rgba(255,193,7,0.7)' : 'rgba(255,82,82,0.7)';
-            return L.divIcon({
-                html: '<div style="background:' + bg + ';color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid rgba(255,255,255,0.5)">' + children.length + '</div>',
-                className: '', iconSize: [36, 36]
-            });
-        }
+    // ═══ INDIVIDUAL SALES LAYER ═══
+    const STATUS_COLORS = { payable:'#00c853', cancelled:'#ff1744', pending:'#ffc107', rejected:'#ff5722' };
+    const individualLayer = L.markerClusterGroup({ maxClusterRadius: 40, disableClusteringAtZoom: 13 });
+    allSales.forEach(s => {
+        const col = STATUS_COLORS[(s[5]||'').toLowerCase()] || '#888';
+        const m = L.circleMarker([s[0], s[1]], { radius: 4, fillColor: col, color: '#fff', weight: 1, fillOpacity: 0.85 });
+        m.bindPopup('<b style="color:#ff8800">' + (s[2]||'') + ' ' + (s[3]||'') + '</b><br>Date: ' + (s[4]||'?') + '<br>Status: <b style="color:' + col + '">' + (s[5]||'?') + '</b><br>Rep: ' + (s[6]||'?'));
+        individualLayer.addLayer(m);
     });
-    document.getElementById('cnt-indiv').textContent = '(' + allSales.length + ')';
-    allSales.forEach(function(s) {
-        if (!s[0] || !s[1]) return;
-        var status = s[5] || '';
-        var color = STATUS_COLORS[status] || '#888';
-        var m = L.circleMarker([s[0], s[1]], { radius: 4, fillColor: color, color: 'rgba(255,255,255,0.3)', weight: 0.5, fillOpacity: 0.8 });
-        var statusLabel = STATUS_LABELS[color] || status;
-        m.bindPopup(
-            '<div style="min-width:180px">' +
-            '<b>' + (s[2]||'') + ', ' + (s[3]||'') + '</b> <span style="background:' + color + ';color:#fff;padding:2px 6px;border-radius:8px;font-size:10px">' + statusLabel + '</span><br>' +
-            '📋 ' + status + '<br>👤 ' + (s[6]||'Unknown') + '<br>📅 ' + (s[4]||'N/A') +
-            '<br><button onclick="openShareModal(' + s[0] + ',' + s[1] + ',\'' + (s[2]||'').replace(/'/g,"\\'") + '\',\'Sale\',0,\'' + (s[6]||'').replace(/'/g,"\\'") + '\')" style="width:100%;margin-top:6px;padding:8px;border:none;border-radius:6px;background:#ff8800;color:#fff;font-size:12px;font-weight:600;cursor:pointer">📤 Share</button></div>'
-        );
-        indivCluster.addLayer(m);
-    });
+    document.getElementById('cnt-individual').textContent = '(' + allSales.length + ')';
 
     // ═══ RENDER FUNCTION ═══
     function renderPins() {
@@ -590,8 +545,8 @@
     document.getElementById('tog-trailers').addEventListener('change', function() {
         this.checked ? map.addLayer(trailerLayer) : map.removeLayer(trailerLayer);
     });
-    document.getElementById('tog-indiv-sales').addEventListener('change', function() {
-        this.checked ? map.addLayer(indivCluster) : map.removeLayer(indivCluster);
+    document.getElementById('tog-individual').addEventListener('change', function() {
+        this.checked ? map.addLayer(individualLayer) : map.removeLayer(individualLayer);
     });
 
     })();
