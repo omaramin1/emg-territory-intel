@@ -1163,19 +1163,28 @@
         // ── LOAD SALES DATA ──
         async function loadSalesData() {
             try {
-                updateLoading('Loading 90,000+ sales records...', 40);
+                updateLoading('Loading real sales data...', 40);
                 const resp = await fetch('ny_sales.json');
                 if (!resp.ok) throw new Error('No sales data');
                 salesData = await resp.json();
 
                 updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 55);
                 const markers = [];
+                const statusColors = {
+                    'Payable':'#00c853','Processed':'#00c853','Sent':'#ff8800',
+                    'Cannot Process':'#ff1744','Denied':'#d50000','Chargeback':'#aa00ff',
+                    'TPV Not Complete':'#ff9100','Duplicate':'#757575','Awaiting Client Update':'#ffd600',
+                    'No Capacity (On Hold)':'#2979ff','Compliance Review':'#e040fb',
+                    'Incomplete':'#bdbdbd','Test':'#9e9e9e','In Queue':'#00b0ff',
+                    'Failed - Agent Phone Number':'#ff1744','Utility Connect Complete':'#00c853'
+                };
                 for (let i = 0; i < salesData.length; i++) {
-                    const [lat, lon, city, zip, date] = salesData[i];
+                    const [lat, lon, city, zip, date, status, rep] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                    const m = L.circleMarker([lat, lon], { radius: 3, fillColor: '#ff8800', color: '#ff6600', weight: 1, opacity: 0.7, fillOpacity: 0.6 });
-                    m.bindPopup(`<b>📍 Sale</b><br>${city || ''} ${zip || ''}<br>${date || ''}`);
+                    const sc = statusColors[status] || '#ff8800';
+                    const m = L.circleMarker([lat, lon], { radius: 5, fillColor: sc, color: '#222', weight: 1, opacity: 0.9, fillOpacity: 0.85 });
+                    m.bindPopup(`<b>📍 Sale</b><br><b>${city || ''}</b> ${zip || ''}<br>📅 ${date || ''}<br>Status: <span style="color:${sc};font-weight:700">${status || 'N/A'}</span><br>Rep: ${rep || 'N/A'}`);
                     markers.push(m);
                 }
 
