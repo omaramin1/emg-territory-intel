@@ -27,10 +27,12 @@
         .marker-cluster-large div { background-color: rgba(220,20,0,0.7); color: #fff; }
         .marker-cluster div { width: 24px; height: 24px; margin-left: 3px; margin-top: 3px; text-align: center; border-radius: 12px; font: 11px "Segoe UI", sans-serif; font-weight: 700; line-height: 24px; }
 
+        /* Header */
         .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10,10,18,0.96); padding: 12px 16px; border-radius: 10px; border: 1px solid #ff8800; backdrop-filter: blur(12px); }
         .header h1 { font-size: 15px; color: #ff8800; font-weight: 700; }
         .header .sub { font-size: 11px; color: #aaa; margin-top: 2px; }
 
+        /* Toggle Panel */
         .toggle-panel { position: absolute; top: 10px; right: 10px; z-index: 1200; background: rgba(10,10,18,0.97); padding: 12px 14px; border-radius: 10px; border: 1px solid #ff8800; backdrop-filter: blur(12px); width: 220px; max-height: calc(100vh - 30px); overflow-y: auto; }
         .toggle-panel h3 { font-size: 12px; color: #ff8800; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .toggle-row { display: flex; align-items: center; padding: 4px 0; cursor: pointer; user-select: none; }
@@ -39,16 +41,20 @@
         .toggle-row .count { font-size: 10px; color: #888; margin-left: 4px; }
         .section-divider { border-top: 1px solid rgba(255,136,0,0.2); margin: 8px 0; }
 
+        /* Legend */
         .legend { position: absolute; bottom: 20px; left: 10px; z-index: 1000; background: rgba(10,10,18,0.96); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,136,0,0.3); backdrop-filter: blur(12px); }
         .legend h4 { font-size: 11px; color: #ff8800; margin-bottom: 6px; font-weight: 700; }
         .legend-row { display: flex; align-items: center; margin: 3px 0; font-size: 11px; }
         .legend-dot { width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; border: 2px solid rgba(255,255,255,0.3); flex-shrink: 0; }
+        .legend-line { width: 20px; height: 3px; margin-right: 8px; border-radius: 2px; flex-shrink: 0; }
         .legend-section { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,136,0,0.15); }
 
+        /* Stats Bar */
         .stats-bar { position: absolute; bottom: 20px; right: 10px; z-index: 1000; background: rgba(10,10,18,0.96); padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,136,0,0.3); backdrop-filter: blur(12px); text-align: right; }
         .stats-bar .stat { font-size: 11px; margin: 2px 0; }
         .stats-bar .stat b { color: #ff8800; }
 
+        /* Share Modal */
         .share-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
         .share-modal.active { display: flex; }
         .share-content { background: #1a1a2e; border-radius: 12px; padding: 20px; width: 90%; max-width: 380px; border: 1px solid #ff8800; }
@@ -62,12 +68,14 @@
         .share-btn.close { background: #555; margin-top: 8px; width: 100%; }
         .share-btn:active { transform: scale(0.96); }
 
+        /* Score bar in popup */
         .score-bar { height: 6px; border-radius: 3px; background: #333; margin: 6px 0; overflow: hidden; }
         .score-fill { height: 100%; border-radius: 3px; }
         .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; font-size: 11px; margin-top: 4px; }
         .comp-grid span { color: #aaa; }
         .comp-grid b { color: #ddd; font-weight: 500; }
 
+        /* Mobile adjustments */
         @media (max-width: 600px) {
             .header { top: 5px; left: 5px; padding: 8px 12px; }
             .header h1 { font-size: 13px; }
@@ -80,11 +88,13 @@
 <body>
     <div id="map"></div>
 
+    <!-- Header -->
     <div class="header">
         <h1>🎯 EMG Rep Starting Points</h1>
         <div class="sub">600 Zones · Priority: EH% → LMI → Saturation → AI Predicted</div>
     </div>
 
+    <!-- Toggle Panel -->
     <div class="toggle-panel" id="togglePanel">
         <h3>🎯 Rep Type</h3>
         <div class="toggle-row"><input type="checkbox" id="tog-black" checked><label for="tog-black">👤 Black Rep</label><span class="count" id="cnt-black"></span></div>
@@ -107,12 +117,13 @@
 
         <div class="section-divider"></div>
         <h3>📍 Overlays</h3>
-        <div class="toggle-row"><input type="checkbox" id="tog-sales" checked><label for="tog-sales">💰 Sales Hotspots (ZIP)</label></div>
+        <div class="toggle-row"><input type="checkbox" id="tog-sales" checked><label for="tog-sales">💰 Proven Sales Zones</label></div>
         <div class="toggle-row"><input type="checkbox" id="tog-indiv-sales"><label for="tog-indiv-sales">📌 Individual Sales</label><span class="count" id="cnt-indiv"></span></div>
         <div class="toggle-row"><input type="checkbox" id="tog-radius"><label for="tog-radius">⭕ 2hr Drive Radius</label></div>
-        <div class="toggle-row"><input type="checkbox" id="tog-heatmap"><label for="tog-heatmap">🔥 Conversion Heatmap</label></div>
+        <div class="toggle-row"><input type="checkbox" id="tog-heatmap" checked><label for="tog-heatmap">🔥 Conversion Heatmap</label></div>
     </div>
 
+    <!-- Legend -->
     <div class="legend">
         <h4>REP TYPE COLORS</h4>
         <div class="legend-row"><div class="legend-dot" style="background:#1565c0"></div>Black Rep</div>
@@ -120,10 +131,11 @@
         <div class="legend-row"><div class="legend-dot" style="background:#2e7d32"></div>White Rep</div>
         <div class="legend-row"><div class="legend-dot" style="background:#7b1fa2"></div>Diverse/Bilingual</div>
         <div class="legend-section">
-            <h4>PRIORITY GRADE</h4>
-            <div class="legend-row"><div class="legend-dot" style="background:#ff8800;border-color:#fff"></div><b style="color:#ff8800">S/A</b>&nbsp;Top Priority (60+)</div>
-            <div class="legend-row"><div class="legend-dot" style="width:10px;height:10px;background:#888;border-color:rgba(255,255,255,0.3)"></div>B Grade (48+)</div>
-            <div class="legend-row"><div class="legend-dot" style="width:8px;height:8px;background:#555;opacity:0.5"></div>C/D Grade</div>
+            <h4>PRIORITY SIZE</h4>
+            <div class="legend-row"><div class="legend-dot" style="width:20px;height:20px;background:#ff8800;border-color:#fff"></div>S-Tier (75+)</div>
+            <div class="legend-row"><div class="legend-dot" style="width:16px;height:16px;background:#ff8800;opacity:0.8"></div>A-Grade (60+)</div>
+            <div class="legend-row"><div class="legend-dot" style="width:12px;height:12px;background:#ff8800;opacity:0.6"></div>B-Grade (48+)</div>
+            <div class="legend-row"><div class="legend-dot" style="width:9px;height:9px;background:#ff8800;opacity:0.4"></div>C/D Grade</div>
         </div>
         <div class="legend-section">
             <h4>GAP ANALYSIS</h4>
@@ -134,18 +146,20 @@
             <h4>OVERLAYS</h4>
             <div class="legend-row"><div class="legend-dot" style="background:#00c853"></div>Proven Sales (high conv.)</div>
             <div class="legend-row"><div class="legend-dot" style="background:#ff1744"></div>Proven Sales (low conv.)</div>
-            <div class="legend-row"><div class="legend-dot" style="background:#00e676;width:6px;height:6px"></div>Individual Sale (Payable)</div>
-            <div class="legend-row"><div class="legend-dot" style="background:#ff5252;width:6px;height:6px"></div>Individual Sale (Bad)</div>
-            <div class="legend-row"><div class="legend-dot" style="background:#ffc107;width:6px;height:6px"></div>Individual Sale (Pending)</div>
+            <div class="legend-row"><div class="legend-dot" style="background:#00e676;width:6px;height:6px"></div>Individual (Payable)</div>
+            <div class="legend-row"><div class="legend-dot" style="background:#ff5252;width:6px;height:6px"></div>Individual (Bad)</div>
+            <div class="legend-row"><div class="legend-dot" style="background:#ffc107;width:6px;height:6px"></div>Individual (Pending)</div>
         </div>
     </div>
 
+    <!-- Stats -->
     <div class="stats-bar" id="statsBar">
         <div class="stat">Visible: <b id="stat-visible">0</b> tracts</div>
         <div class="stat">Top Priority: <b id="stat-top">0</b></div>
         <div class="stat">Est. Households: <b id="stat-hh">0</b></div>
     </div>
 
+    <!-- Share Modal -->
     <div class="share-modal" id="shareModal">
         <div class="share-content">
             <h3>📍 Share Location</h3>
@@ -163,30 +177,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
-    // Fallback: if L.heatLayer not available, define stub
-    if (typeof L !== 'undefined' && !L.heatLayer) {
-        L.heatLayer = function(pts, opts) {
-            var lg = L.layerGroup();
-            pts.forEach(function(p) {
-                if (p[2] > 0.3) {
-                    L.circle([p[0], p[1]], {
-                        radius: (opts.radius || 25) * 50,
-                        color: 'transparent',
-                        fillColor: '#ff8800',
-                        fillOpacity: p[2] * 0.25,
-                        weight: 0
-                    }).addTo(lg);
-                }
-            });
-            return lg;
-        };
-    }
-    </script>
-    <script>
     (async function() {
 
-    // Cache bust - force fresh data on each deploy
-    const CB = '?v=' + Date.now();
+    // Cache bust to prevent stale data
+    var CB = '?v=' + Date.now();
 
     // ═══ CONFIG ═══
     const REP_COLORS = {
@@ -197,12 +191,12 @@
     };
 
     const GRADE_CONFIG = {
-        'S': { radius: 12, opacity: 0.9, weight: 2.5, borderColor: '#fff' },
-        'A': { radius: 10, opacity: 0.85, weight: 2, borderColor: '#fff' },
-        'B': { radius: 7,  opacity: 0.7, weight: 1.5, borderColor: 'rgba(255,255,255,0.4)' },
-        'C': { radius: 5,  opacity: 0.5, weight: 1, borderColor: 'rgba(255,255,255,0.2)' },
-        'D': { radius: 4,  opacity: 0.35, weight: 0.5, borderColor: 'rgba(255,255,255,0.15)' },
-        'F': { radius: 3,  opacity: 0.2, weight: 0.5, borderColor: 'rgba(255,255,255,0.1)' }
+        'S': { radius: 12, opacity: 1.0, weight: 3, glow: true },
+        'A': { radius: 9,  opacity: 0.85, weight: 2, glow: false },
+        'B': { radius: 7,  opacity: 0.70, weight: 1.5, glow: false },
+        'C': { radius: 5,  opacity: 0.50, weight: 1, glow: false },
+        'D': { radius: 4,  opacity: 0.35, weight: 1, glow: false },
+        'F': { radius: 3,  opacity: 0.25, weight: 1, glow: false }
     };
 
     const ANNAPOLIS = [38.9784, -76.4922];
@@ -222,11 +216,12 @@
         maxZoom: 19
     }).addTo(map);
 
+    // Annapolis marker
     L.circleMarker(ANNAPOLIS, {
         radius: 8, fillColor: '#ff8800', color: '#fff', weight: 3, fillOpacity: 1
     }).addTo(map).bindPopup('<b style="color:#ff8800">📍 Annapolis HQ</b><br>Operations Center');
 
-    // ═══ LOAD DATA (cache-busted) ═══
+    // ═══ LOAD DATA ═══
     const [pins, hotspots, gapPins, trailerData, mdSales, vaSales] = await Promise.all([
         fetch('target_pins.json' + CB).then(r => r.json()),
         fetch('sales_hotspots.json' + CB).then(r => r.json()),
@@ -235,7 +230,7 @@
         fetch('md_sales.json' + CB).then(r => r.json()),
         fetch('va_sales.json' + CB).then(r => r.json())
     ]);
-    const allSales = mdSales.concat(vaSales);
+    var allSales = mdSales.concat(vaSales);
 
     // ═══ COUNT STATS ═══
     const repCounts = {};
@@ -245,32 +240,37 @@
         gradeCounts[p.grade] = (gradeCounts[p.grade] || 0) + 1;
     });
 
-    document.getElementById('cnt-black').textContent = '(' + (repCounts['Black Rep']||0) + ')';
-    document.getElementById('cnt-spanish').textContent = '(' + (repCounts['Spanish Rep']||0) + ')';
-    document.getElementById('cnt-white').textContent = '(' + (repCounts['White Rep']||0) + ')';
-    document.getElementById('cnt-diverse').textContent = '(' + (repCounts['Diverse/Bilingual']||0) + ')';
-    document.getElementById('cnt-S').textContent = '(' + (gradeCounts['S']||0) + ')';
-    document.getElementById('cnt-A').textContent = '(' + (gradeCounts['A']||0) + ')';
-    document.getElementById('cnt-B').textContent = '(' + (gradeCounts['B']||0) + ')';
-    document.getElementById('cnt-C').textContent = '(' + (gradeCounts['C']||0) + ')';
-    document.getElementById('cnt-D').textContent = '(' + (gradeCounts['D']||0) + ')';
+    document.getElementById('cnt-black').textContent = `(${repCounts['Black Rep']||0})`;
+    document.getElementById('cnt-spanish').textContent = `(${repCounts['Spanish Rep']||0})`;
+    document.getElementById('cnt-white').textContent = `(${repCounts['White Rep']||0})`;
+    document.getElementById('cnt-diverse').textContent = `(${repCounts['Diverse/Bilingual']||0})`;
+    document.getElementById('cnt-S').textContent = `(${gradeCounts['S']||0})`;
+    document.getElementById('cnt-A').textContent = `(${gradeCounts['A']||0})`;
+    document.getElementById('cnt-B').textContent = `(${gradeCounts['B']||0})`;
+    document.getElementById('cnt-C').textContent = `(${gradeCounts['C']||0})`;
+    document.getElementById('cnt-D').textContent = `(${gradeCounts['D']||0})`;
 
     // ═══ SHARE FUNCTIONS ═══
     let currentShareData = null;
 
     window.openShareModal = function(lat, lng, county, grade, score, rep) {
         currentShareData = { lat, lng, county, grade, score, rep };
-        const addr = county + ' County - ' + rep + ' Zone (Score: ' + score + ')';
-        const coordText = lat.toFixed(5) + ', ' + lng.toFixed(5);
+        const addr = `${county} County - ${rep} Zone (Score: ${score})`;
+        const coordText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         document.getElementById('shareAddress').innerHTML =
-            '<div style="font-weight:600;color:#ff8800;margin-bottom:4px">' + addr + '</div>' +
-            '<div style="font-size:12px;color:#aaa">' + coordText + '</div>';
+            `<div style="font-weight:600;color:#ff8800;margin-bottom:4px">${addr}</div>` +
+            `<div style="font-size:12px;color:#aaa">${coordText}</div>`;
 
+        // SMS link - sends coordinates as text message
         const smsBody = encodeURIComponent(
-            '📍 EMG Target Zone\n' + county + ' County - ' + rep + '\nGrade: ' + grade + ' | Score: ' + score + '\nhttps://www.google.com/maps?q=' + lat + ',' + lng
+            `📍 EMG Target Zone\n${county} County - ${rep}\nGrade: ${grade} | Score: ${score}\nhttps://www.google.com/maps?q=${lat},${lng}`
         );
-        document.getElementById('shareSMS').href = 'sms:?body=' + smsBody;
-        document.getElementById('shareMaps').href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+        // Use sms: protocol - works on both iOS and Android
+        document.getElementById('shareSMS').href = `sms:?body=${smsBody}`;
+
+        // Google Maps link
+        document.getElementById('shareMaps').href = `https://www.google.com/maps?q=${lat},${lng}`;
+
         document.getElementById('shareModal').classList.add('active');
     };
 
@@ -280,14 +280,15 @@
 
     document.getElementById('shareCopy').onclick = function() {
         if (!currentShareData) return;
-        var d = currentShareData;
-        var text = '📍 EMG Target Zone\n' + d.county + ' County - ' + d.rep + '\nGrade: ' + d.grade + ' | Score: ' + d.score + '\nhttps://www.google.com/maps?q=' + d.lat + ',' + d.lng;
-        navigator.clipboard.writeText(text).then(function() {
-            document.getElementById('shareCopy').textContent = '✅ Copied!';
-            setTimeout(function() { document.getElementById('shareCopy').textContent = '📋 Copy'; }, 2000);
+        const d = currentShareData;
+        const text = `📍 EMG Target Zone\n${d.county} County - ${d.rep}\nGrade: ${d.grade} | Score: ${d.score}\nhttps://www.google.com/maps?q=${d.lat},${d.lng}`;
+        navigator.clipboard.writeText(text).then(() => {
+            this.textContent = '✅ Copied!';
+            setTimeout(() => { this.textContent = '📋 Copy'; }, 2000);
         });
     };
 
+    // Close modal on backdrop click
     document.getElementById('shareModal').onclick = function(e) {
         if (e.target === this) closeShareModal();
     };
@@ -296,84 +297,87 @@
     const pinMarkers = [];
     const pinLayer = L.layerGroup();
 
-    pins.forEach(function(p) {
-        var color = REP_COLORS[p.rep] || '#888';
-        var gc = GRADE_CONFIG[p.grade] || GRADE_CONFIG['D'];
+    pins.forEach(p => {
+        const color = REP_COLORS[p.rep] || '#888';
+        const gc = GRADE_CONFIG[p.grade] || GRADE_CONFIG['D'];
 
-        var marker = L.circleMarker([p.lat, p.lng], {
+        const marker = L.circleMarker([p.lat, p.lng], {
             radius: gc.radius,
             fillColor: color,
-            color: gc.borderColor,
+            color: gc.glow ? '#ffd600' : 'rgba(255,255,255,0.4)',
             weight: gc.weight,
-            fillOpacity: gc.opacity
+            fillOpacity: gc.opacity,
+            className: gc.glow ? 'glow-marker' : ''
         });
 
-        var scoreColor = p.score >= 75 ? '#ffd600' : p.score >= 60 ? '#ff8800' : p.score >= 48 ? '#4caf50' : p.score >= 35 ? '#2196f3' : '#9e9e9e';
-        var c = p.comp || {};
+        // Score bar color
+        const scoreColor = p.score >= 75 ? '#ff8800' : p.score >= 60 ? '#ffc107' : p.score >= 48 ? '#4caf50' : p.score >= 35 ? '#2196f3' : '#9e9e9e';
+        const c = p.comp || {};
 
-        var popup =
-            '<div style="min-width:240px">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-                    '<b style="font-size:15px">' + p.county + ', ' + p.state + '</b>' +
-                    '<span style="background:' + color + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + p.rep + '</span>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
-                    '<span>Grade: <b style="color:' + scoreColor + ';font-size:20px">' + p.grade + '</b></span>' +
-                    '<span>Score: <b style="color:' + scoreColor + '">' + p.score + '</b>/100</span>' +
-                '</div>' +
-                '<div class="score-bar"><div class="score-fill" style="width:' + p.score + '%;background:' + scoreColor + '"></div></div>' +
+        const popup = `
+            <div style="min-width:240px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <b style="font-size:15px">${p.county}, ${p.state}</b>
+                    <span style="background:${color};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${p.rep}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                    <span>Grade: <b style="color:${scoreColor};font-size:16px">${p.grade}</b></span>
+                    <span>Score: <b style="color:${scoreColor}">${p.score}</b>/100</span>
+                </div>
+                <div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${scoreColor}"></div></div>
 
-                '<div style="font-size:11px;color:#aaa;margin:6px 0 2px">PRIORITY BREAKDOWN</div>' +
-                '<div class="comp-grid">' +
-                    '<span>⚡ Electric Heat</span><b>' + (c.eh||0) + '/30</b>' +
-                    '<span>💰 LMI Qualified</span><b>' + (c.lmi||0) + '/20</b>' +
-                    '<span>🎯 Low Saturation</span><b>' + (c.sat||0) + '/25</b>' +
-                    '<span>📈 Predicted Deals</span><b>' + (c.pred||0) + '/15</b>' +
-                    '<span>🔧 Modifiers</span><b>' + (c.mod||0) + '/10</b>' +
-                    '<span>📊 Nearby Sales</span><b>' + (p.nearby_sales !== undefined ? p.nearby_sales : '?') + '</b>' +
-                '</div>' +
+                <div style="font-size:11px;color:#aaa;margin:6px 0 2px">PRIORITY BREAKDOWN</div>
+                <div class="comp-grid">
+                    <span>⚡ Electric Heat</span><b>${c.eh||0}/30</b>
+                    <span>💰 LMI Qualified</span><b>${c.lmi||0}/20</b>
+                    <span>🎯 Low Saturation</span><b>${c.sat||0}/25</b>
+                    <span>📈 Predicted Deals</span><b>${c.pred||0}/15</b>
+                    <span>🔧 Modifiers</span><b>${c.mod||0}/10</b>
+                    <span>📊 Nearby Sales</span><b>${p.nearby_sales !== undefined ? p.nearby_sales : '?'}</b>
+                </div>
 
-                '<div style="border-top:1px solid rgba(255,136,0,0.2);margin-top:8px;padding-top:6px;font-size:11px">' +
-                    '<div>🏘️ Households: <b>' + (p.hh||0).toLocaleString() + '</b> · Pop: <b>' + (p.pop||0).toLocaleString() + '</b></div>' +
-                    '<div>⚡ EH: <b>' + (p.eh_pct||0) + '%</b> · 🏠 Own: <b>' + (p.own_pct||0) + '%</b> · 💰 Inc: <b>$' + (p.inc||0).toLocaleString() + '</b></div>' +
-                    '<div>👥 W:' + (p.w_pct||0) + '% B:' + (p.b_pct||0) + '% H:' + (p.h_pct||0) + '%</div>' +
-                    '<div>🕐 Best time: <b>' + (p.best_time||'N/A') + '</b> · 📏 ' + p.dist_mi + 'mi from HQ</div>' +
-                '</div>' +
+                <div style="border-top:1px solid rgba(255,136,0,0.2);margin-top:8px;padding-top:6px;font-size:11px">
+                    <div>🏘️ Households: <b>${(p.hh||0).toLocaleString()}</b> · Pop: <b>${(p.pop||0).toLocaleString()}</b></div>
+                    <div>⚡ EH: <b>${p.eh_pct||0}%</b> · 🏠 Own: <b>${p.own_pct||0}%</b> · 💰 Inc: <b>$${(p.inc||0).toLocaleString()}</b></div>
+                    <div>👥 W:${p.w_pct||0}% B:${p.b_pct||0}% H:${p.h_pct||0}%</div>
+                    <div>🕐 Best time: <b>${p.best_time||'N/A'}</b> · 📏 ${p.dist_mi}mi from HQ</div>
+                </div>
 
-                '<button onclick="openShareModal(' + p.lat + ',' + p.lng + ',\'' + (p.county||'').replace(/'/g,"\\'") + '\',\'' + p.grade + '\',' + p.score + ',\'' + (p.rep||'').replace(/'/g,"\\'") + '\')"' +
-                    ' style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:6px;background:#ff8800;color:#fff;font-size:13px;font-weight:600;cursor:pointer">' +
-                    '📤 Share Location' +
-                '</button>' +
-            '</div>';
+                <button onclick="openShareModal(${p.lat},${p.lng},'${p.county.replace(/'/g,"\\'")}','${p.grade}',${p.score},'${p.rep.replace(/'/g,"\\'")}')"
+                    style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:6px;background:#ff8800;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+                    📤 Share Location
+                </button>
+            </div>
+        `;
 
         marker.bindPopup(popup, { maxWidth: 320 });
-        pinMarkers.push({ marker: marker, rep: p.rep, grade: p.grade, score: p.score, hh: p.hh || 0 });
+        pinMarkers.push({ marker, rep: p.rep, grade: p.grade, score: p.score, hh: p.hh || 0 });
     });
 
     // ═══ SALES HOTSPOTS LAYER ═══
     const salesLayer = L.layerGroup();
-    hotspots.forEach(function(h) {
-        var convColor = h.rate >= 60 ? '#00c853' : h.rate >= 40 ? '#ffc107' : h.rate >= 20 ? '#ff8800' : '#ff1744';
-        var m = L.circleMarker([h.lat, h.lng], {
+    hotspots.forEach(h => {
+        const convColor = h.rate >= 60 ? '#00c853' : h.rate >= 40 ? '#ffc107' : h.rate >= 20 ? '#ff8800' : '#ff1744';
+        const m = L.circleMarker([h.lat, h.lng], {
             radius: Math.min(4 + h.total / 5, 18),
             fillColor: convColor,
             color: '#fff',
             weight: 2,
             fillOpacity: 0.7
         });
-        m.bindPopup(
-            '<b style="color:#ff8800">' + h.city + ', ' + h.state + ' ' + h.zip + '</b><br>' +
-            '📊 Total Orders: <b>' + h.total + '</b><br>' +
-            '✅ Payable: <b style="color:#00c853">' + h.payable + '</b><br>' +
-            '📈 Conversion: <b style="color:' + convColor + '">' + h.rate + '%</b>'
-        );
+        m.bindPopup(`
+            <b style="color:#ff8800">${h.city}, ${h.state} ${h.zip}</b><br>
+            📊 Total Orders: <b>${h.total}</b><br>
+            ✅ Payable: <b style="color:#00c853">${h.payable}</b><br>
+            📈 Conversion: <b style="color:${convColor}">${h.rate}%</b>
+        `);
         salesLayer.addLayer(m);
     });
     salesLayer.addTo(map);
 
     // ═══ DRIVE RADIUS ═══
     const radiusCircle = L.circle(ANNAPOLIS, {
-        radius: 160000,
+        radius: 160000, // ~100 miles in meters
         color: '#ff8800',
         fillColor: '#ff8800',
         fillOpacity: 0.03,
@@ -381,14 +385,14 @@
         dashArray: '8,6'
     });
 
-    // ═══ GAP PINS ═══
+    // ═══ GAP PINS (Untapped Opportunity Zones) ═══
     const gapLayer = L.layerGroup();
-    document.getElementById('cnt-gaps').textContent = '(' + gapPins.length + ')';
+    document.getElementById('cnt-gaps').textContent = `(${gapPins.length})`;
 
-    gapPins.forEach(function(g) {
-        var color = REP_COLORS[g.rep] || '#00e5ff';
-        var gc = GRADE_CONFIG[g.grade] || GRADE_CONFIG['B'];
-        var m = L.circleMarker([g.lat, g.lng], {
+    gapPins.forEach(g => {
+        const color = REP_COLORS[g.rep] || '#00e5ff';
+        const gc = GRADE_CONFIG[g.grade] || GRADE_CONFIG['B'];
+        const m = L.circleMarker([g.lat, g.lng], {
             radius: gc.radius + 2,
             fillColor: color,
             color: '#00e5ff',
@@ -397,78 +401,76 @@
             dashArray: '4,3'
         });
 
-        var scoreColor = g.score >= 75 ? '#00e5ff' : g.score >= 60 ? '#ffc107' : g.score >= 45 ? '#4caf50' : '#9e9e9e';
-        var housingInfo = [];
-        if (g.apt_pct >= 10) housingInfo.push('<div>🏢 Apartments: ' + g.apt_pct + '%</div>');
-        if (g.mobile_pct >= 5) housingInfo.push('<div>🏘️ Mobile: ' + g.mobile_pct + '%</div>');
-        if (g.nearest_tp <= 5) housingInfo.push('<div>🚐 Trailer: ' + (g.nearest_tp_name||'') + ' (' + g.nearest_tp + 'mi)</div>');
+        const scoreColor = g.score >= 75 ? '#00e5ff' : g.score >= 60 ? '#ffc107' : g.score >= 45 ? '#4caf50' : '#9e9e9e';
+        const housingInfo = [];
+        if (g.apt_pct >= 10) housingInfo.push(`🏢 Apartments: ${g.apt_pct}%`);
+        if (g.mobile_pct >= 5) housingInfo.push(`🏘️ Mobile: ${g.mobile_pct}%`);
+        if (g.nearest_tp <= 5) housingInfo.push(`🚐 Trailer: ${g.nearest_tp_name} (${g.nearest_tp}mi)`);
 
-        m.bindPopup(
-            '<div style="min-width:240px">' +
-                '<div style="background:rgba(0,229,255,0.15);padding:4px 8px;border-radius:6px;margin-bottom:6px;border:1px dashed #00e5ff">' +
-                    '<b style="color:#00e5ff">💎 UNTAPPED GAP ZONE</b>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-                    '<b style="font-size:14px">' + (g.county||'') + ', ' + (g.state||'MD') + '</b>' +
-                    '<span style="background:' + color + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + g.rep + '</span>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
-                    '<span>Grade: <b style="color:' + scoreColor + ';font-size:16px">' + g.grade + '</b></span>' +
-                    '<span>Opportunity: <b style="color:' + scoreColor + '">' + g.score + '</b>/100</span>' +
-                '</div>' +
-                '<div class="score-bar"><div class="score-fill" style="width:' + g.score + '%;background:' + scoreColor + '"></div></div>' +
+        m.bindPopup(`
+            <div style="min-width:240px">
+                <div style="background:rgba(0,229,255,0.15);padding:4px 8px;border-radius:6px;margin-bottom:6px;border:1px dashed #00e5ff">
+                    <b style="color:#00e5ff">💎 UNTAPPED GAP ZONE</b>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <b style="font-size:14px">${g.county}, ${g.state || 'MD'}</b>
+                    <span style="background:${color};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${g.rep}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                    <span>Grade: <b style="color:${scoreColor};font-size:16px">${g.grade}</b></span>
+                    <span>Opportunity: <b style="color:${scoreColor}">${g.score}</b>/100</span>
+                </div>
+                <div class="score-bar"><div class="score-fill" style="width:${g.score}%;background:${scoreColor}"></div></div>
 
-                '<div style="font-size:11px;color:#00e5ff;margin:6px 0 2px;font-weight:600">WHY THIS IS A GAP</div>' +
-                '<div style="font-size:12px">' +
-                    '<div>⚡ Electric Heat: <b>' + g.eh_pct + '%</b></div>' +
-                    housingInfo.join('') +
-                    '<div>📊 Existing Sales Nearby: <b style="color:' + (g.nearby_sales === 0 ? '#00e5ff' : '#ffc107') + '">' + g.nearby_sales + '</b> (undersaturated)</div>' +
-                    '<div>💰 Income: <b>$' + (g.inc||0).toLocaleString() + '</b> (' + (g.pct_median||0) + '% of median)</div>' +
-                '</div>' +
+                <div style="font-size:11px;color:#00e5ff;margin:6px 0 2px;font-weight:600">WHY THIS IS A GAP</div>
+                <div style="font-size:12px">
+                    <div>⚡ Electric Heat: <b>${g.eh_pct}%</b></div>
+                    ${housingInfo.map(h => `<div>${h}</div>`).join('')}
+                    <div>📊 Existing Sales Nearby: <b style="color:${g.nearby_sales === 0 ? '#00e5ff' : '#ffc107'}">${g.nearby_sales}</b> (undersaturated)</div>
+                    <div>💰 Income: <b>$${(g.inc||0).toLocaleString()}</b> (${g.pct_median}% of median)</div>
+                </div>
 
-                '<div style="border-top:1px solid rgba(0,229,255,0.2);margin-top:6px;padding-top:6px;font-size:11px">' +
-                    '<div>🏘️ HH: <b>' + (g.hh||0).toLocaleString() + '</b> · 🏠 Own: <b>' + (g.own_pct||0) + '%</b> · 📏 ' + (g.dist_mi||0) + 'mi</div>' +
-                    '<div>👥 W:' + (g.w_pct||0) + '% B:' + (g.b_pct||0) + '% H:' + (g.h_pct||0) + '%</div>' +
-                '</div>' +
+                <div style="border-top:1px solid rgba(0,229,255,0.2);margin-top:6px;padding-top:6px;font-size:11px">
+                    <div>🏘️ HH: <b>${(g.hh||0).toLocaleString()}</b> · 🏠 Own: <b>${g.own_pct}%</b> · 📏 ${g.dist_mi}mi</div>
+                    <div>👥 W:${g.w_pct}% B:${g.b_pct}% H:${g.h_pct}%</div>
+                </div>
 
-                '<button onclick="openShareModal(' + g.lat + ',' + g.lng + ',\'' + (g.county||'').replace(/'/g,"\\'") + '\',\'' + g.grade + '\',' + g.score + ',\'' + (g.rep||'').replace(/'/g,"\\'") + '\')"' +
-                    ' style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:6px;background:#00e5ff;color:#000;font-size:13px;font-weight:600;cursor:pointer">' +
-                    '📤 Share Gap Location' +
-                '</button>' +
-            '</div>'
-        , { maxWidth: 320 });
+                <button onclick="openShareModal(${g.lat},${g.lng},'${(g.county||'').replace(/'/g,"\\'")}','${g.grade}',${g.score},'${(g.rep||'').replace(/'/g,"\\'")}')"
+                    style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:6px;background:#00e5ff;color:#000;font-size:13px;font-weight:600;cursor:pointer">
+                    📤 Share Gap Location
+                </button>
+            </div>
+        `, { maxWidth: 320 });
         gapLayer.addLayer(m);
     });
     gapLayer.addTo(map);
 
     // ═══ TRAILER PARKS ═══
     const trailerLayer = L.layerGroup();
-    document.getElementById('cnt-trailers').textContent = '(' + trailerData.length + ')';
+    document.getElementById('cnt-trailers').textContent = `(${trailerData.length})`;
 
-    trailerData.forEach(function(t) {
-        var m = L.circleMarker([t.lat, t.lon], {
+    trailerData.forEach(t => {
+        const m = L.circleMarker([t.lat, t.lon], {
             radius: 5,
             fillColor: '#ffab00',
             color: '#fff',
             weight: 1.5,
             fillOpacity: 0.8
         });
-        m.bindPopup(
-            '<b style="color:#ffab00">🏘️ ' + (t.name || 'Trailer Park') + '</b><br>' +
-            '📍 ' + (t.city || '') + ', ' + (t.zip || '') + '<br>' +
-            (t.operator ? '🏢 ' + t.operator + '<br>' : '') +
-            (t.capacity ? '📊 Capacity: ' + t.capacity + '<br>' : '') +
-            '<button onclick="openShareModal(' + t.lat + ',' + t.lon + ',\'' + (t.city||'').replace(/'/g,"\\'") + '\',\'TP\',0,\'Trailer Park\')"' +
-                ' style="width:100%;margin-top:6px;padding:8px;border:none;border-radius:6px;background:#ffab00;color:#000;font-size:12px;font-weight:600;cursor:pointer">' +
-                '📤 Share Location' +
-            '</button>'
-        );
+        m.bindPopup(`
+            <b style="color:#ffab00">🏘️ ${t.name || 'Trailer Park'}</b><br>
+            📍 ${t.city || ''}, ${t.zip || ''}<br>
+            ${t.operator ? `🏢 ${t.operator}<br>` : ''}
+            ${t.capacity ? `📊 Capacity: ${t.capacity}<br>` : ''}
+            <button onclick="openShareModal(${t.lat},${t.lon},'${(t.city||'').replace(/'/g,"\\'")}','TP',0,'Trailer Park')"
+                style="width:100%;margin-top:6px;padding:8px;border:none;border-radius:6px;background:#ffab00;color:#000;font-size:12px;font-weight:600;cursor:pointer">
+                📤 Share Location
+            </button>
+        `);
         trailerLayer.addLayer(m);
     });
 
-    // ═══ HEATMAP (real sales density + opportunity scores) ═══
-    // Build heat points from actual payable sales (intensity = 1.0)
-    // and pending sales (intensity = 0.4) — gives true conversion density
+    // ═══ HEATMAP (real sales density via leaflet-heat) ═══
     var heatPoints = [];
     allSales.forEach(function(s) {
         if (!s[0] || !s[1]) return;
@@ -477,37 +479,18 @@
             heatPoints.push([s[0], s[1], 1.0]);
         } else if (status === 'Sent' || status === 'Awaiting Client Update' || status === 'TPV Not Complete') {
             heatPoints.push([s[0], s[1], 0.4]);
-        }
-        // Bad statuses still show weak heat — they indicate canvassing activity
-        else if (status === 'Cannot Process' || status === 'Duplicate' || status === 'Denied') {
+        } else if (status === 'Cannot Process' || status === 'Duplicate' || status === 'Denied') {
             heatPoints.push([s[0], s[1], 0.15]);
         }
     });
-
-    // Also add target pin scores as low-intensity opportunity heat
     pins.forEach(function(p) {
-        if (p.score >= 60) {
-            heatPoints.push([p.lat, p.lng, (p.score / 100) * 0.3]);
-        }
+        if (p.score >= 60) heatPoints.push([p.lat, p.lng, (p.score / 100) * 0.3]);
     });
-
     var heatLayer = L.heatLayer(heatPoints, {
-        radius: 28,
-        blur: 20,
-        maxZoom: 14,
-        max: 1.0,
-        minOpacity: 0.15,
-        gradient: {
-            0.1: '#0d47a1',
-            0.25: '#1565c0',
-            0.4: '#2e7d32',
-            0.55: '#ffc107',
-            0.7: '#ff8800',
-            0.85: '#ff5722',
-            1.0: '#ff1744'
-        }
+        radius: 28, blur: 20, maxZoom: 14, max: 1.0, minOpacity: 0.15,
+        gradient: { 0.1: '#0d47a1', 0.25: '#1565c0', 0.4: '#2e7d32', 0.55: '#ffc107', 0.7: '#ff8800', 0.85: '#ff5722', 1.0: '#ff1744' }
     });
-    // heatLayer NOT added by default — toggle on via panel
+    heatLayer.addTo(map);
 
     // ═══ INDIVIDUAL SALES PINS (clustered) ═══
     var STATUS_COLORS = {
@@ -518,64 +501,34 @@
         'TPV Not Complete': '#ffc107', 'Compliance Review': '#ffc107',
         'Incomplete': '#ffc107', 'Test': '#888'
     };
-    var STATUS_LABELS = {
-        '#00e676': 'Payable', '#ff5252': 'Bad', '#ffc107': 'Pending', '#888': 'Test'
-    };
+    var STATUS_LABELS = { '#00e676': 'Payable', '#ff5252': 'Bad', '#ffc107': 'Pending', '#888': 'Test' };
 
     var indivCluster = L.markerClusterGroup({
-        maxClusterRadius: 40,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
+        maxClusterRadius: 40, spiderfyOnMaxZoom: true, showCoverageOnHover: false,
         iconCreateFunction: function(cluster) {
             var children = cluster.getAllChildMarkers();
-            var payable = 0, bad = 0, pending = 0;
-            children.forEach(function(m) {
-                var c = m.options.fillColor;
-                if (c === '#00e676') payable++;
-                else if (c === '#ff5252') bad++;
-                else pending++;
-            });
-            var total = children.length;
-            var pct = Math.round(payable / total * 100);
+            var payable = 0;
+            children.forEach(function(m) { if (m.options.fillColor === '#00e676') payable++; });
+            var pct = Math.round(payable / children.length * 100);
             var bg = pct >= 50 ? 'rgba(0,230,118,0.7)' : pct >= 25 ? 'rgba(255,193,7,0.7)' : 'rgba(255,82,82,0.7)';
             return L.divIcon({
-                html: '<div style="background:' + bg + ';color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid rgba(255,255,255,0.5);box-shadow:0 2px 8px rgba(0,0,0,0.4)">' + total + '</div>',
-                className: '',
-                iconSize: [36, 36]
+                html: '<div style="background:' + bg + ';color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid rgba(255,255,255,0.5)">' + children.length + '</div>',
+                className: '', iconSize: [36, 36]
             });
         }
     });
-
     document.getElementById('cnt-indiv').textContent = '(' + allSales.length + ')';
-
     allSales.forEach(function(s) {
         if (!s[0] || !s[1]) return;
         var status = s[5] || '';
         var color = STATUS_COLORS[status] || '#888';
-        var m = L.circleMarker([s[0], s[1]], {
-            radius: 4,
-            fillColor: color,
-            color: 'rgba(255,255,255,0.3)',
-            weight: 0.5,
-            fillOpacity: 0.8
-        });
+        var m = L.circleMarker([s[0], s[1]], { radius: 4, fillColor: color, color: 'rgba(255,255,255,0.3)', weight: 0.5, fillOpacity: 0.8 });
         var statusLabel = STATUS_LABELS[color] || status;
         m.bindPopup(
             '<div style="min-width:180px">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-                    '<b style="font-size:13px">' + (s[2]||'') + ', ' + (s[3]||'') + '</b>' +
-                    '<span style="background:' + color + ';color:#fff;padding:2px 6px;border-radius:8px;font-size:10px;font-weight:600">' + statusLabel + '</span>' +
-                '</div>' +
-                '<div style="font-size:11px">' +
-                    '<div>📋 Status: <b>' + status + '</b></div>' +
-                    '<div>👤 Rep: <b>' + (s[6]||'Unknown') + '</b></div>' +
-                    '<div>📅 Date: <b>' + (s[4]||'N/A') + '</b></div>' +
-                '</div>' +
-                '<button onclick="openShareModal(' + s[0] + ',' + s[1] + ',\'' + (s[2]||'').replace(/'/g,"\\'") + '\',\'Sale\',0,\'' + (s[6]||'').replace(/'/g,"\\'") + '\')"' +
-                    ' style="width:100%;margin-top:6px;padding:8px;border:none;border-radius:6px;background:#ff8800;color:#fff;font-size:12px;font-weight:600;cursor:pointer">' +
-                    '📤 Share' +
-                '</button>' +
-            '</div>'
+            '<b>' + (s[2]||'') + ', ' + (s[3]||'') + '</b> <span style="background:' + color + ';color:#fff;padding:2px 6px;border-radius:8px;font-size:10px">' + statusLabel + '</span><br>' +
+            '📋 ' + status + '<br>👤 ' + (s[6]||'Unknown') + '<br>📅 ' + (s[4]||'N/A') +
+            '<br><button onclick="openShareModal(' + s[0] + ',' + s[1] + ',\'' + (s[2]||'').replace(/'/g,"\\'") + '\',\'Sale\',0,\'' + (s[6]||'').replace(/'/g,"\\'") + '\')" style="width:100%;margin-top:6px;padding:8px;border:none;border-radius:6px;background:#ff8800;color:#fff;font-size:12px;font-weight:600;cursor:pointer">📤 Share</button></div>'
         );
         indivCluster.addLayer(m);
     });
@@ -584,27 +537,27 @@
     function renderPins() {
         pinLayer.clearLayers();
 
-        var activeReps = new Set();
+        const activeReps = new Set();
         if (document.getElementById('tog-black').checked) activeReps.add('Black Rep');
         if (document.getElementById('tog-spanish').checked) activeReps.add('Spanish Rep');
         if (document.getElementById('tog-white').checked) activeReps.add('White Rep');
         if (document.getElementById('tog-diverse').checked) activeReps.add('Diverse/Bilingual');
 
-        var activeGrades = new Set();
+        const activeGrades = new Set();
         if (document.getElementById('tog-S').checked) activeGrades.add('S');
         if (document.getElementById('tog-A').checked) activeGrades.add('A');
         if (document.getElementById('tog-B').checked) activeGrades.add('B');
         if (document.getElementById('tog-C').checked) activeGrades.add('C');
         if (document.getElementById('tog-D').checked) activeGrades.add('D');
 
-        var visible = 0, topCount = 0, totalHH = 0;
+        let visible = 0, topCount = 0, totalHH = 0;
 
-        pinMarkers.forEach(function(item) {
-            if (activeReps.has(item.rep) && activeGrades.has(item.grade)) {
-                pinLayer.addLayer(item.marker);
+        pinMarkers.forEach(({ marker, rep, grade, score, hh }) => {
+            if (activeReps.has(rep) && activeGrades.has(grade)) {
+                pinLayer.addLayer(marker);
                 visible++;
-                totalHH += item.hh;
-                if (item.grade === 'S' || item.grade === 'A') topCount++;
+                totalHH += hh;
+                if (grade === 'S' || grade === 'A') topCount++;
             }
         });
 
@@ -618,7 +571,7 @@
 
     // ═══ TOGGLE HANDLERS ═══
     ['tog-black','tog-spanish','tog-white','tog-diverse',
-     'tog-S','tog-A','tog-B','tog-C','tog-D'].forEach(function(id) {
+     'tog-S','tog-A','tog-B','tog-C','tog-D'].forEach(id => {
         document.getElementById(id).addEventListener('change', renderPins);
     });
 
