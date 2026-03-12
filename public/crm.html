@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMG OPS · Solar CRM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2300C6FF'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='%23000' font-weight='bold'>⚡</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body,#root { height:100%; width:100%; overflow:hidden; }
+  body { font-family:'Inter',system-ui,-apple-system,sans-serif; background:#06090F; color:#E2E8F0; }
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#1A2535; border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:#2A3545; }
+  select option { background:#101820; color:#E2E8F0; }
+  input::placeholder { color:#4A6080; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes pulse3 { 0%,100%{opacity:0.3} 50%{opacity:1} }
+  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes countUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation:fadeIn 0.3s ease forwards; }
+  .slide-in { animation:slideIn 0.25s ease forwards; }
+  .hover-lift { transition:all 0.2s ease; }
+  .hover-lift:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .hover-glow:hover { border-color:#00C6FF !important; box-shadow:0 0 0 1px rgba(0,198,255,0.15); }
+  .shine { background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.03) 50%,transparent 100%); background-size:200% 100%; animation:shimmer 3s infinite; }
+  .tabular-nums { font-variant-numeric:tabular-nums; }
+  button { font-family:inherit; }
+  @media (max-width:1200px) {
+    .sidebar-wrap { display:none !important; }
+    .mobile-nav { display:flex !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useRef, useEffect, useCallback } = React;
+const { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar } = Recharts;
+
+// ─── ICONS (inline SVG to avoid CDN dependency) ──────────────────────────────
+const Icon = ({d, size=16, color="currentColor", strokeWidth=2, ...props}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
+    strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d={d}/>
+  </svg>
+);
+
+const Icons = {
+  dashboard: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  users: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  zap: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  map: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
+  bar: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  award: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>,
+  bolt: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  dollar: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  search: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  bell: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  plus: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  check: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  x: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  arrowUp: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>,
+  arrowDown: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>,
+  chevRight: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  chevDown: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  phone: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+  send: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+  target: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  clock: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  trending: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+  globe: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  settings: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  dots: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
+  filter: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+  download: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  layers: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+  mapPin: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+  flame: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
+  calendar: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  externalLink: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+};
+
+// ─── THEME ───────────────────────────────────────────────────────────────────
+const T = {
+  bg:"#06090F", surface:"#0C1118", card:"#101820", cardHover:"#141E2A",
+  border:"#1A2535", borderLight:"#243048",
+  accent:"#00C6FF", accentDim:"#003B52", accentGlow:"rgba(0,198,255,0.08)",
+  green:"#00E096", greenDim:"#003A28",
+  amber:"#FFB800", amberDim:"#3A2800",
+  red:"#FF4560", redDim:"#3A0010",
+  purple:"#8B5CF6", purpleDim:"#2D1F52",
+  text:"#E2E8F0", textSecondary:"#94A3B8", muted:"#4A6080", subtle:"#1E3048",
+};
+
+const STATUS_CONFIG = {
+  Payable:             { color:T.green,  bg:T.greenDim,   label:"Payable" },
+  "Cannot Process":    { color:T.red,    bg:T.redDim,     label:"Cannot Process" },
+  Duplicate:           { color:T.muted,  bg:"#1A2535",    label:"Duplicate" },
+  Denied:              { color:T.amber,  bg:T.amberDim,   label:"Denied" },
+  Chargeback:          { color:T.red,    bg:T.redDim,     label:"Chargeback" },
+  "TPV Not Complete":  { color:T.amber,  bg:T.amberDim,   label:"TPV Incomplete" },
+  "Awaiting Client Update": { color:T.accent, bg:T.accentDim, label:"Awaiting" },
+  Processed:           { color:T.purple, bg:T.purpleDim,  label:"Processed" },
+  Sent:                { color:T.accent, bg:T.accentDim,  label:"Sent" },
+  Test:                { color:T.muted,  bg:"#1A2535",    label:"Test" },
+};
+
+const UTILITY_COLORS = {
+  "DOMINION POWER":"#8B5CF6","CENTRAL HUDSON":"#00C6FF","CMP":"#FFB800",
+  "NATIONAL GRID NY":"#00E096","NATIONAL GRID MA":"#FF7043","EVERSOURCE (WMECO)":"#EC4899",
+  "VERSANT BHD":"#F59E0B","UNITIL MA":"#6366F1","XCEL MN":"#10B981",
+  "PEPCO MD":"#F43F5E","PEPCO DC":"#3B82F6","BGE":"#84CC16",
+  "POTOMAC EDISON":"#FB923C","ORU":"#A78BFA","RGE":"#38BDF8","NYSEG":"#34D399",
+};
+
+// Commission rates per utility ($/kWh enrolled)
+const COMMISSION_RATES = {
+  "DOMINION POWER":0.045,"CENTRAL HUDSON":0.052,"CMP":0.048,"NATIONAL GRID NY":0.055,
+  "NATIONAL GRID MA":0.053,"EVERSOURCE (WMECO)":0.050,"VERSANT BHD":0.046,
+  "UNITIL MA":0.049,"XCEL MN":0.044,"PEPCO MD":0.051,"PEPCO DC":0.051,
+  "BGE":0.047,"POTOMAC EDISON":0.048,"ORU":0.050,"RGE":0.054,"NYSEG":0.052,
+};
+
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+const REPS = [
+  { id:1,name:"Omar Amin",team:"Omar",territory:"Dominion/Pepco",deals:187,kwh:412800,payable:156,rate:83.4,phone:"(804) 555-0101",avatar:"OA",streak:12,weekDeals:8,hireDate:"2023-01-15",role:"CEO / Team Lead" },
+  { id:2,name:"Prince Saunders",team:"Omar",territory:"Central Hudson",deals:143,kwh:318400,payable:121,rate:84.6,phone:"(804) 555-0102",avatar:"PS",streak:7,weekDeals:5,hireDate:"2023-06-01",role:"Senior Closer" },
+  { id:3,name:"Devin Cargile",team:"Omar",territory:"Dominion",deals:516,kwh:1032000,payable:441,rate:85.5,phone:"(804) 555-0103",avatar:"DC",streak:23,weekDeals:14,hireDate:"2023-03-10",role:"Top Producer" },
+  { id:4,name:"Joshua Kole",team:"Omar",territory:"Dominion",deals:98,kwh:215600,payable:84,rate:85.7,phone:"(804) 555-0104",avatar:"JK",streak:4,weekDeals:3,hireDate:"2024-02-20",role:"Field Rep" },
+  { id:5,name:"Aunie Bailey",team:"Omar",territory:"Central Hudson",deals:399,kwh:877800,payable:339,rate:85.0,phone:"(804) 555-0105",avatar:"AB",streak:18,weekDeals:11,hireDate:"2023-04-15",role:"Senior Closer" },
+  { id:6,name:"Malaki Hernandez",team:"Omar",territory:"ORU",deals:76,kwh:167200,payable:64,rate:84.2,phone:"(804) 555-0106",avatar:"MH",streak:3,weekDeals:2,hireDate:"2024-06-01",role:"Field Rep" },
+  { id:7,name:"Michael Fiore",team:"Omar",territory:"Dominion",deals:134,kwh:294800,payable:112,rate:83.6,phone:"(804) 555-0107",avatar:"MF",streak:8,weekDeals:4,hireDate:"2023-09-01",role:"Closer" },
+  { id:8,name:"Hannah Boyer",team:"Omar",territory:"Pepco MD",deals:67,kwh:147400,payable:57,rate:85.1,phone:"(804) 555-0108",avatar:"HB",streak:5,weekDeals:2,hireDate:"2024-04-01",role:"Field Rep" },
+  { id:9,name:"Parion Martin",team:"Omar",territory:"BGE",deals:58,kwh:127600,payable:48,rate:82.8,phone:"(804) 555-0109",avatar:"PM",streak:2,weekDeals:1,hireDate:"2024-08-15",role:"New Rep" },
+  { id:10,name:"Derrick Greene Jr",team:"Omar",territory:"Dominion",deals:312,kwh:686400,payable:267,rate:85.6,phone:"(804) 555-0110",avatar:"DG",streak:15,weekDeals:9,hireDate:"2023-05-01",role:"Senior Closer" },
+  { id:11,name:"Tommy DeSocio",team:"Ahmad",territory:"CMP",deals:198,kwh:435600,payable:168,rate:84.8,phone:"(617) 555-0201",avatar:"TD",streak:10,weekDeals:6,hireDate:"2023-07-01",role:"Closer" },
+  { id:12,name:"Dulani Robinson",team:"Ahmad",territory:"National Grid",deals:167,kwh:367400,payable:142,rate:85.0,phone:"(617) 555-0202",avatar:"DR",streak:9,weekDeals:5,hireDate:"2023-08-15",role:"Closer" },
+  { id:13,name:"Isabella Cutrie",team:"Ahmad",territory:"Eversource",deals:134,kwh:294800,payable:114,rate:85.1,phone:"(617) 555-0203",avatar:"IC",streak:6,weekDeals:4,hireDate:"2024-01-10",role:"Field Rep" },
+  { id:14,name:"Logan Wilcox",team:"Ahmad",territory:"Versant",deals:112,kwh:246400,payable:95,rate:84.8,phone:"(617) 555-0204",avatar:"LW",streak:5,weekDeals:3,hireDate:"2024-03-01",role:"Field Rep" },
+  { id:15,name:"Adnaan Ali",team:"Ahmad",territory:"Central Hudson",deals:98,kwh:215600,payable:83,rate:84.7,phone:"(617) 555-0205",avatar:"AA",streak:4,weekDeals:2,hireDate:"2024-05-15",role:"Field Rep" },
+  { id:16,name:"Jacob Berube",team:"Ahmad",territory:"XCEL MN",deals:87,kwh:191400,payable:74,rate:85.1,phone:"(617) 555-0206",avatar:"JB",streak:3,weekDeals:2,hireDate:"2024-07-01",role:"Field Rep" },
+  { id:17,name:"Kiley Eastin",team:"Ahmad",territory:"CMP",deals:143,kwh:314600,payable:121,rate:84.6,phone:"(617) 555-0207",avatar:"KE",streak:8,weekDeals:4,hireDate:"2023-11-01",role:"Closer" },
+  { id:18,name:"David Sebast",team:"Ahmad",territory:"Dominion",deals:201,kwh:442200,payable:171,rate:85.1,phone:"(804) 555-0208",avatar:"DS",streak:11,weekDeals:7,hireDate:"2023-06-15",role:"Senior Closer" },
+  { id:19,name:"Kirubel Motuma",team:"Ahmad",territory:"National Grid",deals:89,kwh:195800,payable:75,rate:84.3,phone:"(617) 555-0209",avatar:"KM",streak:3,weekDeals:2,hireDate:"2024-09-01",role:"New Rep" },
+  { id:20,name:"Jamani Williams",team:"Ahmad",territory:"Pepco DC",deals:134,kwh:294800,payable:114,rate:85.1,phone:"(202) 555-0210",avatar:"JW",streak:7,weekDeals:4,hireDate:"2024-01-20",role:"Closer" },
+];
+
+const MONTHLY_DATA = [
+  { month:"Aug '24",omar:87,ahmad:112,omarKwh:191400,ahmadKwh:246400 },
+  { month:"Sep '24",omar:134,ahmad:178,omarKwh:294800,ahmadKwh:391600 },
+  { month:"Oct '24",omar:156,ahmad:201,omarKwh:343200,ahmadKwh:442200 },
+  { month:"Nov '24",omar:198,ahmad:234,omarKwh:435600,ahmadKwh:514800 },
+  { month:"Dec '24",omar:212,ahmad:267,omarKwh:466400,ahmadKwh:587400 },
+  { month:"Jan '25",omar:189,ahmad:243,omarKwh:415800,ahmadKwh:534600 },
+  { month:"Feb '25",omar:234,ahmad:289,omarKwh:514800,ahmadKwh:635800 },
+  { month:"Mar '25",omar:256,ahmad:312,omarKwh:563200,ahmadKwh:686400 },
+  { month:"Apr '25",omar:278,ahmad:334,omarKwh:611600,ahmadKwh:734800 },
+  { month:"May '25",omar:301,ahmad:356,omarKwh:662200,ahmadKwh:783200 },
+  { month:"Jun '25",omar:312,ahmad:378,omarKwh:686400,ahmadKwh:831600 },
+  { month:"Jul '25",omar:289,ahmad:345,omarKwh:635800,ahmadKwh:759000 },
+  { month:"Aug '25",omar:334,ahmad:401,omarKwh:734800,ahmadKwh:882200 },
+  { month:"Sep '25",omar:356,ahmad:423,omarKwh:783200,ahmadKwh:930600 },
+  { month:"Oct '25",omar:378,ahmad:445,omarKwh:831600,ahmadKwh:979000 },
+  { month:"Nov '25",omar:312,ahmad:389,omarKwh:686400,ahmadKwh:855800 },
+  { month:"Dec '25",omar:267,ahmad:334,omarKwh:587400,ahmadKwh:734800 },
+  { month:"Jan '26",omar:298,ahmad:367,omarKwh:655600,ahmadKwh:807400 },
+  { month:"Feb '26",omar:312,ahmad:389,omarKwh:686400,ahmadKwh:855800 },
+  { month:"Mar '26",omar:187,ahmad:234,omarKwh:411400,ahmadKwh:514800 },
+];
+
+const UTILITY_DATA = [
+  { name:"DOMINION POWER",value:38,kwh:2847600 },{ name:"CENTRAL HUDSON",value:18,kwh:1348200 },
+  { name:"CMP",value:12,kwh:898800 },{ name:"NATIONAL GRID NY",value:8,kwh:599200 },
+  { name:"EVERSOURCE (WMECO)",value:6,kwh:449400 },{ name:"PEPCO MD",value:5,kwh:374500 },
+  { name:"NATIONAL GRID MA",value:4,kwh:299600 },{ name:"OTHER",value:9,kwh:674100 },
+];
+
+const PIPELINE_STAGES = [
+  { id:"lead",label:"Door Knocked",color:"#4A6080",count:1847,kwh:4063400 },
+  { id:"contacted",label:"Contacted",color:T.accent,count:892,kwh:1962400 },
+  { id:"tpv",label:"TPV Scheduled",color:T.purple,count:456,kwh:1003200 },
+  { id:"processing",label:"In Processing",color:T.amber,count:234,kwh:514800 },
+  { id:"payable",label:"Payable",color:T.green,count:4741,kwh:10430200 },
+  { id:"chargeback",label:"Chargeback Risk",color:T.red,count:302,kwh:664400 },
+];
+
+const firstNames=["James","Maria","Robert","Linda","Michael","Barbara","William","Patricia","David","Jennifer","Richard","Elizabeth","Joseph","Sarah","Thomas","Karen","Charles","Lisa","Christopher","Nancy","Daniel","Betty","Matthew","Margaret","Anthony","Sandra","Donald","Ashley","Mark","Dorothy","Paul","Kimberly","Steven","Emily","Andrew","Donna","Kenneth","Carol","Joshua","Ruth"];
+const lastNames=["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Martinez","Lopez","Hernandez","Gonzalez","Wilson","Anderson","Thomas","Taylor","Moore","Jackson","Martin","Lee","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson","Walker","Young"];
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const CONTACTS = Array.from({ length: 80 }, (_, i) => {
+  const statuses=["Payable","Cannot Process","Awaiting Client Update","TPV Not Complete","Denied","Chargeback","Processed"];
+  const utilities=Object.keys(UTILITY_COLORS);
+  const reps=REPS.map(r=>r.name);
+  const s=statuses[i%statuses.length];
+  const y=i%3===0?2025:2026;
+  const m=(i%12)+1;
+  return {
+    id:i+1, name:`${firstNames[i%firstNames.length]} ${lastNames[i%lastNames.length]}`,
+    account:`${Math.floor(Math.random()*900000000000+100000000000)}`,
+    utility:utilities[i%utilities.length], rep:reps[i%reps.length], status:s,
+    kwh:Math.floor(Math.random()*3000+1500),
+    saleDate:`${months[m-1]} ${(i%28)+1}, ${y}`,
+    address:`${(i+1)*12+100} ${["Oak","Maple","Pine","Cedar","Elm"][i%5]} ${["St","Ave","Blvd","Dr","Ln"][i%5]}, ${["Richmond","Alexandria","Baltimore","Rockville","Brooklyn"][i%5]}`,
+    phone:`(${[804,703,410,301,718][i%5]}) 555-${String(i*7+1001).slice(-4)}`,
+    lmiVerified: Math.random()>0.3,
+    commissionEst: Math.floor(Math.random()*3000+1500) * (COMMISSION_RATES[utilities[i%utilities.length]]||0.05),
+  };
+});
+
+const RECENT_ACTIVITY = [
+  { type:"deal",text:"New payable — Maria Lopez, Dominion Power",rep:"Devin Cargile",time:"2m ago",color:T.green },
+  { type:"alert",text:"Chargeback flagged — James Smith, CMP",rep:"Tommy DeSocio",time:"14m ago",color:T.red },
+  { type:"deal",text:"TPV Complete — Robert Brown, Central Hudson",rep:"Aunie Bailey",time:"31m ago",color:T.accent },
+  { type:"deal",text:"New payable — Linda Johnson, Dominion Power",rep:"Derrick Greene Jr",time:"45m ago",color:T.green },
+  { type:"update",text:"Status: Awaiting — David Kim",rep:"Prince Saunders",time:"1h ago",color:T.amber },
+  { type:"deal",text:"New payable — Patricia Garcia, Pepco MD",rep:"Hannah Boyer",time:"1h ago",color:T.green },
+  { type:"alert",text:"Cannot Process — William Brown, XCEL MN",rep:"Jacob Berube",time:"2h ago",color:T.red },
+  { type:"deal",text:"New payable — Jennifer Davis, Nat Grid NY",rep:"Dulani Robinson",time:"2h ago",color:T.green },
+  { type:"milestone",text:"Devin Cargile hit 500+ total deals!",rep:"Devin Cargile",time:"3h ago",color:T.amber },
+  { type:"deal",text:"New payable — Richard White, BGE",rep:"Parion Martin",time:"4h ago",color:T.green },
+];
+
+const TERRITORIES = [
+  { name:"DOMINION POWER",state:"Virginia",team:"Both",deals:6092,kwh:13484400,reps:85,status:"Active",potential:"High",partner:"Arcadia" },
+  { name:"CENTRAL HUDSON",state:"New York",team:"Both",deals:1933,kwh:5962600,reps:37,status:"Active",potential:"High",partner:"Nexamp" },
+  { name:"CMP",state:"Maine",team:"Ahmad",deals:536,kwh:2353600,reps:17,status:"Active",potential:"Medium",partner:"Nexamp" },
+  { name:"NATIONAL GRID NY",state:"New York",team:"Ahmad",deals:203,kwh:891600,reps:27,status:"Active",potential:"High",partner:"Nexamp" },
+  { name:"NATIONAL GRID MA",state:"Massachusetts",team:"Ahmad",deals:175,kwh:767000,reps:10,status:"Active",potential:"Medium",partner:"Nexamp" },
+  { name:"EVERSOURCE (WMECO)",state:"Massachusetts",team:"Ahmad",deals:120,kwh:526400,reps:16,status:"Active",potential:"Medium",partner:"Nexamp" },
+  { name:"VERSANT BHD",state:"Maine",team:"Ahmad",deals:115,kwh:504400,reps:13,status:"Active",potential:"Low",partner:"Nexamp" },
+  { name:"PEPCO MD",state:"Maryland",team:"Both",deals:124,kwh:542800,reps:24,status:"Active",potential:"High",partner:"Arcadia" },
+  { name:"PEPCO DC",state:"Washington DC",team:"Ahmad",deals:61,kwh:267600,reps:20,status:"Active",potential:"Medium",partner:"Arcadia" },
+  { name:"BGE",state:"Maryland",team:"Omar",deals:64,kwh:280800,reps:11,status:"Expanding",potential:"Very High",partner:"Puresky" },
+  { name:"POTOMAC EDISON",state:"Maryland",team:"Omar",deals:98,kwh:430000,reps:6,status:"Active",potential:"High",partner:"Arcadia" },
+  { name:"XCEL MN",state:"Minnesota",team:"Both",deals:118,kwh:516800,reps:7,status:"Active",potential:"Low",partner:"Common NJ" },
+  { name:"ORU",state:"New York",team:"Both",deals:141,kwh:620400,reps:9,status:"Active",potential:"Medium",partner:"Nexamp" },
+  { name:"RGE",state:"New York",team:"Ahmad",deals:40,kwh:175600,reps:10,status:"Active",potential:"Low",partner:"Nexamp" },
+  { name:"UNITIL MA",state:"Massachusetts",team:"Ahmad",deals:74,kwh:324600,reps:10,status:"Active",potential:"Low",partner:"Nexamp" },
+].sort((a,b)=>b.deals-a.deals);
+
+// ─── REUSABLE COMPONENTS ─────────────────────────────────────────────────────
+const Badge = ({ status, small }) => {
+  const cfg = STATUS_CONFIG[status] || { color:T.muted, bg:T.subtle, label:status };
+  return (
+    <span style={{ display:"inline-flex",alignItems:"center",gap:"4px",
+      padding:small?"2px 6px":"3px 8px",borderRadius:"4px",
+      background:cfg.bg,color:cfg.color,fontSize:small?"10px":"11px",fontWeight:"500",
+      letterSpacing:"0.02em" }}>
+      <span style={{ width:"5px",height:"5px",borderRadius:"50%",background:cfg.color,opacity:0.8 }}/>
+      {cfg.label}
+    </span>
+  );
+};
+
+const KPI = ({ label, value, sub, trend, color=T.accent, icon:IconComp, prefix="" }) => (
+  <div className="hover-lift hover-glow" style={{ background:T.card,border:`1px solid ${T.border}`,
+    borderRadius:"12px",padding:"18px 20px",cursor:"default",position:"relative",overflow:"hidden" }}>
+    <div className="shine" style={{ position:"absolute",inset:0,pointerEvents:"none" }}/>
+    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"12px",position:"relative" }}>
+      <span style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.08em",color:T.muted,fontWeight:"600" }}>{label}</span>
+      {IconComp && <div style={{ color,opacity:0.6 }}><IconComp s={16} c={color}/></div>}
+    </div>
+    <div className="tabular-nums" style={{ fontSize:"26px",fontWeight:"800",color,letterSpacing:"-0.03em",marginBottom:"4px",position:"relative" }}>
+      {prefix}{value}
+    </div>
+    {sub && <div style={{ fontSize:"11px",color:T.muted,position:"relative" }}>{sub}</div>}
+    {trend !== undefined && (
+      <div style={{ display:"flex",alignItems:"center",gap:"4px",marginTop:"8px",position:"relative",
+        color:trend>=0?T.green:T.red,fontSize:"11px",fontWeight:"600" }}>
+        {trend>=0 ? <Icons.arrowUp s={12} c={T.green}/> : <Icons.arrowDown s={12} c={T.red}/>}
+        {Math.abs(trend)}% vs last month
+      </div>
+    )}
+  </div>
+);
+
+const Card = ({ children, style={}, className="" }) => (
+  <div className={className} style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:"12px",padding:"20px",...style }}>
+    {children}
+  </div>
+);
+
+const SectionTitle = ({ children }) => (
+  <div style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",color:T.muted,fontWeight:"700",marginBottom:"16px" }}>
+    {children}
+  </div>
+);
+
+const Avatar = ({ initials, color=T.subtle, size=32, glow=false }) => (
+  <div style={{ width:`${size}px`,height:`${size}px`,borderRadius:"50%",
+    background:`linear-gradient(135deg, ${color}, ${color}99)`,
+    display:"flex",alignItems:"center",justifyContent:"center",
+    fontSize:size>36?"14px":size>28?"11px":"10px",fontWeight:"700",
+    color:"#fff",flexShrink:0,
+    boxShadow:glow?`0 0 12px ${color}40`:"none" }}>
+    {initials}
+  </div>
+);
+
+const Btn = ({ children, variant="primary", style={}, ...props }) => (
+  <button {...props} style={{ display:"inline-flex",alignItems:"center",gap:"6px",
+    padding:"8px 14px",borderRadius:"8px",cursor:"pointer",
+    border:"none",fontSize:"12px",fontWeight:"600",
+    background:variant==="primary"?T.accent:variant==="danger"?T.red:T.subtle,
+    color:variant==="primary"?"#000":variant==="danger"?"#fff":T.text,
+    transition:"all 0.15s",fontFamily:"inherit",letterSpacing:"0.01em",...style }}>
+    {children}
+  </button>
+);
+
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:"8px",padding:"12px 14px",boxShadow:"0 8px 24px rgba(0,0,0,0.4)" }}>
+      <div style={{ color:T.muted,fontSize:"11px",marginBottom:"6px",fontWeight:"500" }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color:p.color,fontSize:"12px",fontWeight:"600",marginBottom:"2px" }}>
+          {p.name}: {typeof p.value==="number"?p.value.toLocaleString():p.value}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────────────
+const Dashboard = () => {
+  const totalPayable=4741, totalKwh=10430200, target=50000000;
+  const omarPayable=REPS.filter(r=>r.team==="Omar").reduce((s,r)=>s+r.payable,0);
+  const ahmadPayable=REPS.filter(r=>r.team==="Ahmad").reduce((s,r)=>s+r.payable,0);
+  const estRevenue=Object.entries(UTILITY_COLORS).reduce((s,[u])=>{
+    const uData=UTILITY_DATA.find(d=>d.name===u);
+    if(!uData)return s;
+    return s+(uData.kwh*(COMMISSION_RATES[u]||0.05));
+  },0);
+  const progressPct=((totalKwh/target)*100).toFixed(1);
+
+  return (
+    <div className="fade-in">
+      {/* KPI Row */}
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"12px",marginBottom:"20px" }}>
+        <KPI label="Total Payable" value={totalPayable.toLocaleString()} sub="All-time confirmed" trend={8.3} color={T.green} icon={Icons.check}/>
+        <KPI label="Enrolled KWH" value={`${(totalKwh/1000000).toFixed(1)}M`} sub={`${progressPct}% to 50M target`} trend={11.2} color={T.accent} icon={Icons.zap}/>
+        <KPI label="Est. Revenue" value={`$${(estRevenue/1000).toFixed(0)}K`} sub="Commission earned" trend={6.8} color={T.amber} icon={Icons.dollar} prefix=""/>
+        <KPI label="Omar's Team" value={omarPayable.toLocaleString()} sub="10 reps active" trend={6.1} color={T.purple} icon={Icons.users}/>
+        <KPI label="Ahmad's Team" value={ahmadPayable.toLocaleString()} sub="10 reps active" trend={9.8} color={T.accent} icon={Icons.users}/>
+      </div>
+
+      {/* Progress to 50M */}
+      <Card style={{ marginBottom:"20px",padding:"16px 20px" }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+            <Icons.target s={14} c={T.amber}/>
+            <span style={{ fontSize:"13px",fontWeight:"700" }}>Path to 50M kWh</span>
+          </div>
+          <span className="tabular-nums" style={{ fontSize:"13px",fontWeight:"700",color:T.amber }}>{(totalKwh/1000000).toFixed(1)}M / 50.0M</span>
+        </div>
+        <div style={{ height:"8px",background:T.subtle,borderRadius:"4px",overflow:"hidden" }}>
+          <div style={{ height:"100%",width:`${progressPct}%`,borderRadius:"4px",
+            background:`linear-gradient(90deg, ${T.accent}, ${T.green})`,
+            boxShadow:`0 0 12px ${T.accent}40`,transition:"width 1s ease" }}/>
+        </div>
+        <div style={{ display:"flex",justifyContent:"space-between",marginTop:"6px" }}>
+          <span style={{ fontSize:"10px",color:T.muted }}>0</span>
+          <span style={{ fontSize:"10px",color:T.muted }}>10M</span>
+          <span style={{ fontSize:"10px",color:T.muted }}>20M</span>
+          <span style={{ fontSize:"10px",color:T.muted }}>30M</span>
+          <span style={{ fontSize:"10px",color:T.muted }}>40M</span>
+          <span style={{ fontSize:"10px",color:T.muted }}>50M</span>
+        </div>
+      </Card>
+
+      {/* Charts Row */}
+      <div style={{ display:"grid",gridTemplateColumns:"2fr 1fr",gap:"14px",marginBottom:"20px" }}>
+        <Card>
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px" }}>
+            <div>
+              <div style={{ fontSize:"14px",fontWeight:"700",marginBottom:"2px" }}>Payable Deals Over Time</div>
+              <div style={{ fontSize:"11px",color:T.muted }}>Monthly — Omar vs Ahmad</div>
+            </div>
+            <div style={{ display:"flex",gap:"14px" }}>
+              {[{c:T.accent,l:"Omar"},{c:T.green,l:"Ahmad"}].map(l=>(
+                <div key={l.l} style={{ display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:T.muted }}>
+                  <div style={{ width:"10px",height:"3px",background:l.c,borderRadius:"2px" }}/>
+                  {l.l}
+                </div>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={MONTHLY_DATA}>
+              <defs>
+                <linearGradient id="gO" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={T.accent} stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor={T.accent} stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={T.green} stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor={T.green} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false}/>
+              <XAxis dataKey="month" tick={{fill:T.muted,fontSize:10}} axisLine={false} tickLine={false} interval={3}/>
+              <YAxis tick={{fill:T.muted,fontSize:10}} axisLine={false} tickLine={false}/>
+              <Tooltip content={<ChartTooltip/>}/>
+              <Area type="monotone" dataKey="omar" name="Omar" stroke={T.accent} fill="url(#gO)" strokeWidth={2}/>
+              <Area type="monotone" dataKey="ahmad" name="Ahmad" stroke={T.green} fill="url(#gA)" strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card>
+          <div style={{ fontSize:"14px",fontWeight:"700",marginBottom:"4px" }}>Deals by Utility</div>
+          <div style={{ fontSize:"11px",color:T.muted,marginBottom:"12px" }}>All-time distribution</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart>
+              <Pie data={UTILITY_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={70}
+                dataKey="value" paddingAngle={2}>
+                {UTILITY_DATA.map((e,i)=><Cell key={i} fill={UTILITY_COLORS[e.name]||T.muted}/>)}
+              </Pie>
+              <Tooltip formatter={v=>[`${v}%`,"Share"]} contentStyle={{ background:T.card,border:`1px solid ${T.border}`,fontSize:"11px",borderRadius:"8px" }}/>
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px",marginTop:"4px" }}>
+            {UTILITY_DATA.slice(0,6).map((u,i)=>(
+              <div key={i} style={{ display:"flex",alignItems:"center",gap:"5px",fontSize:"10px",color:T.muted }}>
+                <div style={{ width:"6px",height:"6px",borderRadius:"50%",background:UTILITY_COLORS[u.name]||T.muted,flexShrink:0 }}/>
+                <span style={{ overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{u.name.split(" ")[0]}</span>
+                <span style={{ color:T.text,fontWeight:"600",marginLeft:"auto" }}>{u.value}%</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Bottom Row */}
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px" }}>
+        {/* Leaderboard */}
+        <Card>
+          <SectionTitle>Top Reps — Payable KWH (All Time)</SectionTitle>
+          {[...REPS].sort((a,b)=>b.kwh-a.kwh).slice(0,8).map((rep,i) => (
+            <div key={rep.id} style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"10px" }}>
+              <div style={{ color:i<3?T.amber:T.muted,fontSize:"12px",fontWeight:"700",width:"18px",textAlign:"center" }}>
+                {i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`}
+              </div>
+              <Avatar initials={rep.avatar} color={rep.team==="Omar"?T.accentDim:T.greenDim} size={32} glow={i<3}/>
+              <div style={{ flex:1,minWidth:0 }}>
+                <div style={{ fontSize:"12px",fontWeight:"600",marginBottom:"1px" }}>{rep.name}</div>
+                <div style={{ fontSize:"10px",color:T.muted }}>{rep.team}'s Team · {rep.territory}</div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div className="tabular-nums" style={{ fontSize:"12px",fontWeight:"700",color:T.accent }}>{(rep.kwh/1000).toFixed(0)}K</div>
+                <div style={{ fontSize:"10px",color:T.muted }}>{rep.payable} deals</div>
+              </div>
+              <div style={{ width:"50px" }}>
+                <div style={{ height:"4px",background:T.subtle,borderRadius:"2px" }}>
+                  <div style={{ height:"4px",borderRadius:"2px",width:`${(rep.kwh/1032000)*100}%`,
+                    background:i<3?`linear-gradient(90deg,${T.amber},${T.accent})`:T.accent }}/>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+
+        {/* Activity Feed */}
+        <Card>
+          <SectionTitle>Live Activity Feed</SectionTitle>
+          {RECENT_ACTIVITY.map((a,i) => (
+            <div key={i} className="slide-in" style={{ display:"flex",gap:"12px",marginBottom:"12px",alignItems:"flex-start",animationDelay:`${i*0.05}s` }}>
+              <div style={{ width:"6px",height:"6px",borderRadius:"50%",background:a.color,marginTop:"6px",flexShrink:0,
+                boxShadow:`0 0 6px ${a.color}60` }}/>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"12px",marginBottom:"2px",lineHeight:"1.4" }}>{a.text}</div>
+                <div style={{ fontSize:"10px",color:T.muted }}>{a.rep} · {a.time}</div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ─── CONTACTS VIEW ───────────────────────────────────────────────────────────
+const ContactsView = () => {
+  const [search,setSearch] = useState("");
+  const [statusFilter,setStatusFilter] = useState("All");
+  const [page,setPage] = useState(0);
+  const [selected,setSelected] = useState(null);
+  const PER_PAGE=15;
+
+  const filtered = useMemo(() => CONTACTS.filter(c => {
+    const q=search.toLowerCase();
+    const ms=!q||c.name.toLowerCase().includes(q)||c.utility.toLowerCase().includes(q)||c.rep.toLowerCase().includes(q)||c.account.includes(q);
+    const mst=statusFilter==="All"||c.status===statusFilter;
+    return ms&&mst;
+  }), [search,statusFilter]);
+
+  const pageData=filtered.slice(page*PER_PAGE,(page+1)*PER_PAGE);
+  const totalPages=Math.ceil(filtered.length/PER_PAGE);
+
+  return (
+    <div className="fade-in">
+      {/* Toolbar */}
+      <div style={{ display:"flex",gap:"10px",marginBottom:"16px",alignItems:"center" }}>
+        <div style={{ position:"relative",flex:1,maxWidth:"380px" }}>
+          <Icons.search s={13} c={T.muted}/>
+          <input style={{ background:T.subtle,border:`1px solid ${T.border}`,borderRadius:"8px",
+            padding:"9px 12px 9px 32px",color:T.text,fontSize:"12px",width:"100%",
+            fontFamily:"inherit",outline:"none" }}
+            placeholder="Search name, utility, rep, account..."
+            value={search} onChange={e=>{setSearch(e.target.value);setPage(0)}}/>
+          <div style={{ position:"absolute",left:"10px",top:"50%",transform:"translateY(-50%)" }}>
+            <Icons.search s={13} c={T.muted}/>
+          </div>
+        </div>
+        <select style={{ background:T.subtle,border:`1px solid ${T.border}`,borderRadius:"8px",
+          padding:"9px 12px",color:T.text,fontSize:"12px",fontFamily:"inherit",cursor:"pointer",outline:"none" }}
+          value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setPage(0)}}>
+          <option>All</option>
+          {Object.keys(STATUS_CONFIG).map(s=><option key={s}>{s}</option>)}
+        </select>
+        <div style={{ color:T.muted,fontSize:"11px",marginLeft:"auto",fontWeight:"500" }}>
+          {filtered.length} records
+        </div>
+      </div>
+
+      {/* Table */}
+      <Card style={{ padding:0,overflow:"hidden" }}>
+        <table style={{ width:"100%",borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:T.surface }}>
+              {["Customer","Account #","Utility","Rep","Status","KWH","Est. Commission","Date"].map((h,i)=>(
+                <th key={i} style={{ padding:"11px 12px",textAlign:"left",fontSize:"10px",
+                  color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",
+                  textTransform:"uppercase",fontWeight:"700" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pageData.map((c,i) => (
+              <tr key={c.id} style={{ background:i%2===0?T.card:T.surface,cursor:"pointer",transition:"background 0.1s" }}
+                onClick={()=>setSelected(c)} onMouseEnter={e=>e.currentTarget.style.background=T.cardHover}
+                onMouseLeave={e=>e.currentTarget.style.background=i%2===0?T.card:T.surface}>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+                    <Avatar initials={c.name.split(" ").map(n=>n[0]).join("").slice(0,2)} color={T.subtle} size={30}/>
+                    <div>
+                      <div style={{ fontWeight:"600",fontSize:"12px" }}>{c.name}</div>
+                      <div style={{ fontSize:"10px",color:T.muted,maxWidth:"180px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{c.address}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.muted,fontFamily:"monospace" }}>{c.account}</td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <span style={{ display:"flex",alignItems:"center",gap:"6px" }}>
+                    <span style={{ width:"6px",height:"6px",borderRadius:"50%",background:UTILITY_COLORS[c.utility]||T.muted,flexShrink:0 }}/>
+                    <span style={{ fontSize:"11px" }}>{c.utility}</span>
+                  </span>
+                </td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px" }}>{c.rep}</td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}><Badge status={c.status} small/></td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontWeight:"600",color:T.accent,fontSize:"12px" }}>{c.kwh.toLocaleString()}</td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontWeight:"600",color:T.green,fontSize:"12px" }}>${c.commissionEst.toFixed(0)}</td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.muted }}>{c.saleDate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      {/* Pagination */}
+      <div style={{ display:"flex",justifyContent:"flex-end",alignItems:"center",gap:"6px",marginTop:"14px" }}>
+        <span style={{ fontSize:"11px",color:T.muted,marginRight:"8px" }}>Page {page+1} of {totalPages}</span>
+        {Array.from({length:Math.min(5,totalPages)},(_,i) => {
+          const p=Math.max(0,Math.min(page-2,totalPages-5))+i;
+          if(p>=totalPages)return null;
+          return (
+            <button key={p} onClick={()=>setPage(p)}
+              style={{ padding:"5px 10px",borderRadius:"6px",border:"none",fontSize:"11px",cursor:"pointer",
+                fontFamily:"inherit",background:p===page?T.accent:T.subtle,color:p===page?"#000":T.muted,fontWeight:"600" }}>
+              {p+1}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Detail Modal */}
+      {selected && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:100,
+          display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)" }}
+          onClick={()=>setSelected(null)}>
+          <div className="fade-in" style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:"16px",
+            padding:"28px",width:"520px",maxHeight:"80vh",overflow:"auto",boxShadow:"0 24px 64px rgba(0,0,0,0.6)" }}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"20px" }}>
+              <div style={{ display:"flex",gap:"14px",alignItems:"center" }}>
+                <Avatar initials={selected.name.split(" ").map(n=>n[0]).join("").slice(0,2)} color={T.subtle} size={48}/>
+                <div>
+                  <div style={{ fontSize:"18px",fontWeight:"700",marginBottom:"4px" }}>{selected.name}</div>
+                  <Badge status={selected.status}/>
+                </div>
+              </div>
+              <button style={{ background:"none",border:"none",color:T.muted,cursor:"pointer",padding:"4px" }}
+                onClick={()=>setSelected(null)}><Icons.x s={18} c={T.muted}/></button>
+            </div>
+            {[["Account #",selected.account],["Utility",selected.utility],["Rep",selected.rep],
+              ["KWH",`${selected.kwh.toLocaleString()} kWh`],["Est. Commission",`$${selected.commissionEst.toFixed(2)}`],
+              ["LMI Verified",selected.lmiVerified?"Yes":"Pending"],
+              ["Sale Date",selected.saleDate],["Address",selected.address],["Phone",selected.phone]
+            ].map(([k,v])=>(
+              <div key={k} style={{ display:"flex",padding:"10px 0",borderBottom:`1px solid ${T.border}`,gap:"16px" }}>
+                <span style={{ color:T.muted,fontSize:"11px",width:"120px",flexShrink:0,fontWeight:"500" }}>{k}</span>
+                <span style={{ fontSize:"12px",fontWeight:"500" }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── REPS VIEW ───────────────────────────────────────────────────────────────
+const RepsView = () => {
+  const [teamFilter,setTeamFilter] = useState("All");
+  const [sortBy,setSortBy] = useState("kwh");
+  const [selected,setSelected] = useState(null);
+
+  const filtered = useMemo(()=>
+    REPS.filter(r=>teamFilter==="All"||r.team===teamFilter).sort((a,b)=>b[sortBy]-a[sortBy]),
+    [teamFilter,sortBy]);
+
+  return (
+    <div className="fade-in">
+      <div style={{ display:"flex",gap:"8px",marginBottom:"16px",alignItems:"center" }}>
+        {["All","Omar","Ahmad"].map(t=>(
+          <Btn key={t} variant={teamFilter===t?"primary":"ghost"} onClick={()=>setTeamFilter(t)}
+            style={{ fontSize:"12px",padding:"7px 14px" }}>
+            {t==="All"?"All Teams":`${t}'s Team`}
+          </Btn>
+        ))}
+        <select style={{ background:T.subtle,border:`1px solid ${T.border}`,borderRadius:"8px",
+          padding:"8px 12px",color:T.text,fontSize:"12px",fontFamily:"inherit",marginLeft:"auto",outline:"none",cursor:"pointer" }}
+          value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+          <option value="kwh">Sort: KWH</option>
+          <option value="deals">Sort: Total Deals</option>
+          <option value="payable">Sort: Payable</option>
+          <option value="rate">Sort: Payable Rate</option>
+          <option value="streak">Sort: Streak</option>
+        </select>
+      </div>
+
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:"14px" }}>
+        {filtered.map(rep=>(
+          <Card key={rep.id} className="hover-lift hover-glow"
+            style={{ cursor:"pointer",borderColor:selected?.id===rep.id?T.accent:T.border,transition:"all 0.2s" }}
+            onClick={()=>setSelected(selected?.id===rep.id?null:rep)}>
+            <div style={{ display:"flex",gap:"12px",alignItems:"flex-start",marginBottom:"16px" }}>
+              <Avatar initials={rep.avatar} color={rep.team==="Omar"?T.accentDim:T.greenDim} size={42} glow={rep.streak>=10}/>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
+                  <span style={{ fontWeight:"700",fontSize:"14px" }}>{rep.name}</span>
+                  {rep.streak>=10 && <span style={{ fontSize:"10px",padding:"2px 6px",borderRadius:"3px",
+                    background:`linear-gradient(90deg,${T.amber},${T.red})`,color:"#000",fontWeight:"700" }}>🔥 {rep.streak}d</span>}
+                </div>
+                <div style={{ fontSize:"11px",color:T.muted }}>{rep.role} · {rep.team}'s Team</div>
+                <div style={{ fontSize:"10px",color:T.muted }}>{rep.territory}</div>
+              </div>
+            </div>
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px" }}>
+              {[["Deals",rep.deals.toLocaleString(),T.muted],["Payable",rep.payable.toLocaleString(),T.green],
+                ["KWH",`${(rep.kwh/1000).toFixed(0)}K`,T.accent],["Rate",`${rep.rate}%`,T.amber]
+              ].map(([l,v,c])=>(
+                <div key={l} style={{ background:T.subtle,borderRadius:"8px",padding:"8px",textAlign:"center" }}>
+                  <div className="tabular-nums" style={{ fontSize:"13px",fontWeight:"700",color:c,marginBottom:"2px" }}>{v}</div>
+                  <div style={{ fontSize:"9px",color:T.muted,textTransform:"uppercase",letterSpacing:"0.06em" }}>{l}</div>
+                </div>
+              ))}
+            </div>
+            {selected?.id===rep.id && (
+              <div style={{ marginTop:"14px",paddingTop:"14px",borderTop:`1px solid ${T.border}` }}>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"12px" }}>
+                  <div style={{ fontSize:"11px",color:T.muted,display:"flex",alignItems:"center",gap:"6px" }}>
+                    <Icons.phone s={11} c={T.muted}/> {rep.phone}
+                  </div>
+                  <div style={{ fontSize:"11px",color:T.muted,display:"flex",alignItems:"center",gap:"6px" }}>
+                    <Icons.calendar s={11} c={T.muted}/> Since {rep.hireDate}
+                  </div>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px" }}>
+                  <div>
+                    <div style={{ fontSize:"10px",color:T.muted,marginBottom:"4px" }}>Avg KWH/Deal</div>
+                    <div className="tabular-nums" style={{ fontSize:"14px",fontWeight:"700",color:T.accent }}>
+                      {Math.round(rep.kwh/Math.max(rep.payable,1)).toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:"10px",color:T.muted,marginBottom:"4px" }}>This Week</div>
+                    <div className="tabular-nums" style={{ fontSize:"14px",fontWeight:"700",color:T.green }}>
+                      {rep.weekDeals} deals
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop:"10px" }}>
+                  <div style={{ fontSize:"10px",color:T.muted,marginBottom:"4px" }}>Payable Rate</div>
+                  <div style={{ height:"6px",background:T.subtle,borderRadius:"3px" }}>
+                    <div style={{ height:"6px",borderRadius:"3px",width:`${rep.rate}%`,
+                      background:`linear-gradient(90deg,${T.accent},${T.green})`,transition:"width 0.5s ease" }}/>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── PIPELINE VIEW ───────────────────────────────────────────────────────────
+const PipelineView = () => {
+  const totalDeals=PIPELINE_STAGES.reduce((s,p)=>s+p.count,0);
+  const totalKwh=PIPELINE_STAGES.reduce((s,p)=>s+p.kwh,0);
+
+  return (
+    <div className="fade-in">
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginBottom:"20px" }}>
+        <KPI label="Total Pipeline" value={totalDeals.toLocaleString()} sub={`${(totalKwh/1000000).toFixed(1)}M kWh`} color={T.text} icon={Icons.layers}/>
+        {PIPELINE_STAGES.filter(s=>["payable","tpv","chargeback"].includes(s.id)).map(s=>(
+          <KPI key={s.id} label={s.label} value={s.count.toLocaleString()} sub={`${(s.kwh/1000000).toFixed(1)}M kWh`} color={s.color} icon={s.id==="payable"?Icons.check:s.id==="chargeback"?Icons.flame:Icons.clock}/>
+        ))}
+      </div>
+
+      {/* Conversion Funnel */}
+      <Card style={{ marginBottom:"20px" }}>
+        <SectionTitle>Enrollment Funnel</SectionTitle>
+        <div style={{ display:"flex",flexDirection:"column",gap:"8px" }}>
+          {PIPELINE_STAGES.map((stage,i) => {
+            const pct=(stage.count/PIPELINE_STAGES[0].count)*100;
+            const convRate=i>0?((stage.count/PIPELINE_STAGES[i-1].count)*100).toFixed(1):100;
+            return (
+              <div key={stage.id} style={{ display:"flex",alignItems:"center",gap:"12px" }}>
+                <div style={{ width:"140px",fontSize:"11px",color:T.muted,flexShrink:0,fontWeight:"500" }}>{stage.label}</div>
+                <div style={{ flex:1,height:"30px",background:T.subtle,borderRadius:"6px",position:"relative",overflow:"hidden" }}>
+                  <div style={{ height:"100%",width:`${pct}%`,background:stage.color,opacity:0.85,
+                    borderRadius:"6px",transition:"width 0.8s ease",display:"flex",alignItems:"center",paddingLeft:"10px" }}>
+                    {pct>12 && <span style={{ fontSize:"11px",fontWeight:"700",color:"#000" }}>{stage.count.toLocaleString()}</span>}
+                  </div>
+                  {pct<=12 && <span style={{ position:"absolute",left:`calc(${pct}% + 8px)`,top:"50%",
+                    transform:"translateY(-50%)",fontSize:"11px",color:T.muted,fontWeight:"500" }}>{stage.count.toLocaleString()}</span>}
+                </div>
+                <div className="tabular-nums" style={{ width:"60px",textAlign:"right",fontSize:"11px",color:T.accent,fontWeight:"600" }}>{pct.toFixed(1)}%</div>
+                {i>0 && <div className="tabular-nums" style={{ width:"70px",textAlign:"right",fontSize:"10px",
+                  color:parseFloat(convRate)>50?T.green:parseFloat(convRate)>25?T.amber:T.red,fontWeight:"600" }}>
+                  {convRate}% conv
+                </div>}
+                {i===0 && <div style={{ width:"70px" }}/>}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* KWH Bar Chart */}
+      <Card>
+        <SectionTitle>Monthly KWH — Team Comparison</SectionTitle>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={MONTHLY_DATA.slice(-12)} barGap={4}>
+            <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false}/>
+            <XAxis dataKey="month" tick={{fill:T.muted,fontSize:10}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fill:T.muted,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}K`}/>
+            <Tooltip content={<ChartTooltip/>}/>
+            <Bar dataKey="omarKwh" name="Omar KWH" fill={T.accent} radius={[4,4,0,0]} fillOpacity={0.9}/>
+            <Bar dataKey="ahmadKwh" name="Ahmad KWH" fill={T.green} radius={[4,4,0,0]} fillOpacity={0.9}/>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
+
+// ─── TERRITORIES VIEW ────────────────────────────────────────────────────────
+const TerritoriesView = () => {
+  const potentialColor={"Very High":T.green,High:T.accent,Medium:T.amber,Low:T.muted};
+
+  return (
+    <div className="fade-in">
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginBottom:"20px" }}>
+        <KPI label="Active Territories" value={TERRITORIES.length} sub="Across 9 states + DC" color={T.accent} icon={Icons.map}/>
+        <KPI label="Total Deals" value={TERRITORIES.reduce((s,t)=>s+t.deals,0).toLocaleString()} sub="All territories" color={T.green} icon={Icons.zap}/>
+        <KPI label="Active Reps" value={TERRITORIES.reduce((s,t)=>s+t.reps,0).toLocaleString()} sub="Across all territories" color={T.amber} icon={Icons.users}/>
+        <KPI label="Total KWH" value={`${(TERRITORIES.reduce((s,t)=>s+t.kwh,0)/1000000).toFixed(1)}M`} sub="Enrolled capacity" color={T.purple} icon={Icons.zap}/>
+      </div>
+
+      {/* Territory Map Links */}
+      <Card style={{ marginBottom:"20px",padding:"14px 20px" }}>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+            <Icons.globe s={14} c={T.accent}/>
+            <span style={{ fontSize:"13px",fontWeight:"700" }}>Territory Intelligence Maps</span>
+          </div>
+          <div style={{ display:"flex",gap:"8px" }}>
+            {[{label:"Virginia",href:"map.html"},{label:"Maryland/DC",href:"map-md.html"},{label:"New York",href:"map-ny.html"}].map(m=>(
+              <a key={m.label} href={m.href} target="_blank" rel="noopener"
+                style={{ display:"inline-flex",alignItems:"center",gap:"4px",padding:"6px 12px",
+                  borderRadius:"6px",background:T.accentDim,color:T.accent,fontSize:"11px",
+                  fontWeight:"600",textDecoration:"none",border:`1px solid ${T.accent}30`,
+                  transition:"all 0.15s" }}>
+                <Icons.externalLink s={11} c={T.accent}/> {m.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <Card style={{ padding:0,overflow:"hidden" }}>
+        <table style={{ width:"100%",borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:T.surface }}>
+              {["Utility","State","Partner","Team","Deals","KWH","Reps","$/kWh","Potential","Status"].map((h,i)=>(
+                <th key={i} style={{ padding:"11px 12px",textAlign:"left",fontSize:"10px",
+                  color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",
+                  textTransform:"uppercase",fontWeight:"700" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {TERRITORIES.map((t,i)=>(
+              <tr key={t.name} style={{ background:i%2===0?T.card:T.surface,transition:"background 0.1s" }}
+                onMouseEnter={e=>e.currentTarget.style.background=T.cardHover}
+                onMouseLeave={e=>e.currentTarget.style.background=i%2===0?T.card:T.surface}>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
+                    <div style={{ width:"8px",height:"8px",borderRadius:"50%",background:UTILITY_COLORS[t.name]||T.muted,flexShrink:0,
+                      boxShadow:`0 0 6px ${UTILITY_COLORS[t.name]||T.muted}40` }}/>
+                    <span style={{ fontWeight:"600",fontSize:"12px" }}>{t.name}</span>
+                  </div>
+                </td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.muted }}>{t.state}</td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <span style={{ fontSize:"10px",padding:"2px 6px",borderRadius:"3px",background:T.subtle,color:T.textSecondary,fontWeight:"500" }}>{t.partner}</span>
+                </td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <span style={{ display:"inline-flex",padding:"2px 7px",borderRadius:"4px",fontSize:"10px",fontWeight:"600",
+                    background:t.team==="Both"?T.amberDim:t.team==="Omar"?T.accentDim:T.greenDim,
+                    color:t.team==="Both"?T.amber:t.team==="Omar"?T.accent:T.green }}>{t.team}</span>
+                </td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontWeight:"700",fontSize:"13px" }}>{t.deals.toLocaleString()}</td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,color:T.accent,fontWeight:"600" }}>{(t.kwh/1000000).toFixed(2)}M</td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px" }}>{t.reps}</td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.green,fontWeight:"600" }}>${COMMISSION_RATES[t.name]?.toFixed(3)||"—"}</td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <span style={{ color:potentialColor[t.potential],fontSize:"11px",fontWeight:"600" }}>{t.potential}</span>
+                </td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <span style={{ display:"inline-flex",padding:"2px 7px",borderRadius:"4px",fontSize:"10px",fontWeight:"600",
+                    background:t.status==="Expanding"?T.greenDim:T.accentDim,
+                    color:t.status==="Expanding"?T.green:T.accent }}>{t.status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+};
+
+// ─── COMMISSIONS VIEW ────────────────────────────────────────────────────────
+const CommissionsView = () => {
+  const commissionData = TERRITORIES.map(t => ({
+    ...t,
+    rate: COMMISSION_RATES[t.name]||0,
+    estRevenue: t.kwh * (COMMISSION_RATES[t.name]||0),
+  })).sort((a,b)=>b.estRevenue-a.estRevenue);
+
+  const totalRevenue = commissionData.reduce((s,c)=>s+c.estRevenue,0);
+  const avgRate = commissionData.reduce((s,c)=>s+c.rate,0)/commissionData.length;
+
+  return (
+    <div className="fade-in">
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginBottom:"20px" }}>
+        <KPI label="Total Est. Revenue" value={`$${(totalRevenue/1000).toFixed(0)}K`} sub="Based on enrolled kWh" color={T.green} icon={Icons.dollar}/>
+        <KPI label="Avg Commission Rate" value={`$${avgRate.toFixed(3)}`} sub="Per kWh enrolled" color={T.accent} icon={Icons.trending}/>
+        <KPI label="Top Utility Revenue" value={`$${(commissionData[0]?.estRevenue/1000).toFixed(0)}K`} sub={commissionData[0]?.name} color={T.amber} icon={Icons.zap}/>
+        <KPI label="Active Partners" value="4" sub="Nexamp, Arcadia, Puresky, Common NJ" color={T.purple} icon={Icons.globe}/>
+      </div>
+
+      {/* Revenue by Utility Chart */}
+      <Card style={{ marginBottom:"20px" }}>
+        <SectionTitle>Revenue by Utility Territory</SectionTitle>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={commissionData.slice(0,10)} layout="vertical" barSize={18}>
+            <CartesianGrid strokeDasharray="3 3" stroke={T.border} horizontal={false}/>
+            <XAxis type="number" tick={{fill:T.muted,fontSize:10}} axisLine={false} tickLine={false}
+              tickFormatter={v=>`$${(v/1000).toFixed(0)}K`}/>
+            <YAxis type="category" dataKey="name" tick={{fill:T.muted,fontSize:10}} axisLine={false} tickLine={false} width={140}/>
+            <Tooltip content={<ChartTooltip/>} formatter={v=>`$${v.toLocaleString()}`}/>
+            <Bar dataKey="estRevenue" name="Est. Revenue" radius={[0,4,4,0]}>
+              {commissionData.slice(0,10).map((e,i)=><Cell key={i} fill={UTILITY_COLORS[e.name]||T.accent}/>)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Commission Rate Table */}
+      <Card style={{ padding:0,overflow:"hidden" }}>
+        <table style={{ width:"100%",borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:T.surface }}>
+              {["Utility","Partner","Rate ($/kWh)","Enrolled KWH","Est. Revenue","% of Total"].map((h,i)=>(
+                <th key={i} style={{ padding:"11px 12px",textAlign:"left",fontSize:"10px",
+                  color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",
+                  textTransform:"uppercase",fontWeight:"700" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {commissionData.map((c,i)=>(
+              <tr key={c.name} style={{ background:i%2===0?T.card:T.surface }}>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
+                    <div style={{ width:"8px",height:"8px",borderRadius:"50%",background:UTILITY_COLORS[c.name]||T.muted }}/>
+                    <span style={{ fontWeight:"600",fontSize:"12px" }}>{c.name}</span>
+                  </div>
+                </td>
+                <td style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}` }}>
+                  <span style={{ fontSize:"11px",padding:"2px 6px",borderRadius:"3px",background:T.subtle,color:T.textSecondary }}>{c.partner}</span>
+                </td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,color:T.green,fontWeight:"700",fontSize:"13px" }}>
+                  ${c.rate.toFixed(3)}
+                </td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,color:T.accent,fontWeight:"600" }}>
+                  {(c.kwh/1000000).toFixed(2)}M
+                </td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontWeight:"700",fontSize:"13px",color:T.green }}>
+                  ${(c.estRevenue/1000).toFixed(1)}K
+                </td>
+                <td className="tabular-nums" style={{ padding:"11px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.muted }}>
+                  {((c.estRevenue/totalRevenue)*100).toFixed(1)}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+};
+
+// ─── AI INSIGHTS VIEW ────────────────────────────────────────────────────────
+const InsightsView = () => {
+  const [query,setQuery] = useState("");
+  const [messages,setMessages] = useState([
+    { role:"assistant",text:"I'm your EMG Operations AI analyst. I have full context on sales data, rep performance, territories, pipeline, and commission rates. Ask me anything about your business.",ts:new Date() }
+  ]);
+  const [loading,setLoading] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"})}, [messages]);
+
+  const CONTEXT = `You are an AI analyst for EMG Operations, a community solar enrollment company running D2D field sales.
+Key data: Total payable deals: 4,741. Total KWH: 10,430,200. Target: 50M kWh.
+Omar's team: 10 reps, ~2,024 payable. Ahmad's team: 10 reps, ~2,714 payable.
+Top rep: Devin Cargile (516 deals, 441 payable, 1,032,000 KWH). Second: Aunie Bailey (399/339/877,800).
+15 utility territories across VA, MD, NY, ME, MA, DC, MN. Partners: Nexamp, Arcadia, Puresky, Common NJ.
+BGE Maryland = highest growth potential. Avg payable rate: ~84-85%. Avg KWH/deal: ~2,200.
+Answer concisely with specific numbers. Be direct and insightful.`;
+
+  const sendMessage = async () => {
+    if(!query.trim()||loading)return;
+    const userMsg={role:"user",text:query.trim(),ts:new Date()};
+    setMessages(p=>[...p,userMsg]); setQuery(""); setLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ model:"claude-sonnet-4-20250514",max_tokens:1000,system:CONTEXT,
+          messages:[...messages.filter(m=>m.role!=="assistant"||messages.indexOf(m)>0).map(m=>({role:m.role,content:m.text})),{role:"user",content:query.trim()}]
+        })
+      });
+      const data=await res.json();
+      setMessages(p=>[...p,{role:"assistant",text:data.content?.[0]?.text||"Unable to get response.",ts:new Date()}]);
+    } catch(e) {
+      setMessages(p=>[...p,{role:"assistant",text:"Unable to connect. Check your connection.",ts:new Date()}]);
+    }
+    setLoading(false);
+  };
+
+  const SUGGESTED=["Who are my top 5 reps by payable KWH?","Which territory has the highest growth potential?","What's my projected path to 50M kWh?","How do Omar's and Ahmad's teams compare?","Which utility has the best commission rate?"];
+
+  return (
+    <div className="fade-in" style={{ display:"flex",flexDirection:"column",height:"calc(100vh - 56px - 48px)",gap:"16px" }}>
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",flexShrink:0 }}>
+        <KPI label="Payable Rate" value="84.8%" sub="Deals confirmed" trend={0.4} color={T.green} icon={Icons.target}/>
+        <KPI label="Avg KWH/Deal" value="2,200" sub="Per enrollment" trend={2.1} color={T.accent} icon={Icons.zap}/>
+        <KPI label="Progress" value="20.9%" sub="10.4M of 50M kWh" color={T.amber} icon={Icons.trending}/>
+        <KPI label="Active States" value="9 + DC" sub="15 territories" color={T.purple} icon={Icons.globe}/>
+      </div>
+
+      <Card style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+        <div style={{ display:"flex",alignItems:"center",gap:"10px",marginBottom:"16px",paddingBottom:"16px",borderBottom:`1px solid ${T.border}`,flexShrink:0 }}>
+          <Avatar initials="" color={`linear-gradient(135deg,${T.accent},${T.green})`} size={32}>
+            <Icons.bolt s={14} c="#000"/>
+          </Avatar>
+          <div>
+            <div style={{ fontWeight:"700",fontSize:"13px" }}>EMG AI Analyst</div>
+            <div style={{ fontSize:"10px",color:T.green }}>● Online · Full data access</div>
+          </div>
+        </div>
+
+        <div style={{ flex:1,overflow:"auto",marginBottom:"14px",display:"flex",flexDirection:"column",gap:"12px" }}>
+          {messages.map((m,i)=>(
+            <div key={i} style={{ display:"flex",gap:"10px",justifyContent:m.role==="user"?"flex-end":"flex-start",alignItems:"flex-start" }}>
+              {m.role==="assistant" && <Avatar initials="⚡" color={`linear-gradient(135deg,${T.accent},${T.green})`} size={28}/>}
+              <div style={{ maxWidth:"75%",padding:"10px 14px",borderRadius:"10px",
+                background:m.role==="user"?T.accent:T.subtle,
+                color:m.role==="user"?"#000":T.text,
+                fontSize:"12px",lineHeight:"1.6",whiteSpace:"pre-wrap",
+                borderBottomRightRadius:m.role==="user"?"2px":"10px",
+                borderBottomLeftRadius:m.role==="assistant"?"2px":"10px" }}>
+                {m.text}
+              </div>
+              {m.role==="user" && <Avatar initials="OA" color={T.accentDim} size={28}/>}
+            </div>
+          ))}
+          {loading && (
+            <div style={{ display:"flex",gap:"10px",alignItems:"flex-start" }}>
+              <Avatar initials="⚡" color={`linear-gradient(135deg,${T.accent},${T.green})`} size={28}/>
+              <div style={{ padding:"10px 14px",background:T.subtle,borderRadius:"10px" }}>
+                <div style={{ display:"flex",gap:"4px",alignItems:"center" }}>
+                  {[0,1,2].map(d=>(
+                    <div key={d} style={{ width:"6px",height:"6px",borderRadius:"50%",background:T.accent,animation:`pulse3 1s ${d*0.2}s infinite` }}/>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef}/>
+        </div>
+
+        {messages.length<=1 && (
+          <div style={{ display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"10px",flexShrink:0 }}>
+            {SUGGESTED.map((s,i)=>(
+              <button key={i} onClick={()=>setQuery(s)}
+                style={{ padding:"5px 10px",borderRadius:"6px",background:T.subtle,color:T.muted,
+                  border:`1px solid ${T.border}`,fontSize:"11px",cursor:"pointer",fontFamily:"inherit",
+                  transition:"all 0.15s" }}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display:"flex",gap:"8px",flexShrink:0 }}>
+          <input style={{ background:T.subtle,border:`1px solid ${T.border}`,borderRadius:"8px",
+            padding:"9px 14px",color:T.text,fontSize:"12px",flex:1,fontFamily:"inherit",outline:"none" }}
+            placeholder="Ask about reps, territories, pipeline, commissions..."
+            value={query} onChange={e=>setQuery(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&sendMessage()}/>
+          <Btn onClick={sendMessage} style={{ padding:"9px 16px" }}>
+            <Icons.send s={13} c="#000"/>
+          </Btn>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── APP SHELL ───────────────────────────────────────────────────────────────
+const NAV = [
+  { id:"dashboard",label:"Dashboard",icon:Icons.dashboard },
+  { id:"contacts",label:"Contacts",icon:Icons.users },
+  { id:"pipeline",label:"Pipeline",icon:Icons.bar },
+  { id:"reps",label:"Reps",icon:Icons.award },
+  { id:"territories",label:"Territories",icon:Icons.map },
+  { id:"commissions",label:"Commissions",icon:Icons.dollar },
+  { id:"insights",label:"AI Insights",icon:Icons.bolt },
+];
+
+const PAGE_LABELS = {
+  dashboard:"Operations Dashboard",contacts:"Customer Contacts",pipeline:"Enrollment Pipeline",
+  reps:"Rep Management",territories:"Territory Intelligence",commissions:"Commission Tracking",
+  insights:"AI Insights",
+};
+
+function App() {
+  const [active,setActive] = useState("dashboard");
+  const [time,setTime] = useState(new Date());
+
+  useEffect(()=>{const t=setInterval(()=>setTime(new Date()),60000);return ()=>clearInterval(t)}, []);
+
+  const VIEW = {
+    dashboard:<Dashboard/>,contacts:<ContactsView/>,pipeline:<PipelineView/>,
+    reps:<RepsView/>,territories:<TerritoriesView/>,commissions:<CommissionsView/>,
+    insights:<InsightsView/>,
+  };
+
+  return (
+    <div style={{ display:"flex",height:"100vh",width:"100%",overflow:"hidden" }}>
+      {/* Sidebar */}
+      <div className="sidebar-wrap" style={{ width:"230px",minWidth:"230px",background:T.surface,
+        borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",zIndex:10 }}>
+        {/* Logo */}
+        <div style={{ padding:"20px 20px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:"12px" }}>
+          <div style={{ width:"36px",height:"36px",background:`linear-gradient(135deg,${T.accent},${T.green})`,
+            borderRadius:"10px",display:"flex",alignItems:"center",justifyContent:"center",
+            boxShadow:`0 4px 12px ${T.accent}30` }}>
+            <Icons.zap s={18} c="#000"/>
+          </div>
+          <div>
+            <div style={{ fontWeight:"800",fontSize:"14px",letterSpacing:"0.04em" }}>EMG OPS</div>
+            <div style={{ fontSize:"10px",color:T.muted }}>Solar CRM v3.0</div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ padding:"12px 0",flex:1,overflow:"auto" }}>
+          <div style={{ padding:"6px 20px 4px",fontSize:"9px",color:T.muted,textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:"700" }}>
+            Main
+          </div>
+          {NAV.slice(0,3).map(n=>(
+            <div key={n.id} onClick={()=>setActive(n.id)}
+              style={{ display:"flex",alignItems:"center",gap:"10px",padding:"9px 20px",cursor:"pointer",
+                transition:"all 0.15s",
+                background:active===n.id?T.accentGlow:"transparent",
+                color:active===n.id?T.accent:T.muted,
+                borderLeft:active===n.id?`2px solid ${T.accent}`:"2px solid transparent",
+                fontSize:"12px",fontWeight:active===n.id?"600":"400" }}>
+              <n.icon s={14} c={active===n.id?T.accent:T.muted}/> {n.label}
+            </div>
+          ))}
+          <div style={{ padding:"14px 20px 4px",fontSize:"9px",color:T.muted,textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:"700" }}>
+            Management
+          </div>
+          {NAV.slice(3).map(n=>(
+            <div key={n.id} onClick={()=>setActive(n.id)}
+              style={{ display:"flex",alignItems:"center",gap:"10px",padding:"9px 20px",cursor:"pointer",
+                transition:"all 0.15s",
+                background:active===n.id?T.accentGlow:"transparent",
+                color:active===n.id?T.accent:T.muted,
+                borderLeft:active===n.id?`2px solid ${T.accent}`:"2px solid transparent",
+                fontSize:"12px",fontWeight:active===n.id?"600":"400" }}>
+              <n.icon s={14} c={active===n.id?T.accent:T.muted}/> {n.label}
+              {n.id==="insights" && (
+                <span style={{ marginLeft:"auto",fontSize:"9px",padding:"2px 6px",
+                  background:`linear-gradient(90deg,${T.accent},${T.green})`,
+                  borderRadius:"3px",color:"#000",fontWeight:"800" }}>AI</span>
+              )}
+              {n.id==="commissions" && (
+                <span style={{ marginLeft:"auto",fontSize:"9px",padding:"2px 6px",
+                  background:T.greenDim,borderRadius:"3px",color:T.green,fontWeight:"700" }}>$</span>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        {/* User */}
+        <div style={{ padding:"16px 20px",borderTop:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+            <Avatar initials="OA" color={T.accentDim} size={32}/>
+            <div style={{ flex:1,overflow:"hidden" }}>
+              <div style={{ fontSize:"12px",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>Omar Amin</div>
+              <div style={{ fontSize:"10px",color:T.muted }}>CEO / Team Lead</div>
+            </div>
+            <div style={{ cursor:"pointer" }}><Icons.settings s={13} c={T.muted}/></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+        {/* Header */}
+        <div style={{ height:"56px",background:T.surface,borderBottom:`1px solid ${T.border}`,
+          display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",flexShrink:0 }}>
+          <div>
+            <div style={{ fontWeight:"700",fontSize:"15px" }}>{PAGE_LABELS[active]}</div>
+            <div style={{ fontSize:"10px",color:T.muted }}>EMG Operations · Community Solar Enrollment</div>
+          </div>
+          <div style={{ display:"flex",alignItems:"center",gap:"14px" }}>
+            <div style={{ fontSize:"11px",color:T.muted,display:"flex",alignItems:"center",gap:"5px" }}>
+              <div style={{ width:"6px",height:"6px",borderRadius:"50%",background:T.green,boxShadow:`0 0 6px ${T.green}60` }}/>
+              Live · {time.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+            </div>
+            <Btn style={{ padding:"7px 14px",fontSize:"11px" }}>
+              <Icons.plus s={12} c="#000"/> New Deal
+            </Btn>
+            <div style={{ position:"relative",cursor:"pointer" }}>
+              <Icons.bell s={16} c={T.muted}/>
+              <div style={{ position:"absolute",top:"-3px",right:"-3px",width:"8px",height:"8px",
+                borderRadius:"50%",background:T.red,border:`2px solid ${T.surface}` }}/>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex:1,overflow:"auto",padding:"24px" }}>
+          {VIEW[active]}
+        </div>
+      </div>
+
+      {/* Mobile Bottom Nav */}
+      <div className="mobile-nav" style={{ display:"none",position:"fixed",bottom:0,left:0,right:0,
+        background:T.surface,borderTop:`1px solid ${T.border}`,padding:"8px 0",zIndex:100,
+        justifyContent:"space-around" }}>
+        {NAV.slice(0,5).map(n=>(
+          <div key={n.id} onClick={()=>setActive(n.id)}
+            style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",cursor:"pointer",padding:"4px 8px" }}>
+            <n.icon s={18} c={active===n.id?T.accent:T.muted}/>
+            <span style={{ fontSize:"9px",color:active===n.id?T.accent:T.muted }}>{n.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
