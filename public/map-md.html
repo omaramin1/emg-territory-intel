@@ -72,8 +72,7 @@
         .basemap-row input[type="radio"] { accent-color: #ff8800; margin-right: 6px; }
         .basemap-label { font-size: 11px; color: #ccc; }
 
-        .info-panel { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; background: rgba(10, 10, 18, 0.98); padding: 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 340px; max-height: 500px; overflow-y: auto; display: none; }
-        .info-panel.active { display: block; }
+        .info-panel { position: absolute; left: 10px; top: 50%; z-index: 1000; background: rgba(10, 10, 18, 0.98); padding: 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 340px; max-height: 500px; overflow-y: auto; }
         .info-panel h3 { color: #ff8800; font-size: 14px; margin-bottom: 12px; padding-right: 30px; }
         .info-label { color: #ff8800; font-weight: 600; }
         .info-value { color: #e0e0e0; margin-left: 5px; }
@@ -257,6 +256,68 @@
         .claim-count { color: #888; font-size: 10px; margin-left: 4px; }
         .leaflet-draw-toolbar { background: rgba(10,10,18,0.9) !important; border: 1px solid #00e676 !important; }
         .leaflet-draw-toolbar a { background-color: rgba(10,10,18,0.9) !important; color: #00e676 !important; }
+
+        /* ── PRO UI POLISH ── */
+        /* Smooth transitions for all panels */
+        .toggle-panel, .priority-panel, .target-summary, .legend, .claim-panel, .filter-bar, .info-panel, .header, .search-panel {
+            transition: opacity 0.25s ease, transform 0.25s ease, width 0.2s ease;
+        }
+        /* Better scrollbar styling */
+        .toggle-panel::-webkit-scrollbar, .priority-panel::-webkit-scrollbar, .legend::-webkit-scrollbar, .target-summary::-webkit-scrollbar, .info-panel::-webkit-scrollbar, .claim-panel::-webkit-scrollbar {
+            width: 5px;
+        }
+        .toggle-panel::-webkit-scrollbar-track, .priority-panel::-webkit-scrollbar-track, .legend::-webkit-scrollbar-track, .target-summary::-webkit-scrollbar-track, .info-panel::-webkit-scrollbar-track, .claim-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .toggle-panel::-webkit-scrollbar-thumb, .priority-panel::-webkit-scrollbar-thumb, .legend::-webkit-scrollbar-thumb, .target-summary::-webkit-scrollbar-thumb, .info-panel::-webkit-scrollbar-thumb, .claim-panel::-webkit-scrollbar-thumb {
+            background: rgba(255,136,0,0.3); border-radius: 3px;
+        }
+        .toggle-panel::-webkit-scrollbar-thumb:hover, .priority-panel::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,136,0,0.6);
+        }
+        /* Refined dropdown selects */
+        .filter-group select {
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ff8800'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 5px center; background-size: 8px 5px;
+            padding-right: 18px; cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .filter-group select:hover { border-color: #ff8800; }
+        .filter-group select:focus { box-shadow: 0 0 0 2px rgba(255,136,0,0.2); }
+        /* Polished toggle switches */
+        .toggle-switch { transition: background 0.25s ease; }
+        .toggle-switch::after { transition: left 0.2s cubic-bezier(0.4,0,0.2,1), background 0.2s; }
+        /* Button hover effects */
+        .search-btn { transition: background 0.2s, transform 0.1s; }
+        .search-btn:active { transform: scale(0.96); }
+        .filter-reset { transition: background 0.2s, color 0.2s, transform 0.1s; }
+        .filter-reset:active { transform: scale(0.96); }
+        .gps-btn { transition: all 0.25s ease; }
+        .claim-btn { transition: background 0.2s, transform 0.1s; }
+        .claim-btn:active { transform: scale(0.97); }
+        /* Panel header hover */
+        .toggle-panel h3:hover, .priority-panel h4:hover, .target-summary h4:hover, .legend h4:hover, .claim-panel h4:hover {
+            opacity: 0.85;
+        }
+        /* Better focus outlines */
+        .search-panel input:focus { box-shadow: 0 0 0 2px rgba(0,255,136,0.25); }
+        /* Utility badge polish */
+        .utility-badge { transition: opacity 0.2s; letter-spacing: 0.3px; }
+        .utility-badge:hover { opacity: 0.8; }
+        /* Priority item animation */
+        .priority-item { transition: background 0.2s, transform 0.1s; }
+        .priority-item:active { transform: scale(0.98); }
+        /* Smoother marker cluster animation */
+        .marker-cluster { transition: background-color 0.2s; }
+        /* Info panel slide-in */
+        .info-panel { opacity: 0; transform: translateY(-50%) translateX(-10px); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; }
+        .info-panel.active { opacity: 1; transform: translateY(-50%) translateX(0); pointer-events: auto; display: block; }
+        /* Loading screen fade */
+        .loading-screen { transition: opacity 0.5s ease; }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+        /* Status banner subtle animation */
+        .status-banner { transition: opacity 0.3s, background 0.3s; }
 
     </style>
 </head>
@@ -474,6 +535,15 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#00ddff;"></div> Mobile Home</div>
             </div>
             <div class="legend-section">
+                <div class="legend-section-title">Sales Status (zoom in)</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#00c853;"></div> Payable / Processed</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Sent / Pending</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ff1744;"></div> Cannot Process / Failed</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#aa00ff;"></div> Chargeback</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#ffd600;"></div> Awaiting Update</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#757575;"></div> Duplicate / Other</div>
+            </div>
+            <div class="legend-section">
                 <div class="legend-section-title">County Boundaries</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ffffff;border-width:1px;"></div> County lines + labels</div>
             </div>
@@ -501,6 +571,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
+        var CB = '?v=' + Date.now();
         const map = L.map('map', { zoomControl: true }).setView([39.15, -76.85], 8);
 
         // Base maps
@@ -607,7 +678,7 @@
 
         // ── Helpers ──
         function updateLoading(s, p) { document.getElementById('loadingStatus').textContent = s; document.getElementById('loadingBar').style.width = p + '%'; }
-        function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
+        function hideLoading() { var el = document.getElementById('loadingScreen'); el.classList.add('hidden'); setTimeout(function(){ el.style.display = 'none'; }, 500); }
         function showInfoPanel(title, html) { document.getElementById('infoPanelTitle').textContent = title; document.getElementById('infoPanelContent').innerHTML = html; document.getElementById('infoPanel').classList.add('active'); }
         function closeInfoPanel() { document.getElementById('infoPanel').classList.remove('active'); }
         function updateStatus(msg) { document.getElementById('statusBanner').textContent = msg; }
@@ -726,10 +797,10 @@
             try {
                 updateLoading('Loading ZIP code boundaries...', 10);
                 const [geoResp, dataResp, demoResp, lmiResp] = await Promise.all([
-                    fetch('md_zip_boundaries.geojson'),
-                    fetch('md_zip_data.json'),
-                    fetch('md_demographics.json'),
-                    fetch('md_lmi_thresholds.json')
+                    fetch('md_zip_boundaries.geojson'+CB),
+                    fetch('md_zip_data.json'+CB),
+                    fetch('md_demographics.json'+CB),
+                    fetch('md_lmi_thresholds.json'+CB)
                 ]);
                 if (!geoResp.ok) throw new Error('Failed to load boundaries');
                 const boundaries = await geoResp.json();
@@ -941,9 +1012,14 @@
         async function loadSalesData() {
             try {
                 updateLoading('Loading real sales data...', 40);
-                const resp = await fetch('md_sales.json');
-                if (!resp.ok) throw new Error('No sales data');
-                salesData = await resp.json();
+                const [mdResp, vaResp] = await Promise.all([
+                    fetch('md_sales.json'+CB),
+                    fetch('va_sales.json'+CB).catch(() => null)
+                ]);
+                if (!mdResp.ok) throw new Error('No sales data');
+                const mdSales = await mdResp.json();
+                const vaSales = (vaResp && vaResp.ok) ? await vaResp.json() : [];
+                salesData = mdSales.concat(vaSales);
 
                 updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 55);
                 const markers = [];
@@ -1447,7 +1523,7 @@
         // ── Load Trailer Parks ──
         async function loadTrailerParks() {
             try {
-                const resp = await fetch('md_trailer_parks.json');
+                const resp = await fetch('md_trailer_parks.json'+CB);
                 if (!resp.ok) return;
                 const parks = await resp.json();
                 parks.forEach(p => {
@@ -1620,7 +1696,7 @@
 
         async function loadHousingConcentration() {
             try {
-                const resp = await fetch('md_housing_pins.geojson');
+                const resp = await fetch('md_housing_pins.geojson'+CB);
                 if (!resp.ok) return;
                 const data = await resp.json();
                 data.features.forEach(feat => {
@@ -1839,7 +1915,7 @@
 
         async function loadAutoQualifyZones() {
             try {
-                const resp = await fetch('md_auto_qualify.geojson');
+                const resp = await fetch('md_auto_qualify.geojson'+CB);
                 if (!resp.ok) return;
                 const data = await resp.json();
                 buildKwhHeatLayer(data);
@@ -1977,7 +2053,7 @@
 
         async function loadCountyBoundaries() {
             try {
-                const resp = await fetch('md_counties.geojson');
+                const resp = await fetch('md_counties.geojson'+CB);
                 if (!resp.ok) return;
                 const counties = await resp.json();
                 L.geoJSON(counties, {
