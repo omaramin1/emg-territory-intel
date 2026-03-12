@@ -68,29 +68,6 @@
         .comp-grid span { color: #aaa; }
         .comp-grid b { color: #ddd; font-weight: 500; }
 
-        /* Grade label on pin */
-        .grade-label {
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.9);
-            pointer-events: none;
-        }
-        .grade-label-S { font-size: 16px; color: #ffd600; text-shadow: 0 0 8px #ff8800, 0 0 16px #ff6600; }
-        .grade-label-A { font-size: 13px; color: #ff8800; text-shadow: 0 0 6px rgba(255,136,0,0.7); }
-        .grade-label-B { font-size: 11px; color: #fff; }
-        .grade-label-C { font-size: 9px; color: #aaa; }
-        .grade-label-D { font-size: 8px; color: #666; }
-
-        /* Pulse animation for S-tier */
-        @keyframes pulse-s {
-            0% { box-shadow: 0 0 0 0 rgba(255,214,0,0.6); }
-            70% { box-shadow: 0 0 0 18px rgba(255,214,0,0); }
-            100% { box-shadow: 0 0 0 0 rgba(255,214,0,0); }
-        }
-        .pulse-ring {
-            position: absolute; border-radius: 50%;
-            animation: pulse-s 2s infinite;
-        }
-
         @media (max-width: 600px) {
             .header { top: 5px; left: 5px; padding: 8px 12px; }
             .header h1 { font-size: 13px; }
@@ -133,7 +110,7 @@
         <div class="toggle-row"><input type="checkbox" id="tog-sales" checked><label for="tog-sales">💰 Sales Hotspots (ZIP)</label></div>
         <div class="toggle-row"><input type="checkbox" id="tog-indiv-sales"><label for="tog-indiv-sales">📌 Individual Sales</label><span class="count" id="cnt-indiv"></span></div>
         <div class="toggle-row"><input type="checkbox" id="tog-radius"><label for="tog-radius">⭕ 2hr Drive Radius</label></div>
-        <div class="toggle-row"><input type="checkbox" id="tog-heatmap" checked><label for="tog-heatmap">🔥 Conversion Heatmap</label></div>
+        <div class="toggle-row"><input type="checkbox" id="tog-heatmap"><label for="tog-heatmap">🔥 Conversion Heatmap</label></div>
     </div>
 
     <div class="legend">
@@ -144,9 +121,8 @@
         <div class="legend-row"><div class="legend-dot" style="background:#7b1fa2"></div>Diverse/Bilingual</div>
         <div class="legend-section">
             <h4>PRIORITY GRADE</h4>
-            <div class="legend-row"><div class="legend-dot" style="width:24px;height:24px;background:#ffd600;border:3px solid #ff8800;box-shadow:0 0 8px #ff8800"></div><b style="color:#ffd600">S</b>&nbsp;Supreme (75+)</div>
-            <div class="legend-row"><div class="legend-dot" style="width:18px;height:18px;background:#ff8800;border-color:#fff"></div><b style="color:#ff8800">A</b>&nbsp;Excellent (60+)</div>
-            <div class="legend-row"><div class="legend-dot" style="width:12px;height:12px;background:#888;border-color:rgba(255,255,255,0.3)"></div>B Grade (48+)</div>
+            <div class="legend-row"><div class="legend-dot" style="background:#ff8800;border-color:#fff"></div><b style="color:#ff8800">S/A</b>&nbsp;Top Priority (60+)</div>
+            <div class="legend-row"><div class="legend-dot" style="width:10px;height:10px;background:#888;border-color:rgba(255,255,255,0.3)"></div>B Grade (48+)</div>
             <div class="legend-row"><div class="legend-dot" style="width:8px;height:8px;background:#555;opacity:0.5"></div>C/D Grade</div>
         </div>
         <div class="legend-section">
@@ -185,6 +161,27 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    <script>
+    // Fallback: if L.heatLayer not available, define stub
+    if (typeof L !== 'undefined' && !L.heatLayer) {
+        L.heatLayer = function(pts, opts) {
+            var lg = L.layerGroup();
+            pts.forEach(function(p) {
+                if (p[2] > 0.3) {
+                    L.circle([p[0], p[1]], {
+                        radius: (opts.radius || 25) * 50,
+                        color: 'transparent',
+                        fillColor: '#ff8800',
+                        fillOpacity: p[2] * 0.25,
+                        weight: 0
+                    }).addTo(lg);
+                }
+            });
+            return lg;
+        };
+    }
+    </script>
     <script>
     (async function() {
 
@@ -199,14 +196,13 @@
         'Diverse/Bilingual': '#7b1fa2'
     };
 
-    // DRAMATICALLY different sizes per grade
     const GRADE_CONFIG = {
-        'S': { radius: 18, opacity: 1.0,  weight: 4, borderColor: '#ffd600', fillBoost: '#ffd600', glow: true },
-        'A': { radius: 13, opacity: 0.95, weight: 3, borderColor: '#ff8800', fillBoost: null, glow: false },
-        'B': { radius: 8,  opacity: 0.65, weight: 1.5, borderColor: 'rgba(255,255,255,0.3)', fillBoost: null, glow: false },
-        'C': { radius: 5,  opacity: 0.35, weight: 1, borderColor: 'rgba(255,255,255,0.15)', fillBoost: null, glow: false },
-        'D': { radius: 3,  opacity: 0.20, weight: 0.5, borderColor: 'rgba(255,255,255,0.1)', fillBoost: null, glow: false },
-        'F': { radius: 2,  opacity: 0.15, weight: 0.5, borderColor: 'rgba(255,255,255,0.05)', fillBoost: null, glow: false }
+        'S': { radius: 12, opacity: 0.9, weight: 2.5, borderColor: '#fff' },
+        'A': { radius: 10, opacity: 0.85, weight: 2, borderColor: '#fff' },
+        'B': { radius: 7,  opacity: 0.7, weight: 1.5, borderColor: 'rgba(255,255,255,0.4)' },
+        'C': { radius: 5,  opacity: 0.5, weight: 1, borderColor: 'rgba(255,255,255,0.2)' },
+        'D': { radius: 4,  opacity: 0.35, weight: 0.5, borderColor: 'rgba(255,255,255,0.15)' },
+        'F': { radius: 3,  opacity: 0.2, weight: 0.5, borderColor: 'rgba(255,255,255,0.1)' }
     };
 
     const ANNAPOLIS = [38.9784, -76.4922];
@@ -304,44 +300,13 @@
         var color = REP_COLORS[p.rep] || '#888';
         var gc = GRADE_CONFIG[p.grade] || GRADE_CONFIG['D'];
 
-        // S-tier gets gold fill override
-        var fillColor = gc.fillBoost || color;
-        // A-tier: brighter version of rep color
-        if (p.grade === 'A') {
-            fillColor = color;
-        }
-
         var marker = L.circleMarker([p.lat, p.lng], {
             radius: gc.radius,
-            fillColor: fillColor,
+            fillColor: color,
             color: gc.borderColor,
             weight: gc.weight,
             fillOpacity: gc.opacity
         });
-
-        // S-tier: add pulsing outer ring
-        if (gc.glow) {
-            var pulseRing = L.circleMarker([p.lat, p.lng], {
-                radius: gc.radius + 6,
-                fillColor: '#ffd600',
-                color: '#ffd600',
-                weight: 2,
-                fillOpacity: 0.15,
-                opacity: 0.4,
-                interactive: false
-            });
-            pinMarkers.push({ marker: pulseRing, rep: p.rep, grade: p.grade, score: p.score, hh: 0, isRing: true });
-        }
-
-        // Grade label tooltip (always visible for S and A)
-        if (p.grade === 'S' || p.grade === 'A') {
-            marker.bindTooltip(p.grade, {
-                permanent: true,
-                direction: 'center',
-                className: 'grade-label grade-label-' + p.grade,
-                offset: [0, 0]
-            });
-        }
 
         var scoreColor = p.score >= 75 ? '#ffd600' : p.score >= 60 ? '#ff8800' : p.score >= 48 ? '#4caf50' : p.score >= 35 ? '#2196f3' : '#9e9e9e';
         var c = p.comp || {};
@@ -382,7 +347,7 @@
             '</div>';
 
         marker.bindPopup(popup, { maxWidth: 320 });
-        pinMarkers.push({ marker: marker, rep: p.rep, grade: p.grade, score: p.score, hh: p.hh || 0, isRing: false });
+        pinMarkers.push({ marker: marker, rep: p.rep, grade: p.grade, score: p.score, hh: p.hh || 0 });
     });
 
     // ═══ SALES HOTSPOTS LAYER ═══
@@ -501,18 +466,48 @@
         trailerLayer.addLayer(m);
     });
 
-    // ═══ HEATMAP ═══
-    const heatLayer = L.layerGroup();
-    hotspots.filter(function(h) { return h.rate >= 40 && h.payable >= 2; }).forEach(function(h) {
-        L.circle([h.lat, h.lng], {
-            radius: 8000,
-            color: 'transparent',
-            fillColor: '#ff8800',
-            fillOpacity: 0.08 + (h.rate / 100) * 0.12,
-            weight: 0
-        }).addTo(heatLayer);
+    // ═══ HEATMAP (real sales density + opportunity scores) ═══
+    // Build heat points from actual payable sales (intensity = 1.0)
+    // and pending sales (intensity = 0.4) — gives true conversion density
+    var heatPoints = [];
+    allSales.forEach(function(s) {
+        if (!s[0] || !s[1]) return;
+        var status = s[5] || '';
+        if (status === 'Payable' || status === 'Processed') {
+            heatPoints.push([s[0], s[1], 1.0]);
+        } else if (status === 'Sent' || status === 'Awaiting Client Update' || status === 'TPV Not Complete') {
+            heatPoints.push([s[0], s[1], 0.4]);
+        }
+        // Bad statuses still show weak heat — they indicate canvassing activity
+        else if (status === 'Cannot Process' || status === 'Duplicate' || status === 'Denied') {
+            heatPoints.push([s[0], s[1], 0.15]);
+        }
     });
-    heatLayer.addTo(map);
+
+    // Also add target pin scores as low-intensity opportunity heat
+    pins.forEach(function(p) {
+        if (p.score >= 60) {
+            heatPoints.push([p.lat, p.lng, (p.score / 100) * 0.3]);
+        }
+    });
+
+    var heatLayer = L.heatLayer(heatPoints, {
+        radius: 28,
+        blur: 20,
+        maxZoom: 14,
+        max: 1.0,
+        minOpacity: 0.15,
+        gradient: {
+            0.1: '#0d47a1',
+            0.25: '#1565c0',
+            0.4: '#2e7d32',
+            0.55: '#ffc107',
+            0.7: '#ff8800',
+            0.85: '#ff5722',
+            1.0: '#ff1744'
+        }
+    });
+    // heatLayer NOT added by default — toggle on via panel
 
     // ═══ INDIVIDUAL SALES PINS (clustered) ═══
     var STATUS_COLORS = {
@@ -607,11 +602,9 @@
         pinMarkers.forEach(function(item) {
             if (activeReps.has(item.rep) && activeGrades.has(item.grade)) {
                 pinLayer.addLayer(item.marker);
-                if (!item.isRing) {
-                    visible++;
-                    totalHH += item.hh;
-                    if (item.grade === 'S' || item.grade === 'A') topCount++;
-                }
+                visible++;
+                totalHH += item.hh;
+                if (item.grade === 'S' || item.grade === 'A') topCount++;
             }
         });
 
