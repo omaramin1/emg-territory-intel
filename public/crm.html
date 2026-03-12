@@ -10,6 +10,8 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   html,body,#root { height:100%; width:100%; overflow:hidden; }
@@ -86,6 +88,10 @@ const Icons = {
   flame: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
   calendar: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
   externalLink: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+  upload: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  fileText: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+  alertCircle: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  merge: ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>,
 };
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
@@ -1075,6 +1081,520 @@ Answer concisely with specific numbers. Be direct and insightful.`;
   );
 };
 
+// ─── DATA IMPORT VIEW ────────────────────────────────────────────────────────
+const COLUMN_ALIASES = {
+  name:["name","customer name","customer","full name","client name","client","subscriber","account holder"],
+  account:["account","account number","account #","acct","acct #","account no","account_number","enrollment id","enrollment_id","enrollment number"],
+  utility:["utility","utility name","utility company","ldc","distribution company","electric company","utility_name"],
+  rep:["rep","sales rep","representative","agent","closer","salesperson","rep name","sales_rep","assigned rep","assigned_rep"],
+  status:["status","enrollment status","enrollment_status","state","disposition","account status","account_status"],
+  kwh:["kwh","kw","kilowatt","annual kwh","annual_kwh","estimated kwh","estimated_kwh","usage","annual usage","annual_usage","kwh enrolled","kwh_enrolled"],
+  saleDate:["sale date","sale_date","date","enrollment date","enrollment_date","signed date","signed_date","created","date created","created_date","sign date","sign_date","signup date","signup_date"],
+  address:["address","service address","service_address","street","location","customer address","customer_address"],
+  phone:["phone","phone number","phone_number","telephone","mobile","cell","contact number","contact_number"],
+  lmiVerified:["lmi","lmi verified","lmi_verified","low income","income verified","income_verified","lmi status","lmi_status","qualified","lmi qualified","lmi_qualified"],
+  commissionEst:["commission","commission est","commission_est","estimated commission","estimated_commission","payout","commission amount","commission_amount"],
+  partner:["partner","energy partner","provider","solar provider","solar_provider","supplier"],
+};
+
+const normalizeHeader = (h) => {
+  const clean = String(h||"").trim().toLowerCase().replace(/[^a-z0-9 _]/g,"").replace(/\s+/g," ");
+  for (const [field,aliases] of Object.entries(COLUMN_ALIASES)) {
+    if (aliases.includes(clean)) return field;
+  }
+  return null;
+};
+
+const normalizeStatus = (raw) => {
+  if (!raw) return null;
+  const s = String(raw).trim().toLowerCase();
+  const MAP = {
+    "payable":"Payable","paid":"Payable","active":"Payable","enrolled":"Payable",
+    "cannot process":"Cannot Process","rejected":"Cannot Process","error":"Cannot Process","invalid":"Cannot Process",
+    "duplicate":"Duplicate","dup":"Duplicate","dupe":"Duplicate",
+    "denied":"Denied","decline":"Denied","declined":"Denied",
+    "chargeback":"Chargeback","charge back":"Chargeback","cb":"Chargeback",
+    "tpv not complete":"TPV Not Complete","tpv incomplete":"TPV Not Complete","tpv pending":"TPV Not Complete","pending tpv":"TPV Not Complete",
+    "awaiting client update":"Awaiting Client Update","awaiting":"Awaiting Client Update","pending":"Awaiting Client Update","awaiting update":"Awaiting Client Update",
+    "processed":"Processed","complete":"Processed","completed":"Processed",
+    "sent":"Sent","submitted":"Sent",
+    "test":"Test",
+  };
+  return MAP[s]||Object.values(STATUS_CONFIG).find(v=>v.label.toLowerCase()===s)?.label||raw;
+};
+
+const normalizeUtility = (raw) => {
+  if (!raw) return null;
+  const s = String(raw).trim().toUpperCase();
+  const keys = Object.keys(UTILITY_COLORS);
+  const exact = keys.find(k=>k===s);
+  if (exact) return exact;
+  const partial = keys.find(k=>s.includes(k)||k.includes(s));
+  if (partial) return partial;
+  const ALIASES = {
+    "DOMINION":"DOMINION POWER","DOM":"DOMINION POWER","DVP":"DOMINION POWER","DOMINION VIRGINIA":"DOMINION POWER",
+    "CH":"CENTRAL HUDSON","CENTRAL HUDSON GAS":"CENTRAL HUDSON","CHGE":"CENTRAL HUDSON",
+    "NGRID NY":"NATIONAL GRID NY","NATIONAL GRID NEW YORK":"NATIONAL GRID NY","NAT GRID NY":"NATIONAL GRID NY",
+    "NGRID MA":"NATIONAL GRID MA","NATIONAL GRID MASS":"NATIONAL GRID MA","NAT GRID MA":"NATIONAL GRID MA",
+    "EVERSOURCE":"EVERSOURCE (WMECO)","WMECO":"EVERSOURCE (WMECO)",
+    "VERSANT":"VERSANT BHD","BHD":"VERSANT BHD",
+    "UNITIL":"UNITIL MA",
+    "XCEL":"XCEL MN","XCEL ENERGY":"XCEL MN",
+    "PEPCO MARYLAND":"PEPCO MD","PEPCO WASHINGTON":"PEPCO DC",
+    "POTOMAC ED":"POTOMAC EDISON","PE":"POTOMAC EDISON",
+    "ORANGE ROCKLAND":"ORU","O&R":"ORU","OR":"ORU",
+    "ROCHESTER GAS":"RGE","ROCHESTER":"RGE",
+    "NEW YORK STATE ELECTRIC":"NYSEG","NY STATE ELECTRIC":"NYSEG",
+  };
+  return ALIASES[s]||raw;
+};
+
+const DataImportView = () => {
+  const [dragActive, setDragActive] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [parsed, setParsed] = useState(null);
+  const [importResult, setImportResult] = useState(null);
+  const [columnMap, setColumnMap] = useState({});
+  const [previewTab, setPreviewTab] = useState("new");
+  const [importHistory, setImportHistory] = useState([]);
+  const fileRef = useRef(null);
+
+  const parseFile = (file) => {
+    setImporting(true);
+    setParsed(null);
+    setImportResult(null);
+
+    const ext = file.name.split(".").pop().toLowerCase();
+
+    if (ext === "csv" || ext === "tsv") {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (result) => {
+          processRows(result.data, file.name);
+        },
+        error: (err) => {
+          setImporting(false);
+          alert("CSV parse error: " + err.message);
+        }
+      });
+    } else if (["xlsx","xls","xlsm"].includes(ext)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const wb = XLSX.read(e.target.result, { type:"array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const data = XLSX.utils.sheet_to_json(ws, { defval:"" });
+          processRows(data, file.name);
+        } catch(err) {
+          setImporting(false);
+          alert("Excel parse error: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      setImporting(false);
+      alert("Unsupported file type. Drop a CSV, TSV, or Excel file.");
+    }
+  };
+
+  const processRows = (rows, fileName) => {
+    if (!rows.length) { setImporting(false); return; }
+
+    // Auto-detect column mapping
+    const headers = Object.keys(rows[0]);
+    const autoMap = {};
+    headers.forEach(h => {
+      const mapped = normalizeHeader(h);
+      if (mapped && !Object.values(autoMap).includes(mapped)) {
+        autoMap[h] = mapped;
+      }
+    });
+    setColumnMap(autoMap);
+
+    // Transform rows using detected mapping
+    const transformed = rows.map((row, idx) => {
+      const rec = { _raw: row, _rowNum: idx + 1 };
+      Object.entries(autoMap).forEach(([src, dest]) => {
+        let val = row[src];
+        if (dest === "kwh") val = parseFloat(String(val||0).replace(/[^0-9.-]/g,""))||0;
+        else if (dest === "lmiVerified") val = ["yes","true","1","verified","qualified","y"].includes(String(val||"").trim().toLowerCase());
+        else if (dest === "commissionEst") val = parseFloat(String(val||0).replace(/[^0-9.-]/g,""))||0;
+        else if (dest === "status") val = normalizeStatus(val);
+        else if (dest === "utility") val = normalizeUtility(val);
+        else val = String(val||"").trim();
+        rec[dest] = val;
+      });
+      return rec;
+    }).filter(r => r.name || r.account);
+
+    // Dedup detection against existing CONTACTS
+    const existingAccounts = new Set(CONTACTS.map(c => c.account));
+    const existingNameUtility = new Set(CONTACTS.map(c => `${c.name?.toLowerCase()}||${c.utility?.toLowerCase()}`));
+
+    const results = { new: [], duplicate: [], updated: [], unmapped: [], fileName, totalRows: rows.length };
+
+    transformed.forEach(rec => {
+      let isDup = false;
+      let matchType = null;
+      let existingMatch = null;
+
+      // Primary key: account number
+      if (rec.account && existingAccounts.has(rec.account)) {
+        isDup = true;
+        matchType = "account";
+        existingMatch = CONTACTS.find(c => c.account === rec.account);
+      }
+      // Secondary key: name + utility combo
+      else if (rec.name && rec.utility) {
+        const key = `${rec.name.toLowerCase()}||${rec.utility.toLowerCase()}`;
+        if (existingNameUtility.has(key)) {
+          isDup = true;
+          matchType = "name+utility";
+          existingMatch = CONTACTS.find(c => `${c.name?.toLowerCase()}||${c.utility?.toLowerCase()}` === key);
+        }
+      }
+
+      if (isDup) {
+        // Check if record has new data vs existing
+        const hasUpdates = existingMatch && (
+          (rec.status && rec.status !== existingMatch.status) ||
+          (rec.kwh && rec.kwh !== existingMatch.kwh) ||
+          (rec.rep && rec.rep !== existingMatch.rep) ||
+          (rec.phone && rec.phone !== existingMatch.phone) ||
+          (rec.address && rec.address !== existingMatch.address)
+        );
+        if (hasUpdates) {
+          results.updated.push({ ...rec, _matchType: matchType, _existing: existingMatch });
+        } else {
+          results.duplicate.push({ ...rec, _matchType: matchType, _existing: existingMatch });
+        }
+      } else {
+        results.new.push(rec);
+      }
+    });
+
+    // Detect unmapped columns
+    const mapped = new Set(Object.keys(autoMap));
+    results.unmapped = headers.filter(h => !mapped.has(h));
+
+    setParsed(results);
+    setImporting(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files?.[0]) parseFile(e.dataTransfer.files[0]);
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    setDragActive(e.type === "dragover" || e.type === "dragenter");
+  };
+
+  const commitImport = () => {
+    if (!parsed) return;
+    const newCount = parsed.new.length;
+    const updCount = parsed.updated.length;
+
+    // Add new records
+    parsed.new.forEach((rec, i) => {
+      CONTACTS.push({
+        id: CONTACTS.length + i + 1,
+        name: rec.name || "Unknown",
+        account: rec.account || `IMP${Date.now()}${i}`,
+        utility: rec.utility || "UNKNOWN",
+        rep: rec.rep || "Unassigned",
+        status: rec.status || "Sent",
+        kwh: rec.kwh || 0,
+        saleDate: rec.saleDate || new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
+        address: rec.address || "",
+        phone: rec.phone || "",
+        lmiVerified: rec.lmiVerified || false,
+        commissionEst: rec.commissionEst || (rec.kwh||0) * (COMMISSION_RATES[rec.utility]||0.05),
+      });
+    });
+
+    // Apply updates to existing records
+    parsed.updated.forEach(rec => {
+      const existing = rec._existing;
+      if (!existing) return;
+      if (rec.status) existing.status = rec.status;
+      if (rec.kwh) existing.kwh = rec.kwh;
+      if (rec.rep) existing.rep = rec.rep;
+      if (rec.phone) existing.phone = rec.phone;
+      if (rec.address) existing.address = rec.address;
+      if (rec.saleDate) existing.saleDate = rec.saleDate;
+      if (rec.lmiVerified !== undefined) existing.lmiVerified = rec.lmiVerified;
+    });
+
+    setImportHistory(prev => [...prev, {
+      fileName: parsed.fileName,
+      date: new Date().toLocaleString(),
+      newRecords: newCount,
+      updated: updCount,
+      duplicates: parsed.duplicate.length,
+      total: parsed.totalRows,
+    }]);
+
+    setImportResult({ newCount, updCount, dupCount: parsed.duplicate.length });
+    setParsed(null);
+  };
+
+  const resetImport = () => { setParsed(null); setImportResult(null); setColumnMap({}); };
+
+  const TABS = [
+    { id:"new", label:"New Records", count: parsed?.new?.length||0, color:T.green },
+    { id:"updated", label:"Has Updates", count: parsed?.updated?.length||0, color:T.amber },
+    { id:"duplicate", label:"Exact Duplicates", count: parsed?.duplicate?.length||0, color:T.red },
+  ];
+
+  const previewData = parsed?.[previewTab]||[];
+
+  return (
+    <div className="fade-in">
+      {/* KPI Row */}
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginBottom:"20px" }}>
+        <KPI label="Total Contacts" value={CONTACTS.length} sub="In CRM database" color={T.accent} icon={Icons.users}/>
+        <KPI label="Files Imported" value={importHistory.length} sub="This session" color={T.green} icon={Icons.fileText}/>
+        <KPI label="New Added" value={importHistory.reduce((s,h)=>s+h.newRecords,0)} sub="From imports" color={T.purple} icon={Icons.plus}/>
+        <KPI label="Dedup Caught" value={importHistory.reduce((s,h)=>s+h.duplicates,0)} sub="Prevented duplicates" color={T.amber} icon={Icons.alertCircle}/>
+      </div>
+
+      {/* Drop Zone */}
+      {!parsed && !importResult && (
+        <Card style={{ marginBottom:"20px" }}>
+          <div
+            onDragOver={handleDrag} onDragEnter={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}
+            onClick={()=>fileRef.current?.click()}
+            style={{
+              border:`2px dashed ${dragActive?T.accent:T.border}`,
+              borderRadius:"12px", padding:"48px 24px", textAlign:"center", cursor:"pointer",
+              background:dragActive?T.accentGlow:"transparent",
+              transition:"all 0.2s ease",
+            }}>
+            <input ref={fileRef} type="file" accept=".csv,.tsv,.xlsx,.xls,.xlsm" style={{display:"none"}}
+              onChange={e=>{if(e.target.files?.[0])parseFile(e.target.files[0]);e.target.value="";}}/>
+            {importing ? (
+              <div>
+                <div style={{ width:"40px",height:"40px",margin:"0 auto 16px",border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%",animation:"pulse3 1s linear infinite" }}/>
+                <div style={{ fontSize:"14px",fontWeight:"600",color:T.text }}>Parsing file...</div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ width:"56px",height:"56px",borderRadius:"14px",margin:"0 auto 16px",
+                  background:`linear-gradient(135deg,${T.accentDim},${T.purpleDim})`,
+                  display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  <Icons.upload s={24} c={T.accent}/>
+                </div>
+                <div style={{ fontSize:"15px",fontWeight:"700",color:T.text,marginBottom:"6px" }}>
+                  Drop Partner Reports Here
+                </div>
+                <div style={{ fontSize:"12px",color:T.muted,marginBottom:"16px",lineHeight:"1.5" }}>
+                  Nexamp, Arcadia, Puresky, Common NJ enrollment exports<br/>
+                  CSV, TSV, or Excel files · Auto-detects columns · Catches duplicates
+                </div>
+                <div style={{ display:"inline-flex",padding:"8px 20px",borderRadius:"8px",fontSize:"12px",
+                  fontWeight:"600",background:T.accentDim,color:T.accent,gap:"6px",alignItems:"center" }}>
+                  <Icons.upload s={13} c={T.accent}/> Browse Files
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Import Success Banner */}
+      {importResult && (
+        <Card style={{ marginBottom:"20px",background:`linear-gradient(135deg,${T.greenDim},${T.card})`,border:`1px solid ${T.green}30` }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"16px" }}>
+            <div style={{ width:"48px",height:"48px",borderRadius:"12px",background:T.greenDim,
+              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+              <Icons.check s={24} c={T.green}/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:"15px",fontWeight:"700",color:T.green,marginBottom:"4px" }}>Import Complete</div>
+              <div style={{ fontSize:"12px",color:T.textSecondary }}>
+                <span style={{ color:T.green,fontWeight:"600" }}>{importResult.newCount} new</span> records added
+                {importResult.updCount > 0 && <span> · <span style={{ color:T.amber,fontWeight:"600" }}>{importResult.updCount} updated</span></span>}
+                {importResult.dupCount > 0 && <span> · <span style={{ color:T.muted,fontWeight:"600" }}>{importResult.dupCount} duplicates</span> skipped</span>}
+              </div>
+            </div>
+            <Btn onClick={resetImport} style={{ padding:"8px 16px",fontSize:"11px" }}>
+              <Icons.upload s={12} c="#000"/> Import Another
+            </Btn>
+          </div>
+        </Card>
+      )}
+
+      {/* Parsed Results Preview */}
+      {parsed && (
+        <div>
+          {/* Summary Bar */}
+          <Card style={{ marginBottom:"16px" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:"12px" }}>
+                <Icons.fileText s={16} c={T.accent}/>
+                <div>
+                  <div style={{ fontSize:"13px",fontWeight:"700",color:T.text }}>{parsed.fileName}</div>
+                  <div style={{ fontSize:"11px",color:T.muted }}>{parsed.totalRows} rows parsed · {Object.keys(columnMap).length} columns mapped</div>
+                </div>
+              </div>
+              <div style={{ display:"flex",gap:"8px" }}>
+                <div onClick={resetImport} style={{ padding:"7px 14px",borderRadius:"6px",fontSize:"11px",fontWeight:"600",
+                  background:T.subtle,color:T.muted,cursor:"pointer" }}>Cancel</div>
+                <Btn onClick={commitImport} style={{ padding:"7px 16px",fontSize:"11px" }}>
+                  <Icons.merge s={12} c="#000"/> Import {parsed.new.length + parsed.updated.length} Records
+                </Btn>
+              </div>
+            </div>
+
+            {/* Column Mapping Display */}
+            {parsed.unmapped.length > 0 && (
+              <div style={{ padding:"8px 12px",borderRadius:"6px",background:T.amberDim,fontSize:"11px",
+                color:T.amber,marginBottom:"12px",display:"flex",alignItems:"center",gap:"6px" }}>
+                <Icons.alertCircle s={12} c={T.amber}/>
+                Unmapped columns: {parsed.unmapped.join(", ")}
+              </div>
+            )}
+
+            <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
+              {Object.entries(columnMap).map(([src,dest])=>(
+                <div key={src} style={{ display:"flex",alignItems:"center",gap:"4px",padding:"4px 8px",
+                  borderRadius:"4px",background:T.subtle,fontSize:"10px" }}>
+                  <span style={{ color:T.muted }}>{src}</span>
+                  <span style={{ color:T.accent }}>→</span>
+                  <span style={{ color:T.green,fontWeight:"600" }}>{dest}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Tabs */}
+          <div style={{ display:"flex",gap:"4px",marginBottom:"16px" }}>
+            {TABS.map(tab=>(
+              <div key={tab.id} onClick={()=>setPreviewTab(tab.id)}
+                style={{ padding:"8px 16px",borderRadius:"6px",fontSize:"11px",fontWeight:"600",cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:"6px",transition:"all 0.15s",
+                  background:previewTab===tab.id?T.card:T.surface,
+                  color:previewTab===tab.id?tab.color:T.muted,
+                  border:`1px solid ${previewTab===tab.id?tab.color+"40":T.border}` }}>
+                {tab.label}
+                <span style={{ padding:"1px 6px",borderRadius:"3px",fontSize:"10px",fontWeight:"800",
+                  background:previewTab===tab.id?tab.color+"20":"transparent",
+                  color:tab.color }}>{tab.count}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Data Table */}
+          <Card style={{ padding:0,overflow:"hidden" }}>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%",borderCollapse:"collapse",minWidth:"800px" }}>
+                <thead>
+                  <tr style={{ background:T.surface }}>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>#</th>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>Name</th>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>Account</th>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>Utility</th>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>Status</th>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>KWH</th>
+                    <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>Rep</th>
+                    {previewTab !== "new" && (
+                      <th style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>Match</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewData.length === 0 && (
+                    <tr><td colSpan={previewTab!=="new"?8:7} style={{ padding:"32px",textAlign:"center",color:T.muted,fontSize:"12px" }}>
+                      No records in this category
+                    </td></tr>
+                  )}
+                  {previewData.slice(0,50).map((r,i) => {
+                    const sc = STATUS_CONFIG[r.status]||{color:T.muted,bg:T.subtle};
+                    return (
+                      <tr key={i} style={{ background:i%2===0?T.card:T.surface }}>
+                        <td style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.muted }}>{r._rowNum}</td>
+                        <td style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px",fontWeight:"600" }}>{r.name||"—"}</td>
+                        <td className="tabular-nums" style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.accent,fontFamily:"monospace" }}>{r.account||"—"}</td>
+                        <td style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}` }}>
+                          {r.utility ? (
+                            <div style={{ display:"flex",alignItems:"center",gap:"5px" }}>
+                              <div style={{ width:"6px",height:"6px",borderRadius:"50%",background:UTILITY_COLORS[r.utility]||T.muted }}/>
+                              <span style={{ fontSize:"11px" }}>{r.utility}</span>
+                            </div>
+                          ) : <span style={{ fontSize:"11px",color:T.muted }}>—</span>}
+                        </td>
+                        <td style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}` }}>
+                          <span style={{ display:"inline-block",padding:"2px 7px",borderRadius:"4px",fontSize:"10px",
+                            fontWeight:"600",background:sc.bg,color:sc.color }}>{r.status||"—"}</span>
+                        </td>
+                        <td className="tabular-nums" style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.accent,fontWeight:"600" }}>
+                          {r.kwh?r.kwh.toLocaleString():"—"}
+                        </td>
+                        <td style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.textSecondary }}>{r.rep||"—"}</td>
+                        {previewTab !== "new" && (
+                          <td style={{ padding:"9px 12px",borderBottom:`1px solid ${T.border}` }}>
+                            <span style={{ fontSize:"10px",padding:"2px 6px",borderRadius:"3px",fontWeight:"600",
+                              background:r._matchType==="account"?T.redDim:T.amberDim,
+                              color:r._matchType==="account"?T.red:T.amber }}>
+                              {r._matchType==="account"?"Acct #":"Name+Util"}
+                            </span>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {previewData.length > 50 && (
+              <div style={{ padding:"10px",textAlign:"center",fontSize:"11px",color:T.muted,borderTop:`1px solid ${T.border}` }}>
+                Showing 50 of {previewData.length} records
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Import History */}
+      {importHistory.length > 0 && !parsed && (
+        <Card style={{ marginTop:"20px" }}>
+          <SectionTitle>Import History (This Session)</SectionTitle>
+          <table style={{ width:"100%",borderCollapse:"collapse" }}>
+            <thead>
+              <tr style={{ background:T.surface }}>
+                {["File","Date","Total Rows","New Added","Updated","Duplicates"].map((h,i)=>(
+                  <th key={i} style={{ padding:"10px 12px",textAlign:"left",fontSize:"10px",color:T.muted,
+                    borderBottom:`1px solid ${T.border}`,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:"700" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {importHistory.map((h,i)=>(
+                <tr key={i} style={{ background:i%2===0?T.card:T.surface }}>
+                  <td style={{ padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px",fontWeight:"600" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:"6px" }}>
+                      <Icons.fileText s={12} c={T.accent}/> {h.fileName}
+                    </div>
+                  </td>
+                  <td style={{ padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"11px",color:T.muted }}>{h.date}</td>
+                  <td className="tabular-nums" style={{ padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px" }}>{h.total}</td>
+                  <td className="tabular-nums" style={{ padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px",color:T.green,fontWeight:"600" }}>+{h.newRecords}</td>
+                  <td className="tabular-nums" style={{ padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px",color:T.amber,fontWeight:"600" }}>{h.updated}</td>
+                  <td className="tabular-nums" style={{ padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:"12px",color:T.red }}>{h.duplicates}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+    </div>
+  );
+};
+
 // ─── APP SHELL ───────────────────────────────────────────────────────────────
 const NAV = [
   { id:"dashboard",label:"Dashboard",icon:Icons.dashboard },
@@ -1084,12 +1604,14 @@ const NAV = [
   { id:"territories",label:"Territories",icon:Icons.map },
   { id:"commissions",label:"Commissions",icon:Icons.dollar },
   { id:"insights",label:"AI Insights",icon:Icons.bolt },
+  { id:"import",label:"Data Import",icon:Icons.upload },
 ];
 
 const PAGE_LABELS = {
   dashboard:"Operations Dashboard",contacts:"Customer Contacts",pipeline:"Enrollment Pipeline",
   reps:"Rep Management",territories:"Territory Intelligence",commissions:"Commission Tracking",
   insights:"AI Insights",
+  import:"Data Import",
 };
 
 function App() {
@@ -1102,6 +1624,7 @@ function App() {
     dashboard:<Dashboard/>,contacts:<ContactsView/>,pipeline:<PipelineView/>,
     reps:<RepsView/>,territories:<TerritoriesView/>,commissions:<CommissionsView/>,
     insights:<InsightsView/>,
+    import:<DataImportView/>,
   };
 
   return (
@@ -1158,6 +1681,10 @@ function App() {
               {n.id==="commissions" && (
                 <span style={{ marginLeft:"auto",fontSize:"9px",padding:"2px 6px",
                   background:T.greenDim,borderRadius:"3px",color:T.green,fontWeight:"700" }}>$</span>
+              )}
+              {n.id==="import" && (
+                <span style={{ marginLeft:"auto",fontSize:"9px",padding:"2px 6px",
+                  background:T.purpleDim,borderRadius:"3px",color:T.purple,fontWeight:"700" }}>↑</span>
               )}
             </div>
           ))}
