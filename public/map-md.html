@@ -524,8 +524,11 @@
                 <div class="legend-section-title">Zone Overlays</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#00ff88;"></div> LMI ≥ 70% (solid)</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#00bbff;border-style:dashed;"></div> LMI < 70% (dashed)</div>
-                <div class="legend-item"><div class="legend-line" style="border-color:#ff2222;border-width:4px;border-style:dashed;"></div> EH ≥ 65% — Critical</div>
-                <div class="legend-item"><div class="legend-line" style="border-color:#ff6644;border-style:dashed;"></div> EH 55–64% — High</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#d50000;opacity:0.6;"></div> 🔥 EH ≥ 70% — Critical</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff3d00;opacity:0.5;"></div> 🔥 EH 55–69% — Very High</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff6d00;opacity:0.4;"></div> EH 40–54% — High</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff9100;opacity:0.3;"></div> EH 25–39% — Moderate</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffab40;opacity:0.2;"></div> EH < 25% — Low</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">Housing Pins</div>
@@ -763,33 +766,33 @@
             return '—';
         }
 
-        // ── LMI + Electric Heat data (Census ACS 2023 per capita income) ──
+        // ── LMI + Electric Heat data (Census ACS 2023 B25040 + B19301) ──
         const lmiData = {
-            '20706': { city: 'Lanham', lmi: 50, eh: 52, hh: 6100, income: 37413, type: 'Suburban Mixed', util: 'Pepco' },
-            '20710': { city: 'Bladensburg', lmi: 75, eh: 64, hh: 2100, income: 25555, type: 'Urban Mixed', util: 'Pepco' },
-            '20712': { city: 'Mt Rainier', lmi: 50, eh: 68, hh: 1800, income: 37327, type: 'Urban Dense', util: 'Pepco' },
-            '20737': { city: 'Riverdale', lmi: 65, eh: 65, hh: 3800, income: 35260, type: 'Apt/Townhome Dense', util: 'Pepco' },
-            '20743': { city: 'Capitol Heights', lmi: 50, eh: 62, hh: 4200, income: 38295, type: 'Suburban Apt Dense', util: 'Pepco' },
-            '20746': { city: 'Suitland', lmi: 35, eh: 61, hh: 5500, income: 44864, type: 'Suburban Apt', util: 'Pepco' },
-            '20748': { city: 'Temple Hills', lmi: 50, eh: 55, hh: 4800, income: 40547, type: 'Suburban SFH/Apt', util: 'Pepco' },
-            '20770': { city: 'Greenbelt', lmi: 35, eh: 54, hh: 3900, income: 45269, type: 'Planned Community', util: 'Pepco' },
-            '20774': { city: 'Upper Marlboro', lmi: 25, eh: 48, hh: 8200, income: 60028, type: 'Suburban SFH', util: 'Pepco' },
-            '20781': { city: 'Hyattsville', lmi: 50, eh: 60, hh: 2900, income: 39927, type: 'Suburban Mixed', util: 'Pepco' },
-            '20783': { city: 'Adelphi', lmi: 75, eh: 59, hh: 3400, income: 28657, type: 'Dense Apt/Townhome', util: 'Pepco' },
-            '20785': { city: 'Hyattsville', lmi: 50, eh: 58, hh: 5100, income: 36991, type: 'Mixed Residential', util: 'Pepco' },
-            '20902': { city: 'Wheaton', lmi: 65, eh: 50, hh: 5500, income: 48887, type: 'Mixed Residential', util: 'Pepco' },
-            '20904': { city: 'Colesville', lmi: 65, eh: 42, hh: 7800, income: 48162, type: 'Suburban SFH', util: 'Pepco' },
-            '20906': { city: 'Silver Spring', lmi: 65, eh: 45, hh: 9200, income: 43855, type: 'Suburban Dense', util: 'Pepco' },
-            '21158': { city: 'Westminster', lmi: 35, eh: 46, hh: 7200, income: 51165, type: 'Suburban Mixed', util: 'Potomac Edison' },
-            '21502': { city: 'Cumberland', lmi: 35, eh: 72, hh: 5200, income: 30485, type: 'Rural/Urban Mix', util: 'Potomac Edison' },
-            '21532': { city: 'Frostburg', lmi: 35, eh: 68, hh: 2800, income: 31281, type: 'Small Town', util: 'Potomac Edison' },
-            '21550': { city: 'Oakland', lmi: 35, eh: 65, hh: 2400, income: 41945, type: 'Rural', util: 'Potomac Edison' },
-            '21701': { city: 'Frederick', lmi: 35, eh: 48, hh: 12500, income: 56512, type: 'Suburban Mixed', util: 'Potomac Edison' },
-            '21702': { city: 'Frederick N', lmi: 50, eh: 44, hh: 9800, income: 48392, type: 'Suburban SFH', util: 'Potomac Edison' },
-            '21740': { city: 'Hagerstown', lmi: 50, eh: 58, hh: 8900, income: 32289, type: 'Urban/Suburban Mix', util: 'Potomac Edison' },
-            '21742': { city: 'Hagerstown W', lmi: 35, eh: 52, hh: 6200, income: 40147, type: 'Suburban SFH', util: 'Potomac Edison' },
-            '21793': { city: 'Walkersville', lmi: 35, eh: 40, hh: 4200, income: 54148, type: 'Suburban SFH', util: 'Potomac Edison' },
-            '21795': { city: 'Williamsport', lmi: 35, eh: 55, hh: 3100, income: 41856, type: 'Small Town', util: 'Potomac Edison' },
+            '20706': { city: 'Lanham', lmi: 50, eh: 36.5, hh: 13230, income: 37413, type: 'Suburban Mixed', util: 'Pepco' },
+            '20710': { city: 'Bladensburg', lmi: 75, eh: 45.2, hh: 3269, income: 25555, type: 'Urban Mixed', util: 'Pepco' },
+            '20712': { city: 'Mt Rainier', lmi: 50, eh: 50.0, hh: 4107, income: 37327, type: 'Urban Dense', util: 'Pepco' },
+            '20737': { city: 'Riverdale', lmi: 65, eh: 27.0, hh: 6979, income: 35260, type: 'Apt/Townhome Dense', util: 'Pepco' },
+            '20743': { city: 'Capitol Heights', lmi: 50, eh: 34.8, hh: 15577, income: 38295, type: 'Suburban Apt Dense', util: 'Pepco' },
+            '20746': { city: 'Suitland', lmi: 35, eh: 49.5, hh: 13164, income: 44864, type: 'Suburban Apt', util: 'Pepco' },
+            '20748': { city: 'Temple Hills', lmi: 50, eh: 34.3, hh: 16374, income: 40547, type: 'Suburban SFH/Apt', util: 'Pepco' },
+            '20770': { city: 'Greenbelt', lmi: 35, eh: 54.6, hh: 12006, income: 45269, type: 'Planned Community', util: 'Pepco' },
+            '20774': { city: 'Upper Marlboro', lmi: 25, eh: 49.1, hh: 20815, income: 60028, type: 'Suburban SFH', util: 'Pepco' },
+            '20781': { city: 'Hyattsville', lmi: 50, eh: 22.3, hh: 4458, income: 39927, type: 'Suburban Mixed', util: 'Pepco' },
+            '20783': { city: 'Adelphi', lmi: 75, eh: 17.1, hh: 13852, income: 28657, type: 'Dense Apt/Townhome', util: 'Pepco' },
+            '20785': { city: 'Hyattsville', lmi: 50, eh: 40.7, hh: 15473, income: 36991, type: 'Mixed Residential', util: 'Pepco' },
+            '20902': { city: 'Wheaton', lmi: 65, eh: 35.9, hh: 17982, income: 48887, type: 'Mixed Residential', util: 'Pepco' },
+            '20904': { city: 'Colesville', lmi: 65, eh: 50.5, hh: 21245, income: 48162, type: 'Suburban SFH', util: 'Pepco' },
+            '20906': { city: 'Silver Spring', lmi: 65, eh: 48.5, hh: 26242, income: 43855, type: 'Suburban Dense', util: 'Pepco' },
+            '21158': { city: 'Westminster', lmi: 35, eh: 52.4, hh: 8370, income: 51165, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21502': { city: 'Cumberland', lmi: 35, eh: 27.9, hh: 16659, income: 30485, type: 'Rural/Urban Mix', util: 'Potomac Edison' },
+            '21532': { city: 'Frostburg', lmi: 35, eh: 33.1, hh: 5207, income: 31281, type: 'Small Town', util: 'Potomac Edison' },
+            '21550': { city: 'Oakland', lmi: 35, eh: 26.1, hh: 5926, income: 41945, type: 'Rural', util: 'Potomac Edison' },
+            '21701': { city: 'Frederick', lmi: 35, eh: 42.2, hh: 17662, income: 56512, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21702': { city: 'Frederick N', lmi: 50, eh: 46.6, hh: 17730, income: 48392, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21740': { city: 'Hagerstown', lmi: 50, eh: 49.2, hh: 24928, income: 32289, type: 'Urban/Suburban Mix', util: 'Potomac Edison' },
+            '21742': { city: 'Hagerstown W', lmi: 35, eh: 47.6, hh: 13315, income: 40147, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21793': { city: 'Walkersville', lmi: 35, eh: 61.9, hh: 3941, income: 54148, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21795': { city: 'Williamsport', lmi: 35, eh: 61.4, hh: 3803, income: 41856, type: 'Small Town', util: 'Potomac Edison' },
         };
 
         const zipCentroids = {};  // Global: ZIP → [lat, lng] for target pin placement
@@ -826,6 +829,27 @@
                     // Store feature for priority highlighting
                     zipGeoFeatures[zip] = feature;
 
+                    // ── Electric Heat choropleth (Census ACS B25040) ──
+                    const dEH = demoData[zip];
+                    if (dEH && dEH.ehp > 0) {
+                        const ehVal = dEH.ehp;
+                        const ehFill = ehVal >= 70 ? '#d50000' : ehVal >= 55 ? '#ff3d00' : ehVal >= 40 ? '#ff6d00' : ehVal >= 25 ? '#ff9100' : '#ffab40';
+                        const ehOp = ehVal >= 55 ? 0.35 : ehVal >= 40 ? 0.22 : ehVal >= 25 ? 0.12 : 0.06;
+                        const ehBorder = ehVal >= 55 ? 2 : ehVal >= 40 ? 1.5 : 1;
+                        L.geoJSON(feature, {
+                            interactive: false,
+                            style: { fillColor: ehFill, fillOpacity: ehOp, color: ehFill, weight: ehBorder, opacity: ehVal >= 40 ? 0.7 : 0.3 }
+                        }).addTo(fg.ehZones);
+                        // Label high-EH zones
+                        if (ehVal >= 50 && dEH.eht >= 200) {
+                            const ehBounds = L.geoJSON(feature).getBounds();
+                            const ehCenter = ehBounds.getCenter();
+                            L.marker(ehCenter, {
+                                icon: L.divIcon({ className: 'zone-label', html: `<span style="color:#ff3333;font-size:9px;text-shadow:0 0 3px #000;">🔥${Math.round(ehVal)}%</span>`, iconSize: [60, 12], iconAnchor: [30, 6] })
+                            }).addTo(fg.ehZones);
+                        }
+                    }
+
                     // Choropleth polygon
                     L.geoJSON(feature, {
                         style: {
@@ -847,6 +871,10 @@
                                 popup += `<br>Income/capita: <b style="color:${incCol};">$${dTip.inc.toLocaleString()}</b>`;
                                 const rDom = getRaceDominant(dTip);
                                 popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
+                                if (dTip.ehp > 0) {
+                                    const ehCol = dTip.ehp >= 55 ? '#ff3333' : dTip.ehp >= 35 ? '#ff8800' : '#aaa';
+                                    popup += `<br>🔥 Elec Heat: <b style="color:${ehCol};">${dTip.ehp}%</b> (${(dTip.ehe||0).toLocaleString()} HH)`;
+                                }
                             }
                             if (isTarget) {
                                 const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
@@ -1003,15 +1031,8 @@
                             icon: L.divIcon({ className: 'zone-label', html: `<span style="color:${lmiColor};font-size:11px;">${zip} ${lmi.city}</span>`, iconSize: [120, 14], iconAnchor: [60, 7] })
                         }).addTo(fg.lmiOutlines);
 
-                        // Electric Heat overlay — red border for high EH zones
+                        // Electric Heat overlay — lmiData-based label for target zones
                         if (lmi.eh >= 55) {
-                            const ehColor = lmi.eh >= 65 ? '#ff2222' : '#ff6644';
-                            const ehWeight = lmi.eh >= 65 ? 4 : 2.5;
-                            L.geoJSON(feature, {
-                                interactive: false,
-                                style: { fillColor: '#ff3333', fillOpacity: lmi.eh >= 65 ? 0.12 : 0.06, color: ehColor, weight: ehWeight, opacity: 0.8, dashArray: '4, 3' }
-                            }).addTo(fg.ehZones);
-
                             L.marker(center, {
                                 icon: L.divIcon({ className: 'zone-label', html: `<span style="color:#ff4444;font-size:10px;">🔥${lmi.eh}% EH</span>`, iconSize: [80, 14], iconAnchor: [40, -8] })
                             }).addTo(fg.ehZones);
@@ -1553,17 +1574,23 @@
                         iconAnchor: [100, 14]
                     });
                     const marker = L.marker([p.lat, p.lon], { icon: icon, zIndexOffset: 1000 });
+                    // Enrich trailer park popup with ZIP-level electric heat data
+                    const tpDemo = p.zip ? demoData[p.zip] : null;
+                    const tpEh = tpDemo ? tpDemo.ehp : null;
+                    const tpEhColor = tpEh >= 55 ? '#ff3333' : tpEh >= 35 ? '#ff8800' : '#aaa';
                     const popupHtml =
                         '<div style="font-family:Segoe UI,sans-serif;">' +
-                        '<b style="font-size:14px;color:#ff5722;">🏘️ ' + p.name + '</b><br>' +
+                        '<b style="font-size:14px;color:#ff5722;">🏘️ ' + esc(p.name) + '</b><br>' +
                         '<div style="margin:4px 0;padding:5px;background:rgba(255,87,34,0.1);border-radius:4px;">' +
-                        (p.city ? '<b>City:</b> ' + p.city + '<br>' : '') +
-                        (p.zip ? '<b>ZIP:</b> ' + p.zip + '<br>' : '') +
-                        (p.operator ? '<b>Operator:</b> ' + p.operator + '<br>' : '') +
+                        (p.city ? '<b>City:</b> ' + esc(p.city) + '<br>' : '') +
+                        (p.zip ? '<b>ZIP:</b> ' + esc(p.zip) + '<br>' : '') +
+                        (p.operator ? '<b>Operator:</b> ' + esc(p.operator) + '<br>' : '') +
                         (p.capacity ? '<b>Capacity:</b> ' + p.capacity + ' units<br>' : '') +
+                        (tpEh !== null ? '<b>🔥 Electric Heat:</b> <span style="color:' + tpEhColor + ';font-weight:700;">' + tpEh + '%</span> (' + (tpDemo.ehe||0).toLocaleString() + ' HH)<br>' : '') +
+                        (tpDemo && tpDemo.inc ? '<b>Income/cap:</b> $' + tpDemo.inc.toLocaleString() + '<br>' : '') +
                         '<b>Coords:</b> ' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) +
                         '</div>' +
-                        '<div style="font-size:10px;color:#aaa;">Source: OpenStreetMap</div>' +
+                        '<div style="font-size:10px;color:#aaa;">EH Source: Census ACS 2023 B25040</div>' +
                         '</div>';
                     marker.bindPopup(popupHtml, { maxWidth: 280 });
                     marker.addTo(fg.trailerParks);
@@ -1732,15 +1759,28 @@
                     const marker = L.marker([lat, lon], { icon: icon });
                     const label = isApt ? 'Apartment Complex Zone' : 'Mobile Home Zone';
                     const pct = isApt ? p.apt_pct + '% apartments' : p.mobile_pct + '% mobile homes';
+                    // Find nearest ZIP for electric heat enrichment
+                    let nearZip = null, nearDist = Infinity;
+                    for (const [z, c] of Object.entries(zipCentroids)) {
+                        const dx = c[1] - lon, dy = c[0] - lat;
+                        const d2 = dx*dx + dy*dy;
+                        if (d2 < nearDist) { nearDist = d2; nearZip = z; }
+                    }
+                    const hpDemo = nearZip ? demoData[nearZip] : null;
+                    const hpEh = hpDemo ? hpDemo.ehp : null;
+                    const hpEhCol = hpEh >= 55 ? '#ff3333' : hpEh >= 35 ? '#ff8800' : '#aaa';
                     marker.bindPopup(
                         '<div style="font-size:12px;line-height:1.5;">' +
                         '<b style="color:#ff6d00;">' + (isApt ? '🏢' : '🏘️') + ' ' + label + '</b><br>' +
                         '<b>Tract:</b> ' + p.GEOID + '<br>' +
+                        (nearZip ? '<b>ZIP:</b> ' + nearZip + '<br>' : '') +
                         '<b>Housing Mix:</b> ' + pct + '<br>' +
                         '<b>Total Units:</b> ' + (p.total_units || 0).toLocaleString() + '<br>' +
+                        (hpEh !== null ? '<b>🔥 Electric Heat:</b> <span style="color:' + hpEhCol + ';font-weight:700;">' + hpEh + '%</span><br>' : '') +
+                        (hpDemo && hpDemo.inc ? '<b>Income/cap:</b> $' + hpDemo.inc.toLocaleString() + '<br>' : '') +
                         '<span style="color:#ff6d00;font-weight:bold;">HIGH-DENSITY TARGET</span>' +
                         '</div>',
-                        { maxWidth: 250 }
+                        { maxWidth: 280 }
                     );
                     marker.addTo(fg.housingConcentration);
                 });
