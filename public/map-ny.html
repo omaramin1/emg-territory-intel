@@ -325,32 +325,32 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label">🏦 80% AMI Zones Only</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('trailerParks',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff5722;"></div><span class="toggle-label">🏘️ Trailer Parks</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('trailerParks',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff5722;"></div><span class="toggle-label">🏘️ Trailer Parks</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('kwhHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#0000ff,#00ff00,#ff0000);"></div><span class="toggle-label">⚡ kWh Demand Heat</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('dacZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">⚖️ NY DAC Zones</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('dacZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">⚖️ NY DAC Zones</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('countyRoutes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffffff;"></div><span class="toggle-label">🗺 County Boundaries</span></label>
             </div>
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (90K+)</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">📌 Priority Targets</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (90K+)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">📌 Priority Targets</span></label>
             </div>
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Utility Territories</div>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('nyseg',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc88;"></div><span class="toggle-label">⚡ NYSEG</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('ngrid',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#4a90d9;"></div><span class="toggle-label">⚡ National Grid</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('chudson',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6644;"></div><span class="toggle-label">⚡ Central Hudson</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('oru',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#aa66ff;"></div><span class="toggle-label">⚡ ORU</span></label>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('rge',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffcc00;"></div><span class="toggle-label">⚡ RGE</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('nyseg',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc88;"></div><span class="toggle-label">⚡ NYSEG</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('ngrid',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#4a90d9;"></div><span class="toggle-label">⚡ National Grid</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('chudson',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6644;"></div><span class="toggle-label">⚡ Central Hudson</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('oru',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#aa66ff;"></div><span class="toggle-label">⚡ ORU</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('rge',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffcc00;"></div><span class="toggle-label">⚡ RGE</span></label>
             </div>
 
             <div class="toggle-section" style="border-bottom:none;">
@@ -508,10 +508,10 @@
             }
         });
 
-        // All ON except income/race overlays
-        const defaultOffLayers = ['raceOverlay', 'lmiIncomeOnly', 'kwhHeat'];
-        Object.entries(fg).forEach(([name, g]) => { if (!defaultOffLayers.includes(name)) g.addTo(map); });
-        salesCluster.addTo(map);
+        // DEFAULT ALL OFF for fast initial load — user toggles on what they need
+        const defaultOnLayers = ['zipZones'];
+        Object.entries(fg).forEach(([name, g]) => { if (defaultOnLayers.includes(name)) g.addTo(map); });
+        // salesCluster NOT added by default — toggle on via Sales Pins
 
         const layerMap = {
             zipZones: fg.zipZones, incomeOverlay: fg.incomeOverlay, raceOverlay: fg.raceOverlay,
@@ -1481,13 +1481,16 @@
         async function loadAllData() {
             try {
                 loadUtilityTerritories();
-                await loadZipBoundaries();
-                await loadDACZones();
-                await loadHousingConcentration();
-                await loadAutoQualifyZones();
-                await loadTrailerParks();
-                await loadCountyBoundaries();
-                await loadSalesData();
+                await loadZipBoundaries();  // Must load first (dependencies)
+                // Parallel load all independent layers
+                await Promise.all([
+                    loadDACZones(),
+                    loadHousingConcentration(),
+                    loadAutoQualifyZones(),
+                    loadTrailerParks(),
+                    loadCountyBoundaries(),
+                    loadSalesData()
+                ]);
                 loadTargetZones();
                 updateLoading('Complete', 100);
                 setTimeout(hideLoading, 500);

@@ -514,7 +514,8 @@
             <div class="legend-section">
                 <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#e8d4a8;"></div> Majority White</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#4a90d9;"></div> Majority Black</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#4a90d9;"></div> Black — American</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#8e44ad;"></div> Black — African/Foreign</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#e67e22;"></div> Majority Hispanic</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#27ae60;"></div> Majority Asian</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#9b59b6;"></div> Diverse (no majority)</div>
@@ -677,6 +678,8 @@
         let priorityTargets = [];  // Populated by loadTargetZones
 
         // ── Helpers ──
+        // Sanitize strings that go into innerHTML to prevent XSS from data files
+        function esc(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
         function updateLoading(s, p) { document.getElementById('loadingStatus').textContent = s; document.getElementById('loadingBar').style.width = p + '%'; }
         function hideLoading() { var el = document.getElementById('loadingScreen'); el.classList.add('hidden'); setTimeout(function(){ el.style.display = 'none'; }, 500); }
         function showInfoPanel(title, html) { document.getElementById('infoPanelTitle').textContent = title; document.getElementById('infoPanelContent').innerHTML = html; document.getElementById('infoPanel').classList.add('active'); }
@@ -689,7 +692,7 @@
         let lmiThresholds = {};  // Populated on load
         function getZipThreshold(zip) {
             const entry = lmiThresholds[zip];
-            return entry ? entry.t : 40112;  // fallback to state-level if no county data
+            return entry ? entry.t : 42653;  // fallback to MD state avg 80% ($53316 * 0.8)
         }
         function getIncomeColor(inc, zip) {
             if (inc <= 0) return '#555';
@@ -760,33 +763,33 @@
             return '—';
         }
 
-        // ── LMI + Electric Heat data ──
+        // ── LMI + Electric Heat data (Census ACS 2023 per capita income) ──
         const lmiData = {
-            '20743': { city: 'Capitol Heights', lmi: 78, eh: 62, hh: 4200, income: 42500, type: 'Suburban Apt Dense', util: 'Pepco' },
-            '20785': { city: 'Hyattsville', lmi: 72, eh: 58, hh: 5100, income: 48000, type: 'Mixed Residential', util: 'Pepco' },
-            '20737': { city: 'Riverdale', lmi: 81, eh: 65, hh: 3800, income: 38500, type: 'Apt/Townhome Dense', util: 'Pepco' },
-            '20781': { city: 'Hyattsville', lmi: 74, eh: 60, hh: 2900, income: 45200, type: 'Suburban Mixed', util: 'Pepco' },
-            '20710': { city: 'Bladensburg', lmi: 79, eh: 64, hh: 2100, income: 41800, type: 'Urban Mixed', util: 'Pepco' },
-            '20746': { city: 'Suitland', lmi: 76, eh: 61, hh: 5500, income: 43100, type: 'Suburban Apt', util: 'Pepco' },
-            '20748': { city: 'Temple Hills', lmi: 70, eh: 55, hh: 4800, income: 52300, type: 'Suburban SFH/Apt', util: 'Pepco' },
-            '20774': { city: 'Upper Marlboro', lmi: 55, eh: 48, hh: 8200, income: 68500, type: 'Suburban SFH', util: 'Pepco' },
-            '20783': { city: 'Adelphi', lmi: 73, eh: 59, hh: 3400, income: 46700, type: 'Dense Apt/Townhome', util: 'Pepco' },
-            '20706': { city: 'Lanham', lmi: 62, eh: 52, hh: 6100, income: 58200, type: 'Suburban Mixed', util: 'Pepco' },
-            '20770': { city: 'Greenbelt', lmi: 65, eh: 54, hh: 3900, income: 55800, type: 'Planned Community', util: 'Pepco' },
-            '20712': { city: 'Mt Rainier', lmi: 82, eh: 68, hh: 1800, income: 36200, type: 'Urban Dense', util: 'Pepco' },
-            '20906': { city: 'Silver Spring', lmi: 58, eh: 45, hh: 9200, income: 62100, type: 'Suburban Dense', util: 'Pepco' },
-            '20904': { city: 'Colesville', lmi: 52, eh: 42, hh: 7800, income: 71200, type: 'Suburban SFH', util: 'Pepco' },
-            '20902': { city: 'Wheaton', lmi: 61, eh: 50, hh: 5500, income: 59800, type: 'Mixed Residential', util: 'Pepco' },
-            '21740': { city: 'Hagerstown', lmi: 74, eh: 58, hh: 8900, income: 38200, type: 'Urban/Suburban Mix', util: 'Potomac Edison' },
-            '21742': { city: 'Hagerstown W', lmi: 62, eh: 52, hh: 6200, income: 48500, type: 'Suburban SFH', util: 'Potomac Edison' },
-            '21701': { city: 'Frederick', lmi: 58, eh: 48, hh: 12500, income: 56800, type: 'Suburban Mixed', util: 'Potomac Edison' },
-            '21702': { city: 'Frederick N', lmi: 52, eh: 44, hh: 9800, income: 64200, type: 'Suburban SFH', util: 'Potomac Edison' },
-            '21502': { city: 'Cumberland', lmi: 80, eh: 72, hh: 5200, income: 32100, type: 'Rural/Urban Mix', util: 'Potomac Edison' },
-            '21532': { city: 'Frostburg', lmi: 76, eh: 68, hh: 2800, income: 35400, type: 'Small Town', util: 'Potomac Edison' },
-            '21795': { city: 'Williamsport', lmi: 65, eh: 55, hh: 3100, income: 47200, type: 'Small Town', util: 'Potomac Edison' },
-            '21793': { city: 'Walkersville', lmi: 45, eh: 40, hh: 4200, income: 72500, type: 'Suburban SFH', util: 'Potomac Edison' },
-            '21158': { city: 'Westminster', lmi: 55, eh: 46, hh: 7200, income: 58900, type: 'Suburban Mixed', util: 'Potomac Edison' },
-            '21550': { city: 'Oakland', lmi: 72, eh: 65, hh: 2400, income: 37800, type: 'Rural', util: 'Potomac Edison' },
+            '20706': { city: 'Lanham', lmi: 50, eh: 52, hh: 6100, income: 37413, type: 'Suburban Mixed', util: 'Pepco' },
+            '20710': { city: 'Bladensburg', lmi: 75, eh: 64, hh: 2100, income: 25555, type: 'Urban Mixed', util: 'Pepco' },
+            '20712': { city: 'Mt Rainier', lmi: 50, eh: 68, hh: 1800, income: 37327, type: 'Urban Dense', util: 'Pepco' },
+            '20737': { city: 'Riverdale', lmi: 65, eh: 65, hh: 3800, income: 35260, type: 'Apt/Townhome Dense', util: 'Pepco' },
+            '20743': { city: 'Capitol Heights', lmi: 50, eh: 62, hh: 4200, income: 38295, type: 'Suburban Apt Dense', util: 'Pepco' },
+            '20746': { city: 'Suitland', lmi: 35, eh: 61, hh: 5500, income: 44864, type: 'Suburban Apt', util: 'Pepco' },
+            '20748': { city: 'Temple Hills', lmi: 50, eh: 55, hh: 4800, income: 40547, type: 'Suburban SFH/Apt', util: 'Pepco' },
+            '20770': { city: 'Greenbelt', lmi: 35, eh: 54, hh: 3900, income: 45269, type: 'Planned Community', util: 'Pepco' },
+            '20774': { city: 'Upper Marlboro', lmi: 25, eh: 48, hh: 8200, income: 60028, type: 'Suburban SFH', util: 'Pepco' },
+            '20781': { city: 'Hyattsville', lmi: 50, eh: 60, hh: 2900, income: 39927, type: 'Suburban Mixed', util: 'Pepco' },
+            '20783': { city: 'Adelphi', lmi: 75, eh: 59, hh: 3400, income: 28657, type: 'Dense Apt/Townhome', util: 'Pepco' },
+            '20785': { city: 'Hyattsville', lmi: 50, eh: 58, hh: 5100, income: 36991, type: 'Mixed Residential', util: 'Pepco' },
+            '20902': { city: 'Wheaton', lmi: 65, eh: 50, hh: 5500, income: 48887, type: 'Mixed Residential', util: 'Pepco' },
+            '20904': { city: 'Colesville', lmi: 65, eh: 42, hh: 7800, income: 48162, type: 'Suburban SFH', util: 'Pepco' },
+            '20906': { city: 'Silver Spring', lmi: 65, eh: 45, hh: 9200, income: 43855, type: 'Suburban Dense', util: 'Pepco' },
+            '21158': { city: 'Westminster', lmi: 35, eh: 46, hh: 7200, income: 51165, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21502': { city: 'Cumberland', lmi: 35, eh: 72, hh: 5200, income: 30485, type: 'Rural/Urban Mix', util: 'Potomac Edison' },
+            '21532': { city: 'Frostburg', lmi: 35, eh: 68, hh: 2800, income: 31281, type: 'Small Town', util: 'Potomac Edison' },
+            '21550': { city: 'Oakland', lmi: 35, eh: 65, hh: 2400, income: 41945, type: 'Rural', util: 'Potomac Edison' },
+            '21701': { city: 'Frederick', lmi: 35, eh: 48, hh: 12500, income: 56512, type: 'Suburban Mixed', util: 'Potomac Edison' },
+            '21702': { city: 'Frederick N', lmi: 50, eh: 44, hh: 9800, income: 48392, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21740': { city: 'Hagerstown', lmi: 50, eh: 58, hh: 8900, income: 32289, type: 'Urban/Suburban Mix', util: 'Potomac Edison' },
+            '21742': { city: 'Hagerstown W', lmi: 35, eh: 52, hh: 6200, income: 40147, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21793': { city: 'Walkersville', lmi: 35, eh: 40, hh: 4200, income: 54148, type: 'Suburban SFH', util: 'Potomac Edison' },
+            '21795': { city: 'Williamsport', lmi: 35, eh: 55, hh: 3100, income: 41856, type: 'Small Town', util: 'Potomac Edison' },
         };
 
         const zipCentroids = {};  // Global: ZIP → [lat, lng] for target pin placement
@@ -867,9 +870,12 @@
                                         <div style="width:${demo.ra}%;background:#27ae60;" title="Asian ${demo.ra}%"></div>
                                         <div style="width:${demo.ro}%;background:#95a5a6;" title="Other ${demo.ro}%"></div>
                                     </div>`;
+                                    const blackTotal = (demo.rba||0) + (demo.rbf||0);
+                                    const baPct = blackTotal > 0 ? Math.round((demo.rba||0)/blackTotal*100) : 0;
+                                    const bfPct = blackTotal > 0 ? 100 - baPct : 0;
                                     html += `
                                         <div class="info-section">
-                                            <div class="info-section-title">Race / Ethnicity (Census ACS)</div>
+                                            <div class="info-section-title">Race / Ethnicity (Census ACS 2023)</div>
                                             ${raceBar}
                                             <div style="display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;margin-top:4px;">
                                                 <span><span style="color:#e8d4a8;">●</span> White <b>${demo.rw}%</b></span>
@@ -878,6 +884,18 @@
                                                 <span><span style="color:#27ae60;">●</span> Asian <b>${demo.ra}%</b></span>
                                                 <span><span style="color:#95a5a6;">●</span> Other <b>${demo.ro}%</b></span>
                                             </div>
+                                            ${blackTotal > 0 ? `
+                                            <div style="margin-top:6px;padding:5px 7px;background:#1a1a2e;border-radius:4px;border-left:3px solid #4a90d9;">
+                                                <div style="font-size:10px;color:#888;margin-bottom:3px;">BLACK POPULATION BREAKDOWN</div>
+                                                <div style="display:flex;height:10px;border-radius:3px;overflow:hidden;margin-bottom:3px;">
+                                                    <div style="width:${baPct}%;background:#4a90d9;" title="American Black ${baPct}%"></div>
+                                                    <div style="width:${bfPct}%;background:#8e44ad;" title="African/Foreign-born ${bfPct}%"></div>
+                                                </div>
+                                                <div style="display:flex;gap:8px;font-size:10px;">
+                                                    <span><span style="color:#4a90d9;">■</span> American <b>${(demo.rba||0).toLocaleString()}</b> (${baPct}%)</span>
+                                                    <span><span style="color:#8e44ad;">■</span> African/Foreign <b>${(demo.rbf||0).toLocaleString()}</b> (${bfPct}%)</span>
+                                                </div>
+                                            </div>` : ''}
                                         </div>
                                         <div class="info-section">
                                             <div class="info-section-title">Demographics</div>
@@ -1345,7 +1363,8 @@
                     satRate: satRate.toFixed(1), satLevel, satLabel,
                     incomeRatio: (incomeRatio * 100).toFixed(0),
                     why: reasons.slice(0, 4).join(' · ') || 'General opportunity',
-                    rw: d.rw, rb: d.rb, rh: d.rh, ra: d.ra, ro: d.ro
+                    rw: d.rw, rb: d.rb, rh: d.rh, ra: d.ra, ro: d.ro,
+                    rba: d.rba || 0, rbf: d.rbf || 0
                 });
             }
 
