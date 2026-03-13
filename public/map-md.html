@@ -875,6 +875,12 @@
                                     const ehCol = dTip.ehp >= 55 ? '#ff3333' : dTip.ehp >= 35 ? '#ff8800' : '#aaa';
                                     popup += `<br>🔥 Elec Heat: <b style="color:${ehCol};">${dTip.ehp}%</b> (${(dTip.ehe||0).toLocaleString()} HH)`;
                                 }
+                                if (dTip.ap > 0 || dTip.mp > 0) {
+                                    let hParts = [];
+                                    if (dTip.ap > 0) hParts.push(`🏢 Apt ${dTip.ap}%`);
+                                    if (dTip.mp > 0) hParts.push(`🏠 Mobile ${dTip.mp}%`);
+                                    popup += `<br><span style="color:#aaa;font-size:11px;">${hParts.join(' | ')}</span>`;
+                                }
                             }
                             if (isTarget) {
                                 const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
@@ -941,6 +947,22 @@
                                             <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
                                                 <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#666'};"></div>
                                             </div>
+                                        </div>
+                                        <div class="info-section">
+                                            <div class="info-section-title">Housing Structure (Census B25024)</div>
+                                            <div class="info-row"><span class="info-label">Apartments (2+ units):</span><span class="info-value">${(demo.apt||0).toLocaleString()} <span style="color:#888;">(${demo.ap||0}%)</span></span></div>
+                                            <div class="info-row"><span class="info-label">Large Complexes (20+):</span><span class="info-value" style="color:${(demo.lp||0) >= 20 ? '#ff8800' : '#ccc'};">${(demo.la||0).toLocaleString()} <span style="color:#888;">(${demo.lp||0}%)</span></span></div>
+                                            <div class="info-row"><span class="info-label">Mobile Homes:</span><span class="info-value" style="color:${(demo.mp||0) >= 10 ? '#00cc66' : '#ccc'};">${(demo.mob||0).toLocaleString()} <span style="color:#888;">(${demo.mp||0}%)</span></span></div>
+                                            ${(demo.ap||0) > 0 || (demo.mp||0) > 0 ? `<div style="display:flex;height:10px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
+                                                <div style="width:${demo.lp||0}%;background:#ff8800;" title="Large Apt ${demo.lp||0}%"></div>
+                                                <div style="width:${Math.max(0,(demo.ap||0)-(demo.lp||0))}%;background:#ffcc44;" title="Small Apt ${Math.max(0,(demo.ap||0)-(demo.lp||0))}%"></div>
+                                                <div style="width:${demo.mp||0}%;background:#00cc66;" title="Mobile ${demo.mp||0}%"></div>
+                                            </div>
+                                            <div style="display:flex;gap:8px;font-size:10px;margin-top:3px;">
+                                                <span><span style="color:#ff8800;">■</span> Lg Apt</span>
+                                                <span><span style="color:#ffcc44;">■</span> Sm Apt</span>
+                                                <span><span style="color:#00cc66;">■</span> Mobile</span>
+                                            </div>` : ''}
                                         </div>`;
                                 }
                                 if (isTarget) {
@@ -1588,6 +1610,8 @@
                         (p.capacity ? '<b>Capacity:</b> ' + p.capacity + ' units<br>' : '') +
                         (tpEh !== null ? '<b>🔥 Electric Heat:</b> <span style="color:' + tpEhColor + ';font-weight:700;">' + tpEh + '%</span> (' + (tpDemo.ehe||0).toLocaleString() + ' HH)<br>' : '') +
                         (tpDemo && tpDemo.inc ? '<b>Income/cap:</b> $' + tpDemo.inc.toLocaleString() + '<br>' : '') +
+                        (tpDemo && (tpDemo.mp||0) > 0 ? '<b>🏠 Mobile Homes in ZIP:</b> ' + (tpDemo.mob||0).toLocaleString() + ' (' + (tpDemo.mp||0) + '%)<br>' : '') +
+                        (p.source ? '<b>Source:</b> ' + esc(p.source) + '<br>' : '') +
                         '<b>Coords:</b> ' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) +
                         '</div>' +
                         '<div style="font-size:10px;color:#aaa;">EH Source: Census ACS 2023 B25040</div>' +
