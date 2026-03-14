@@ -165,6 +165,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
+// ── Supabase Config ──
+const SB_URL = 'https://gfbbhvsfznxhimwvokob.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmYmJodnNmem54aGltd3Zva29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzQ4MTYsImV4cCI6MjA4NDcxMDgxNn0.IJaI6vQJPA5Yb0tWtMHznjk-qY83RSWdYPjzorQUMyw';
+const sbHeaders = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+async function sbFetch(endpoint) {
+    const r = await fetch(SB_URL + endpoint, { headers: sbHeaders });
+    if (!r.ok) throw new Error('Supabase: ' + r.status);
+    return r.json();
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
 // ═══════════════════════════════════════════════════
 // ██  STATE CONFIGURATION                          ██
 // ═══════════════════════════════════════════════════
@@ -188,7 +199,7 @@ const STATE_CONFIG = {
             'ORU': { coords: [[41.50,-74.50],[41.50,-73.90],[41.10,-73.90],[41.00,-74.10],[41.00,-74.40],[41.20,-74.60],[41.50,-74.50]], color: '#aa66ff', label: [41.25,-74.25], desc: 'Orange / Rockland / Sullivan Counties', parent: 'Consolidated Edison' }
         },
         toggles: [
-            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: true },
+            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: false },
             { id: 'salesCluster', label: '📍 Sales Pins', default: false },
             { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
             { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
@@ -198,11 +209,11 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
-            { id: 'util_Central Hudson', label: '⚡ Central Hudson', default: true },
-            { id: 'util_NYSEG', label: '⚡ NYSEG', default: true },
-            { id: 'util_RGE', label: '⚡ RGE', default: true },
-            { id: 'util_National Grid', label: '⚡ National Grid', default: true },
-            { id: 'util_ORU', label: '⚡ ORU', default: true }
+            { id: 'util_Central Hudson', label: '⚡ Central Hudson', default: false },
+            { id: 'util_NYSEG', label: '⚡ NYSEG', default: false },
+            { id: 'util_RGE', label: '⚡ RGE', default: false },
+            { id: 'util_National Grid', label: '⚡ National Grid', default: false },
+            { id: 'util_ORU', label: '⚡ ORU', default: false }
         ],
         lmiData: null,
         housingPins: null
@@ -223,7 +234,7 @@ const STATE_CONFIG = {
             'Potomac Edison': { coords: [[39.72,-79.50],[39.72,-77.35],[39.35,-77.35],[39.20,-77.40],[39.10,-77.50],[39.10,-77.70],[39.20,-77.85],[39.30,-78.00],[39.25,-78.30],[39.30,-78.60],[39.40,-78.80],[39.50,-79.10],[39.60,-79.30],[39.65,-79.50],[39.72,-79.50]], color: '#ff8800', label: [39.45,-78.30], desc: 'Western MD / Frederick / Hagerstown / Cumberland', parent: 'FirstEnergy' }
         },
         toggles: [
-            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: true },
+            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: false },
             { id: 'salesCluster', label: '📍 Sales Pins', default: false },
             { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
             { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
@@ -235,8 +246,8 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
-            { id: 'util_Pepco', label: '⚡ Pepco', default: true },
-            { id: 'util_Potomac Edison', label: '⚡ Potomac Edison', default: true }
+            { id: 'util_Pepco', label: '⚡ Pepco', default: false },
+            { id: 'util_Potomac Edison', label: '⚡ Potomac Edison', default: false }
         ],
         lmiData: {
             '20743': { city: 'Capitol Heights', lmi: 78, eh: 62, hh: 4200, income: 42500, type: 'Suburban Apt Dense', util: 'Pepco' },
@@ -305,7 +316,7 @@ const STATE_CONFIG = {
             'Dominion Virginia': { coords: [[39.00,-77.50],[39.00,-76.00],[37.80,-76.00],[37.00,-76.30],[36.55,-76.00],[36.55,-76.70],[36.60,-77.20],[36.80,-77.80],[37.20,-78.50],[37.80,-79.00],[38.20,-79.00],[38.50,-78.30],[38.80,-77.80],[39.00,-77.50]], color: '#00cc88', label: [37.50,-77.50], desc: 'Hampton Roads / Richmond / NoVA / Tidewater', parent: 'Dominion Energy' }
         },
         toggles: [
-            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: true },
+            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: false },
             { id: 'salesCluster', label: '📍 Sales History (orange dots)', default: false },
             { id: 'ordersLayer', label: '◆ Recent Orders (diamonds)', default: false },
             { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
@@ -319,7 +330,7 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
-            { id: 'util_Dominion Virginia', label: '⚡ Dominion Virginia', default: true }
+            { id: 'util_Dominion Virginia', label: '⚡ Dominion Virginia', default: false }
         ],
         lmiData: null,
         housingPins: null,
@@ -644,32 +655,85 @@ async function loadZipBoundaries() {
 
 async function loadSalesData() {
     const cfg = STATE_CONFIG[currentState];
-    updateLoading('Loading sales data...', 50);
-    try {
-        const resp = await fetch(`${cfg.dataPrefix}_sales.json`);
-        if (!resp.ok) return;
-        salesData = await resp.json();
-        updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins...`, 65);
+    updateLoading('Loading sales data from Supabase...', 50);
 
-        const statusColors = {
-            'Payable':'#00c853','Processed':'#00c853','Sent':'#ff8800',
-            'Cannot Process':'#ff1744','Denied':'#d50000','Chargeback':'#aa00ff',
-            'TPV Not Complete':'#ff9100','Duplicate':'#757575','Awaiting Client Update':'#ffd600',
-            'No Capacity (On Hold)':'#2979ff','Compliance Review':'#e040fb',
-            'Incomplete':'#bdbdbd','Test':'#9e9e9e','In Queue':'#00b0ff',
-            'Failed - Agent Phone Number':'#ff1744','Utility Connect Complete':'#00c853'
-        };
-        salesData.forEach(d => {
-            const [lat,lon,city,zip,date,status,rep] = d;
+    const statusColors = {
+        'Payable':'#00c853','Completed':'#00c853','Processed':'#00c853','Sent':'#ff8800',
+        'Cancelled':'#ff1744','Cannot Process':'#ff1744','Denied':'#d50000',
+        'Invalid':'#d50000','Chargeback':'#aa00ff','Void':'#aa00ff',
+        'Rejected':'#ff1744','Duplicate':'#757575','Draft':'#bdbdbd',
+        'TPV Not Complete':'#ff9100','Awaiting Client Update':'#ffd600',
+        'No Capacity (On Hold)':'#2979ff','Compliance Review':'#e040fb',
+        'Incomplete':'#bdbdbd','Test':'#9e9e9e','In Queue':'#00b0ff','Pending':'#ffd600',
+        'Failed - Agent Phone Number':'#ff1744','Utility Connect Complete':'#00c853'
+    };
+
+    try {
+        const stateFilter = currentState ? `&state=eq.${currentState}` : '';
+        const PAGE = 5000;
+        let offset = 0, allPoints = [], fetching = true;
+        while (fetching) {
+            const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state&limit=' + PAGE + '&offset=' + offset + stateFilter);
+            allPoints = allPoints.concat(batch);
+            updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 50 + Math.min(20, (allPoints.length / 150000) * 20));
+            if (batch.length < PAGE) fetching = false;
+            else offset += PAGE;
+        }
+        salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state]);
+        allPoints = null;
+        updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins...`, 72);
+
+        salesData.forEach((d, i) => {
+            const [lat, lon, city, zip, status, state] = d;
             const sc = statusColors[status] || '#ff8800';
             const marker = L.circleMarker([lat, lon], {
                 radius: 4, fillColor: sc, color: '#222', weight: 0.8, fillOpacity: 0.8
             });
-            marker.bindPopup(`<b>📍 ${city||''}</b> ${zip||''}<br>📅 ${date||'N/A'}<br>Status: <span style="color:${sc};font-weight:700">${status||'N/A'}</span><br>Rep: ${rep||'N/A'}`);
+            marker.bindTooltip(`${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
+            marker.on('click', async function () {
+                marker.bindPopup('<div style="text-align:center;padding:8px;color:#aaa;">Loading…</div>').openPopup();
+                try {
+                    const rows = await sbFetch(`/v_sale_points?latitude=eq.${lat}&longitude=eq.${lon}&limit=1`);
+                    if (rows.length) {
+                        const s = rows[0];
+                        marker.setPopupContent(
+                            `<div style="min-width:220px;"><b>📍 ${esc(s.city||'')} ${esc(s.zip_code||'')}</b><br>` +
+                            `📅 ${s.sale_date||'N/A'}<br>` +
+                            `Status: <span style="color:${sc};font-weight:700">${esc(s.order_status||'N/A')}</span><br>` +
+                            `Rep: ${esc(s.rep_name||'N/A')}<br>` +
+                            `${s.customer_name ? 'Customer: '+esc(s.customer_name)+'<br>' : ''}` +
+                            `${s.dwelling_type ? 'Dwelling: '+esc(s.dwelling_type)+'<br>' : ''}` +
+                            `${s.utility_name ? 'Utility: '+esc(s.utility_name)+'<br>' : ''}` +
+                            `${s.campaign ? 'Campaign: '+esc(s.campaign)+'<br>' : ''}` +
+                            `${s.address ? '<span style="color:#888;font-size:11px;">'+esc(s.address)+'</span>' : ''}` +
+                            `</div>`
+                        );
+                    }
+                } catch (e) {
+                    marker.setPopupContent(`<b>📍 ${esc(city||'')} ${esc(zip||'')}</b><br>Status: ${esc(status||'N/A')}`);
+                }
+            });
             marker.addTo(fg.salesCluster);
         });
-    } catch (e) {
-        console.warn('Sales data load failed:', e);
+    } catch (sbErr) {
+        console.warn('Supabase sales fallback:', sbErr);
+        try {
+            const resp = await fetch(`${cfg.dataPrefix}_sales.json`);
+            if (!resp.ok) return;
+            salesData = await resp.json();
+            updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins (static)...`, 65);
+            salesData.forEach(d => {
+                const [lat, lon, city, zip, date, status, rep] = d;
+                const sc = statusColors[status] || '#ff8800';
+                const marker = L.circleMarker([lat, lon], {
+                    radius: 4, fillColor: sc, color: '#222', weight: 0.8, fillOpacity: 0.8
+                });
+                marker.bindPopup(`<b>📍 ${city||''}</b> ${zip||''}<br>📅 ${date||'N/A'}<br>Status: <span style="color:${sc};font-weight:700">${status||'N/A'}</span><br>Rep: ${rep||'N/A'}`);
+                marker.addTo(fg.salesCluster);
+            });
+        } catch (e) {
+            console.warn('Sales data load failed:', e);
+        }
     }
 }
 

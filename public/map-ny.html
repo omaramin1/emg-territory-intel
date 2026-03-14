@@ -324,7 +324,7 @@
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
-                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label">🏦 80% AMI Zones Only</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
@@ -462,6 +462,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
+        // ── Supabase Config ──
+        const SB_URL = 'https://gfbbhvsfznxhimwvokob.supabase.co/rest/v1';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmYmJodnNmem54aGltd3Zva29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzQ4MTYsImV4cCI6MjA4NDcxMDgxNn0.IJaI6vQJPA5Yb0tWtMHznjk-qY83RSWdYPjzorQUMyw';
+        const sbHeaders = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+        async function sbFetch(endpoint) {
+            const r = await fetch(SB_URL + endpoint, { headers: sbHeaders });
+            if (!r.ok) throw new Error('Supabase: ' + r.status);
+            return r.json();
+        }
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
         // ── NY center: roughly Albany area, zoom to see whole state ──
         const map = L.map('map', { zoomControl: true }).setView([42.85, -75.80], 7);
 
@@ -1160,42 +1171,96 @@
             } catch(e) { console.error('County boundaries error:', e); }
         }
 
-        // ── LOAD SALES DATA ──
+        // ── LOAD SALES DATA (from Supabase — NY only) ──
         async function loadSalesData() {
             try {
-                updateLoading('Loading real sales data...', 40);
-                const resp = await fetch('ny_sales.json');
-                if (!resp.ok) throw new Error('No sales data');
-                salesData = await resp.json();
-
-                updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 55);
-                const markers = [];
+                updateLoading('Loading sales from Supabase...', 40);
                 const statusColors = {
-                    'Payable':'#00c853','Processed':'#00c853','Sent':'#ff8800',
-                    'Cannot Process':'#ff1744','Denied':'#d50000','Chargeback':'#aa00ff',
-                    'TPV Not Complete':'#ff9100','Duplicate':'#757575','Awaiting Client Update':'#ffd600',
-                    'No Capacity (On Hold)':'#2979ff','Compliance Review':'#e040fb',
-                    'Incomplete':'#bdbdbd','Test':'#9e9e9e','In Queue':'#00b0ff',
-                    'Failed - Agent Phone Number':'#ff1744','Utility Connect Complete':'#00c853'
+                    'Payable':'#00c853','Completed':'#00c853','Sent':'#ff8800',
+                    'Cancelled':'#ff1744','Invalid':'#d50000','Duplicate':'#757575',
+                    'Rejected':'#ff1744','Void':'#aa00ff','Draft':'#bdbdbd',
+                    'Test':'#9e9e9e','Pending':'#ffd600'
                 };
+
+                // Paginated fetch — NY records only, lightweight cols
+                const PAGE = 5000;
+                let offset = 0, allPoints = [], fetching = true;
+                while (fetching) {
+                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state&state=eq.NY&limit=' + PAGE + '&offset=' + offset);
+                    allPoints = allPoints.concat(batch);
+                    updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 40 + Math.min(20, (allPoints.length/130000)*20));
+                    if (batch.length < PAGE) fetching = false;
+                    else offset += PAGE;
+                }
+                console.log('Supabase NY sale points loaded:', allPoints.length);
+
+                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state]);
+                allPoints = null;
+
+                updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 60);
+                const markers = [];
                 for (let i = 0; i < salesData.length; i++) {
-                    const [lat, lon, city, zip, date, status, rep] = salesData[i];
+                    const [lat, lon, city, zip, status, state] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
                     const sc = statusColors[status] || '#ff8800';
-                    const m = L.circleMarker([lat, lon], { radius: 5, fillColor: sc, color: '#222', weight: 1, opacity: 0.9, fillOpacity: 0.85 });
-                    m.bindPopup(`<b>📍 Sale</b><br><b>${city || ''}</b> ${zip || ''}<br>📅 ${date || ''}<br>Status: <span style="color:${sc};font-weight:700">${status || 'N/A'}</span><br>Rep: ${rep || 'N/A'}`);
+                    const m = L.circleMarker([lat, lon], { radius: 4, fillColor: sc, color: '#111', weight: 0.5, opacity: 0.8, fillOpacity: 0.75 });
+                    m.bindTooltip((city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
+                    m.on('click', function() {
+                        if (m._popup) { m.openPopup(); return; }
+                        m.bindPopup('<div style="text-align:center;padding:8px;">Loading…</div>').openPopup();
+                        sbFetch('/v_sale_points?select=latitude,longitude,zip_code,city,sale_date,order_status,dwelling_type,rep_name,campaign,utility_name,customer_name,state,address&latitude=eq.' + lat + '&longitude=eq.' + lon + '&limit=1')
+                            .then(rows => {
+                                const p = rows[0] || {};
+                                const di = {'Apartment (MDU)':'🏢','House (SFU)':'🏠','Single Family Home':'🏠','Townhouse':'🏘️','Condo':'🏙️','Mobile Home':'🏕️','Commercial':'🏪'}[p.dwelling_type] || '📍';
+                                const psc = statusColors[p.order_status] || '#ff8800';
+                                m.setPopupContent(
+                                    '<div style="font-family:Segoe UI,sans-serif;min-width:200px;">' +
+                                    '<b style="font-size:13px;">' + di + ' ' + (p.customer_name ? esc(p.customer_name) : 'Sale') + '</b><br>' +
+                                    '<div style="margin:4px 0;padding:5px;background:rgba(255,255,255,0.05);border-radius:4px;">' +
+                                    (p.city ? '<b>City:</b> ' + esc(p.city) + (p.state ? ', ' + p.state : '') + '<br>' : '') +
+                                    (p.zip_code ? '<b>ZIP:</b> ' + p.zip_code + '<br>' : '') +
+                                    (p.sale_date ? '<b>Date:</b> ' + p.sale_date + '<br>' : '') +
+                                    '<b>Status:</b> <span style="color:' + psc + ';font-weight:700;">' + (p.order_status||'N/A') + '</span><br>' +
+                                    (p.dwelling_type && p.dwelling_type !== 'Unknown' ? '<b>Type:</b> ' + p.dwelling_type + '<br>' : '') +
+                                    (p.campaign ? '<b>Campaign:</b> ' + esc(p.campaign) + '<br>' : '') +
+                                    (p.utility_name ? '<b>Utility:</b> ' + esc(p.utility_name) + '<br>' : '') +
+                                    (p.rep_name ? '<b>Rep:</b> ' + esc(p.rep_name) + '<br>' : '') +
+                                    (p.address ? '<b>Address:</b> ' + esc(p.address) + '<br>' : '') +
+                                    '</div></div>'
+                                );
+                            }).catch(() => m.setPopupContent('<div style="color:#e74c3c;">Could not load details</div>'));
+                    });
                     markers.push(m);
                 }
 
-                updateLoading('Clustering markers...', 70);
+                updateLoading('Clustering ' + markers.length.toLocaleString() + ' markers...', 75);
                 salesCluster.addLayers(markers);
 
                 document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
                 document.getElementById('statCities').textContent = Object.keys(cityStats).length;
                 document.getElementById('statVisible').textContent = salesData.length.toLocaleString();
-                updateStatus(`${salesData.length.toLocaleString()} sales across ${Object.keys(cityStats).length} cities | ${Object.keys(zipStats).length} ZIPs`);
-            } catch (error) { console.error('Sales load error:', error); }
+                updateStatus(salesData.length.toLocaleString() + ' sales across ' + Object.keys(cityStats).length + ' cities | ' + Object.keys(zipStats).length + ' ZIPs (Live from Supabase)');
+            } catch (error) {
+                console.error('Sales load error, falling back to static:', error);
+                try {
+                    const resp = await fetch('ny_sales.json');
+                    if (resp.ok) {
+                        salesData = await resp.json();
+                        const markers = [];
+                        for (const [lat,lon,city,zip,date,status,rep] of salesData) {
+                            if (city) cityStats[city] = (cityStats[city]||0)+1;
+                            if (zip) zipStats[zip] = (zipStats[zip]||0)+1;
+                            const m = L.circleMarker([lat,lon],{radius:4,fillColor:'#ff8800',color:'#111',weight:0.5,opacity:0.8,fillOpacity:0.75});
+                            m.bindPopup(`<b>📍 Sale</b><br><b>${city||''}</b> ${zip||''}<br>📅 ${date||''}<br>Status: ${status||'N/A'}<br>Rep: ${rep||'N/A'}`);
+                            markers.push(m);
+                        }
+                        salesCluster.addLayers(markers);
+                        document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
+                        updateStatus(salesData.length.toLocaleString()+' sales (static fallback)');
+                    }
+                } catch(e2) { console.error('Static fallback also failed:', e2); }
+            }
         }
 
         map.on('moveend', () => {
