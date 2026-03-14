@@ -539,13 +539,11 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#00ddff;"></div> Mobile Home</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">Sales Status (zoom in)</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#00c853;"></div> Payable / Processed</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Sent / Pending</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ff1744;"></div> Cannot Process / Failed</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#aa00ff;"></div> Chargeback</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ffd600;"></div> Awaiting Update</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#757575;"></div> Duplicate / Other</div>
+                <div class="legend-section-title">Sales Pin Styles (zoom in)</div>
+                <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#00c853;border:1.2px solid #fff;display:inline-block;"></div> <b>Completed</b> — solid, large</div>
+                <div class="legend-item"><div style="width:8px;height:8px;border-radius:50%;background:transparent;border:2.5px solid #ff8800;display:inline-block;"></div> <b>Pipeline</b> — hollow ring</div>
+                <div class="legend-item"><div style="width:5px;height:5px;border-radius:50%;background:#ff1744;opacity:0.5;display:inline-block;"></div> <b>Dead</b> — small, dim</div>
+                <div class="legend-item" style="margin-top:4px;font-size:9px;color:#666;">Colors: <span style="color:#00c853;">●</span> Payable <span style="color:#ff8800;">●</span> Sent <span style="color:#ff1744;">●</span> Cancelled <span style="color:#aa00ff;">●</span> Void <span style="color:#ffd600;">●</span> Pending</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">County Boundaries</div>
@@ -1109,6 +1107,16 @@
                     'Rejected':'#ff1744','Void':'#aa00ff','Draft':'#bdbdbd',
                     'Test':'#9e9e9e','Pending':'#ffd600'
                 };
+                // Pin style by status category — distinct shapes via radius/weight/opacity
+                const completedSet = new Set(['Payable','Completed']);
+                const pipelineSet = new Set(['Sent','Pending','Draft']);
+                const deadSet = new Set(['Cancelled','Invalid','Rejected','Void','Duplicate','Test']);
+                function pinStyle(status, sc) {
+                    if (completedSet.has(status)) return { radius: 5, fillColor: sc, color: '#fff', weight: 1.2, opacity: 1, fillOpacity: 0.9 };
+                    if (pipelineSet.has(status)) return { radius: 4, fillColor: 'transparent', color: sc, weight: 2.5, opacity: 0.9, fillOpacity: 0.15 };
+                    if (deadSet.has(status)) return { radius: 2.5, fillColor: sc, color: '#000', weight: 0.5, opacity: 0.5, fillOpacity: 0.4 };
+                    return { radius: 4, fillColor: sc, color: '#111', weight: 0.5, opacity: 0.8, fillOpacity: 0.75 };
+                }
 
                 // Paginated fetch — lightweight columns only for speed (5K/page)
                 const PAGE = 5000;
@@ -1136,10 +1144,7 @@
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
                     const sc = statusColors[status] || '#ff8800';
 
-                    const m = L.circleMarker([lat, lon], {
-                        radius: 4, fillColor: sc, color: '#111',
-                        weight: 0.5, opacity: 0.8, fillOpacity: 0.75
-                    });
+                    const m = L.circleMarker([lat, lon], pinStyle(status, sc));
                     // Light tooltip — full detail loads on popup open via Supabase
                     m.bindTooltip((city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
                     m.on('click', function() {
@@ -1195,7 +1200,8 @@
                         for (const [lat,lon,city,zip,date,status,rep] of salesData) {
                             if (city) cityStats[city] = (cityStats[city]||0)+1;
                             if (zip) zipStats[zip] = (zipStats[zip]||0)+1;
-                            const m = L.circleMarker([lat,lon],{radius:4,fillColor:'#ff8800',color:'#111',weight:0.5,opacity:0.8,fillOpacity:0.75});
+                            const sc2 = statusColors[status] || '#ff8800';
+                            const m = L.circleMarker([lat,lon], pinStyle(status, sc2));
                             m.bindPopup('<b>📍</b> '+esc(city||'')+' '+zip+'<br>'+date+'<br>'+esc(rep||''));
                             markers.push(m);
                         }

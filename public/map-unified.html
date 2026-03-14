@@ -667,6 +667,15 @@ async function loadSalesData() {
         'Incomplete':'#bdbdbd','Test':'#9e9e9e','In Queue':'#00b0ff','Pending':'#ffd600',
         'Failed - Agent Phone Number':'#ff1744','Utility Connect Complete':'#00c853'
     };
+    const completedSet = new Set(['Payable','Completed','Processed','Utility Connect Complete']);
+    const pipelineSet = new Set(['Sent','Pending','Draft','In Queue','TPV Not Complete','Awaiting Client Update','No Capacity (On Hold)','Compliance Review','Incomplete']);
+    const deadSet = new Set(['Cancelled','Cannot Process','Denied','Invalid','Chargeback','Void','Rejected','Duplicate','Test','Failed - Agent Phone Number']);
+    function pinStyle(status, sc) {
+        if (completedSet.has(status)) return { radius: 5, fillColor: sc, color: '#fff', weight: 1.2, opacity: 1, fillOpacity: 0.9 };
+        if (pipelineSet.has(status)) return { radius: 4, fillColor: 'transparent', color: sc, weight: 2.5, opacity: 0.9, fillOpacity: 0.15 };
+        if (deadSet.has(status)) return { radius: 2.5, fillColor: sc, color: '#000', weight: 0.5, opacity: 0.5, fillOpacity: 0.4 };
+        return { radius: 4, fillColor: sc, color: '#111', weight: 0.5, opacity: 0.8, fillOpacity: 0.75 };
+    }
 
     try {
         const stateFilter = currentState ? `&state=eq.${currentState}` : '';
@@ -686,9 +695,7 @@ async function loadSalesData() {
         salesData.forEach((d, i) => {
             const [lat, lon, city, zip, status, state] = d;
             const sc = statusColors[status] || '#ff8800';
-            const marker = L.circleMarker([lat, lon], {
-                radius: 4, fillColor: sc, color: '#222', weight: 0.8, fillOpacity: 0.8
-            });
+            const marker = L.circleMarker([lat, lon], pinStyle(status, sc));
             marker.bindTooltip(`${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
             marker.on('click', async function () {
                 marker.bindPopup('<div style="text-align:center;padding:8px;color:#aaa;">Loading…</div>').openPopup();
@@ -725,9 +732,7 @@ async function loadSalesData() {
             salesData.forEach(d => {
                 const [lat, lon, city, zip, date, status, rep] = d;
                 const sc = statusColors[status] || '#ff8800';
-                const marker = L.circleMarker([lat, lon], {
-                    radius: 4, fillColor: sc, color: '#222', weight: 0.8, fillOpacity: 0.8
-                });
+                const marker = L.circleMarker([lat, lon], pinStyle(status, sc));
                 marker.bindPopup(`<b>📍 ${city||''}</b> ${zip||''}<br>📅 ${date||'N/A'}<br>Status: <span style="color:${sc};font-weight:700">${status||'N/A'}</span><br>Rep: ${rep||'N/A'}`);
                 marker.addTo(fg.salesCluster);
             });
