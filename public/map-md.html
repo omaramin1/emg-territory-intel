@@ -576,6 +576,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
         var CB = '?v=' + Date.now();
+        // ── Supabase Config ──
+        const SB_URL = 'https://gfbbhvsfznxhimwvokob.supabase.co/rest/v1';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmYmJodnNmem54aGltd3Zva29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzQ4MTYsImV4cCI6MjA4NDcxMDgxNn0.IJaI6vQJPA5Yb0tWtMHznjk-qY83RSWdYPjzorQUMyw';
+        const sbHeaders = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+        async function sbFetch(endpoint) {
+            const r = await fetch(SB_URL + endpoint, { headers: sbHeaders });
+            if (!r.ok) throw new Error('Supabase: ' + r.status);
+            return r.json();
+        }
         const map = L.map('map', { zoomControl: true }).setView([39.15, -76.85], 8);
 
         // Base maps
@@ -802,17 +811,28 @@
         async function loadZipBoundaries() {
             try {
                 updateLoading('Loading ZIP code boundaries...', 10);
-                const [geoResp, dataResp, demoResp, lmiResp] = await Promise.all([
+                const [geoResp, demoResp, lmiResp] = await Promise.all([
                     fetch('md_zip_boundaries.geojson'+CB),
-                    fetch('md_zip_data.json'+CB),
                     fetch('md_demographics.json'+CB),
                     fetch('md_lmi_thresholds.json'+CB)
                 ]);
                 if (!geoResp.ok) throw new Error('Failed to load boundaries');
                 const boundaries = await geoResp.json();
-                zipSalesData = dataResp.ok ? await dataResp.json() : {};
                 demoData = demoResp.ok ? await demoResp.json() : {};
                 lmiThresholds = lmiResp.ok ? await lmiResp.json() : {};
+                // Load ZIP sales from Supabase (live) with static fallback
+                try {
+                    const sbZips = await sbFetch('/v_zip_sales?select=zip_code,sale_count,cities,completed,sent,cancelled,apartments,houses,mobile_homes,first_sale,last_sale,rep_count&limit=5000');
+                    zipSalesData = {};
+                    sbZips.forEach(z => {
+                        zipSalesData[z.zip_code] = { n: z.sale_count, c: (z.cities||'').split(', ').slice(0,3).join(', '), completed: z.completed, sent: z.sent, cancelled: z.cancelled, apts: z.apartments, houses: z.houses, mobiles: z.mobile_homes, first: z.first_sale, last: z.last_sale, reps: z.rep_count };
+                    });
+                    console.log('ZIP sales from Supabase:', Object.keys(zipSalesData).length, 'ZIPs');
+                } catch(sbErr) {
+                    console.warn('Supabase ZIP sales fallback:', sbErr);
+                    const dataResp = await fetch('md_zip_data.json'+CB);
+                    zipSalesData = dataResp.ok ? await dataResp.json() : {};
+                }
 
                 updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
 
@@ -895,7 +915,21 @@
                                     <div class="info-section-title">Sales Activity</div>
                                     <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
                                     <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
-                                    ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
+                                    ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}
+                                    ${sales.completed != null ? `
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0;font-size:11px;">
+                                        <span style="color:#27ae60;">✓ ${(sales.completed||0).toLocaleString()} completed</span>
+                                        <span style="color:#f39c12;">⏳ ${(sales.sent||0).toLocaleString()} sent</span>
+                                        <span style="color:#e74c3c;">✗ ${(sales.cancelled||0).toLocaleString()} cancelled</span>
+                                    </div>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:2px 0;font-size:11px;color:#aaa;">
+                                        ${sales.houses ? `<span>🏠 ${sales.houses} house</span>` : ''}
+                                        ${sales.apts ? `<span>🏢 ${sales.apts} apt</span>` : ''}
+                                        ${sales.mobiles ? `<span>🏘️ ${sales.mobiles} mobile</span>` : ''}
+                                    </div>
+                                    ${sales.reps ? `<div class="info-row"><span class="info-label">Reps Active:</span><span class="info-value">${sales.reps}</span></div>` : ''}
+                                    ${sales.first ? `<div class="info-row"><span class="info-label">Date Range:</span><span class="info-value" style="font-size:11px;">${sales.first} → ${sales.last||'now'}</span></div>` : ''}
+                                    ` : ''}`;
                                 if (demo) {
                                     const raceBar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;margin:4px 0;">
                                         <div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>
@@ -1069,53 +1103,101 @@
             }
         }
 
-        // ── LOAD SALES DATA ──
+        // ── LOAD SALES DATA (from Supabase) ──
         async function loadSalesData() {
             try {
-                updateLoading('Loading real sales data...', 40);
-                const [mdResp, vaResp] = await Promise.all([
-                    fetch('md_sales.json'+CB),
-                    fetch('va_sales.json'+CB).catch(() => null)
-                ]);
-                if (!mdResp.ok) throw new Error('No sales data');
-                const mdSales = await mdResp.json();
-                const vaSales = (vaResp && vaResp.ok) ? await vaResp.json() : [];
-                salesData = mdSales.concat(vaSales);
-
-                updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 55);
-                const markers = [];
+                updateLoading('Loading sales data from Supabase...', 40);
                 const statusColors = {
-                    'Payable':'#00c853','Processed':'#00c853','Sent':'#ff8800',
-                    'Cannot Process':'#ff1744','Denied':'#d50000','Chargeback':'#aa00ff',
-                    'TPV Not Complete':'#ff9100','Duplicate':'#757575','Awaiting Client Update':'#ffd600',
-                    'No Capacity (On Hold)':'#2979ff','Compliance Review':'#e040fb',
-                    'Incomplete':'#bdbdbd','Test':'#9e9e9e','In Queue':'#00b0ff',
-                    'Failed - Agent Phone Number':'#ff1744','Utility Connect Complete':'#00c853'
+                    'Payable':'#00c853','Completed':'#00c853','Sent':'#ff8800',
+                    'Cancelled':'#ff1744','Invalid':'#d50000','Duplicate':'#757575',
+                    'Rejected':'#ff1744','Void':'#aa00ff','Draft':'#bdbdbd',
+                    'Test':'#9e9e9e','Pending':'#ffd600'
+                };
+                const dwellingIcons = {
+                    'Apartment (MDU)':'🏢','House (SFU)':'🏠','Single Family Home':'🏠',
+                    'Townhouse':'🏘️','Condo':'🏙️','Mobile Home':'🏕️','Commercial':'🏪'
                 };
 
+                // Paginated fetch — Supabase max 1000 per request
+                const PAGE = 1000;
+                let offset = 0;
+                let allPoints = [];
+                let fetching = true;
+                while (fetching) {
+                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,zip_code,city,sale_date,order_status,dwelling_type,rep_name,campaign,utility_name,customer_name,state&order=sale_date.desc.nullslast&limit=' + PAGE + '&offset=' + offset);
+                    allPoints = allPoints.concat(batch);
+                    updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 40 + Math.min(20, (allPoints.length/150000)*20));
+                    if (batch.length < PAGE) fetching = false;
+                    else offset += PAGE;
+                }
+                console.log('Supabase sale points loaded:', allPoints.length);
+
+                // Convert to salesData array format for backward compat
+                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.sale_date, p.order_status, p.rep_name, p.dwelling_type, p.campaign, p.utility_name, p.customer_name, p.state]);
+
+                updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 60);
+                const markers = [];
                 for (let i = 0; i < salesData.length; i++) {
-                    const [lat, lon, city, zip, date, status, rep] = salesData[i];
+                    const [lat, lon, city, zip, date, status, rep, dwelling, campaign, utility, customer, state] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
                     const sc = statusColors[status] || '#ff8800';
+                    const di = dwellingIcons[dwelling] || '📍';
 
                     const m = L.circleMarker([lat, lon], {
-                        radius: 5, fillColor: sc, color: '#222',
-                        weight: 1, opacity: 0.9, fillOpacity: 0.85
+                        radius: 4, fillColor: sc, color: '#111',
+                        weight: 0.5, opacity: 0.8, fillOpacity: 0.75
                     });
-                    m.bindPopup(`<b>📍 Sale</b><br><b>${city || ''}</b> ${zip || ''}<br>📅 ${date || ''}<br>Status: <span style="color:${sc};font-weight:700">${status || 'N/A'}</span><br>Rep: ${rep || 'N/A'}`);
+                    m.bindPopup(
+                        '<div style="font-family:Segoe UI,sans-serif;min-width:200px;">' +
+                        '<b style="font-size:13px;">' + di + ' ' + (customer ? esc(customer) : 'Sale') + '</b><br>' +
+                        '<div style="margin:4px 0;padding:5px;background:rgba(255,255,255,0.05);border-radius:4px;">' +
+                        (city ? '<b>City:</b> ' + esc(city) + (state ? ', ' + state : '') + '<br>' : '') +
+                        (zip ? '<b>ZIP:</b> ' + zip + '<br>' : '') +
+                        (date ? '<b>Date:</b> ' + date + '<br>' : '') +
+                        '<b>Status:</b> <span style="color:' + sc + ';font-weight:700;">' + (status||'N/A') + '</span><br>' +
+                        (dwelling && dwelling !== 'Unknown' ? '<b>Type:</b> ' + dwelling + '<br>' : '') +
+                        (campaign ? '<b>Campaign:</b> ' + esc(campaign) + '<br>' : '') +
+                        (utility ? '<b>Utility:</b> ' + esc(utility) + '<br>' : '') +
+                        (rep ? '<b>Rep:</b> ' + esc(rep) + '<br>' : '') +
+                        '</div></div>'
+                    );
                     markers.push(m);
                 }
 
-                updateLoading('Clustering markers...', 70);
+                updateLoading('Clustering ' + markers.length.toLocaleString() + ' markers...', 75);
                 salesCluster.addLayers(markers);
 
                 document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
                 document.getElementById('statCities').textContent = Object.keys(cityStats).length;
                 document.getElementById('statVisible').textContent = salesData.length.toLocaleString();
-                updateStatus(`${salesData.length.toLocaleString()} sales across ${Object.keys(cityStats).length} cities | ${Object.keys(zipStats).length} ZIPs`);
+                updateStatus(salesData.length.toLocaleString() + ' sales across ' + Object.keys(cityStats).length + ' cities | ' + Object.keys(zipStats).length + ' ZIPs (Live from Supabase)');
             } catch (error) {
                 console.error('Sales load error:', error);
+                // Fallback to static files
+                try {
+                    console.warn('Falling back to static sales files...');
+                    const [mdResp, vaResp] = await Promise.all([
+                        fetch('md_sales.json'+CB),
+                        fetch('va_sales.json'+CB).catch(() => null)
+                    ]);
+                    if (mdResp.ok) {
+                        const mdSales = await mdResp.json();
+                        const vaSales = (vaResp && vaResp.ok) ? await vaResp.json() : [];
+                        salesData = mdSales.concat(vaSales);
+                        const markers = [];
+                        for (const [lat,lon,city,zip,date,status,rep] of salesData) {
+                            if (city) cityStats[city] = (cityStats[city]||0)+1;
+                            if (zip) zipStats[zip] = (zipStats[zip]||0)+1;
+                            const m = L.circleMarker([lat,lon],{radius:4,fillColor:'#ff8800',color:'#111',weight:0.5,opacity:0.8,fillOpacity:0.75});
+                            m.bindPopup('<b>📍</b> '+esc(city||'')+' '+zip+'<br>'+date+'<br>'+esc(rep||''));
+                            markers.push(m);
+                        }
+                        salesCluster.addLayers(markers);
+                        document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
+                        updateStatus(salesData.length.toLocaleString()+' sales (static fallback)');
+                    }
+                } catch(e2) { console.error('Static fallback failed:', e2); }
             }
         }
 
