@@ -209,6 +209,10 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
+            { id: 'canvassZones', label: '🗺 Canvass Targeting (Tract)', default: false },
+            { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
+            '_divider',
             { id: 'util_Central Hudson', label: '⚡ Central Hudson', default: false },
             { id: 'util_NYSEG', label: '⚡ NYSEG', default: false },
             { id: 'util_RGE', label: '⚡ RGE', default: false },
@@ -245,6 +249,10 @@ const STATE_CONFIG = {
             '_divider',
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            '_divider',
+            { id: 'canvassZones', label: '🗺 Canvass Targeting (Tract)', default: false },
+            { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
             '_divider',
             { id: 'util_Pepco', label: '⚡ Pepco', default: false },
             { id: 'util_Potomac Edison', label: '⚡ Potomac Edison', default: false }
@@ -329,6 +337,10 @@ const STATE_CONFIG = {
             '_divider',
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            '_divider',
+            { id: 'canvassZones', label: '🗺 Canvass Targeting (Tract)', default: false },
+            { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
             '_divider',
             { id: 'util_Dominion Virginia', label: '⚡ Dominion Virginia', default: false }
         ],
@@ -501,7 +513,7 @@ async function switchState(stateCode) {
     priorityData = {};
 
     // Initialize feature groups
-    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight'];
+    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight','canvassZones','homeScore','saturationMap'];
     if (cfg.hasExtras) { groupIds.push('ordersLayer','lmiOutlines','housingPins','allElectricPins'); }
     if (cfg.lmiData) groupIds.push('lmiOutlines');
     if (cfg.housingPins) groupIds.push('housingPins');
@@ -532,6 +544,7 @@ async function switchState(stateCode) {
     if (cfg.lmiData) loadLMIOutlines();
     if (cfg.housingPins) loadHousingPins();
     loadTargetZones();
+    await loadCanvassTargeting();
 
     // Apply default toggles
     cfg.toggles.forEach(t => {
@@ -933,6 +946,112 @@ function getUtilityOutageLinks(name, color) {
     const l = links[name];
     if (!l) return '';
     return `· ${l.customers} customers<br><a href="${l.outage}" target="_blank" style="color:${color};">🔴 Live Outage Map</a> · <a href="${l.report}" target="_blank" style="color:${color};">Report Outage</a><br><span style="font-size:10px;color:#888;">${l.solar}</span>`;
+}
+
+// ═══════════════════════════════════════════════════
+// ██  CANVASS TARGETING + HOME SCORE + SATURATION   ██
+// ═══════════════════════════════════════════════════
+async function loadCanvassTargeting() {
+    const cfg = STATE_CONFIG[currentState];
+    updateLoading('Loading canvass targeting data...', 85);
+
+    // Load tract-level auto_qualify GeoJSON (has canvass_grade, home_score, opp_score, daytime_home)
+    const [tractResp, targetResp] = await Promise.all([
+        fetch(`${cfg.dataPrefix}_auto_qualify.geojson`).catch(() => null),
+        fetch(`${cfg.dataPrefix}_targeting.json`).catch(() => null)
+    ]);
+
+    let targetingData = {};
+    if (targetResp && targetResp.ok) {
+        try { targetingData = await targetResp.json(); } catch(e) {}
+    }
+
+    if (tractResp && tractResp.ok) {
+        try {
+            const tractGeo = await tractResp.json();
+
+            // Canvass Grade colors
+            const gradeColors = { 'A': '#00cc66', 'B': '#ffcc00', 'C': '#ff8844', 'D': '#ff3333' };
+            const gradeOpacity = { 'A': 0.30, 'B': 0.22, 'C': 0.18, 'D': 0.12 };
+            const gradeLabels = { 'A': 'TOP PRIORITY', 'B': 'HIGH VALUE', 'C': 'MODERATE', 'D': 'LOW PRIORITY' };
+
+            // Home Score gradient: blue (low) → green (mid) → red (high home probability)
+            function homeColor(score) {
+                if (score >= 60) return '#00ff88';
+                if (score >= 45) return '#88ff44';
+                if (score >= 30) return '#ffcc00';
+                return '#ff6644';
+            }
+
+            tractGeo.features.forEach(f => {
+                const p = f.properties;
+                const grade = p.canvass_grade || 'D';
+                const homeS = p.home_score || p.daytime_home || 0;
+                const oppS = p.opp_score || 0;
+                const lmiEst = p.lmi_est || 0;
+                const pop = p.pop || 0;
+                const hh = p.hh || 0;
+                const county = p.county || '';
+                const wfhPct = p.wfh_pct || 0;
+                const daytimeHome = p.daytime_home || 0;
+                const bestTime = p.best_time || '';
+                const ehPct = p.eh_pct || 0;
+                const rentPct = p.rent_pct || 0;
+                const ownPct = p.own_pct || 0;
+                const medInc = p.med_inc || p.inc || 0;
+
+                const popupHtml = `
+                    <div style="min-width:260px;font-size:12px;">
+                    <b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b>
+                    <br><span style="color:#888;">Tract ${p.GEOID || ''} · ${county}</span>
+                    <hr style="border-color:#333;margin:4px 0;">
+                    <b>🎯 Opportunity Score:</b> ${oppS}/100<br>
+                    <b>🏠 Home Score:</b> ${homeS}/100 (${Math.round(daytimeHome)}% daytime home)<br>
+                    <b>💼 WFH Rate:</b> ${wfhPct}%<br>
+                    <b>⏰ Best Canvass Time:</b> ${bestTime}<br>
+                    <hr style="border-color:#333;margin:4px 0;">
+                    <b>📋 LMI Qualify Est:</b> ${lmiEst}%<br>
+                    <b>⚡ Electric Heat:</b> ${ehPct}%<br>
+                    <b>🏠 Own/Rent:</b> ${ownPct}% / ${rentPct}%<br>
+                    <b>👥 Population:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br>
+                    <b>💰 Median Income:</b> $${medInc.toLocaleString()}<br>
+                    </div>`;
+
+                // Canvass Zones layer (colored by grade)
+                L.geoJSON(f, {
+                    style: { fillColor: gradeColors[grade], fillOpacity: gradeOpacity[grade], color: gradeColors[grade], weight: 1.5, opacity: 0.6 }
+                }).bindPopup(popupHtml).addTo(fg.canvassZones);
+
+                // Home Score layer (colored by daytime home %)
+                L.geoJSON(f, {
+                    style: { fillColor: homeColor(homeS), fillOpacity: 0.25, color: homeColor(homeS), weight: 1, opacity: 0.5 }
+                }).bindPopup(popupHtml).addTo(fg.homeScore);
+            });
+        } catch(e) { console.warn('Canvass targeting load error:', e); }
+    }
+
+    // Saturation layer — ZIP-level from targeting data
+    if (boundaryFeatures && Object.keys(targetingData).length > 0) {
+        Object.entries(targetingData).forEach(([zip, td]) => {
+            const feat = zipGeoFeatures[zip];
+            if (!feat) return;
+            const sat = td.sat || 0;
+            if (sat < 0.1) return; // Skip ZIPs with no enrollments
+
+            const satColor = sat >= 15 ? '#ff0000' : sat >= 8 ? '#ff6600' : sat >= 3 ? '#ffcc00' : '#00cc66';
+            const satOpacity = sat >= 15 ? 0.4 : sat >= 8 ? 0.3 : sat >= 3 ? 0.2 : 0.12;
+
+            L.geoJSON(feat, {
+                style: { fillColor: satColor, fillOpacity: satOpacity, color: satColor, weight: 1.5, opacity: 0.6 }
+            }).bindPopup(`
+                <b style="color:${satColor}">ZIP ${zip} — SATURATION</b>
+                <br>Enrolled: <b>${td.es}</b> orders (${sat}% of HH)
+                <br>Arcadia: ${td.eat} total / ${td.ep} payable
+                <br>${sat >= 10 ? '🔴 SATURATED — skip or revisit later' : sat >= 5 ? '🟡 MODERATE — declining returns' : '🟢 FRESH — high potential'}
+                <br><span style="color:#888;font-size:10px;">Pop: ${td.pop.toLocaleString()} · Income: $${td.inc.toLocaleString()} · LMI: ${td.lp}%</span>
+            `).addTo(fg.saturationMap);
+        });
+    }
 }
 
 function loadUtilityTerritories() {

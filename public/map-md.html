@@ -425,6 +425,13 @@
             </div>
 
             <div class="toggle-section">
+                <div class="toggle-section-title">D2D Canvass Intelligence</div>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc66;"></div><span class="toggle-label">🗺 Canvass Targeting (Tract)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('homeScore',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#88ff44;"></div><span class="toggle-label">🏠 Home Score (Daytime)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('saturationMap',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6600;"></div><span class="toggle-label">📊 Saturation (Enrolled)</span></label>
+            </div>
+
+            <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Real Sales Data</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('housing',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#aa66ff;"></div><span class="toggle-label">🏢 Housing / Apts</span></label>
@@ -621,7 +628,10 @@
             housingConcentration: L.featureGroup(),
             trailerParks: L.featureGroup(),
             kwhHeat: L.featureGroup(),
-            lmiIncomeOnly: L.featureGroup()
+            lmiIncomeOnly: L.featureGroup(),
+            canvassZones: L.featureGroup(),
+            homeScore: L.featureGroup(),
+            saturationMap: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -665,7 +675,10 @@
             housingConcentration: fg.housingConcentration,
             lmiIncomeOnly: fg.lmiIncomeOnly,
             trailerParks: fg.trailerParks,
-            kwhHeat: fg.kwhHeat
+            kwhHeat: fg.kwhHeat,
+            canvassZones: fg.canvassZones,
+            homeScore: fg.homeScore,
+            saturationMap: fg.saturationMap
         };
 
         function toggleLayer(name, on) {
@@ -1828,6 +1841,44 @@
             alert(`No results for "${term}". Try a ZIP code, city name, or address.`);
         }
 
+        // ── Canvass Targeting + Home Score + Saturation ──
+        async function loadCanvassTargeting() {
+            updateLoading('Loading canvass targeting...', 88);
+            const [tractResp, targetResp] = await Promise.all([
+                fetch('md_auto_qualify.geojson'+CB).catch(() => null),
+                fetch('md_targeting.json'+CB).catch(() => null)
+            ]);
+            let targetingData = {};
+            if (targetResp && targetResp.ok) { try { targetingData = await targetResp.json(); } catch(e) {} }
+            if (tractResp && tractResp.ok) {
+                try {
+                    const tractGeo = await tractResp.json();
+                    const gradeColors = { 'A': '#00cc66', 'B': '#ffcc00', 'C': '#ff8844', 'D': '#ff3333' };
+                    const gradeOpacity = { 'A': 0.30, 'B': 0.22, 'C': 0.18, 'D': 0.12 };
+                    const gradeLabels = { 'A': 'TOP PRIORITY', 'B': 'HIGH VALUE', 'C': 'MODERATE', 'D': 'LOW PRIORITY' };
+                    function homeColor(s) { return s >= 60 ? '#00ff88' : s >= 45 ? '#88ff44' : s >= 30 ? '#ffcc00' : '#ff6644'; }
+                    tractGeo.features.forEach(f => {
+                        const p = f.properties;
+                        const grade = p.canvass_grade || 'D';
+                        const homeS = p.home_score || p.daytime_home || 0;
+                        const popup = `<div style="min-width:260px;font-size:12px;"><b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b><br><span style="color:#888;">Tract ${p.GEOID||''} · ${p.county||''}</span><hr style="border-color:#333;margin:4px 0;"><b>🎯 Opportunity:</b> ${p.opp_score||0}/100<br><b>🏠 Home Score:</b> ${homeS}/100 (${Math.round(p.daytime_home||0)}% daytime)<br><b>💼 WFH:</b> ${p.wfh_pct||0}%<br><b>⏰ Best Time:</b> ${p.best_time||'N/A'}<hr style="border-color:#333;margin:4px 0;"><b>📋 LMI Est:</b> ${p.lmi_est||0}%<br><b>⚡ EH:</b> ${p.eh_pct||0}%<br><b>🏠 Own/Rent:</b> ${p.own_pct||0}%/${p.rent_pct||0}%<br><b>👥 Pop:</b> ${(p.pop||0).toLocaleString()} · ${(p.hh||0).toLocaleString()} HH<br><b>💰 Income:</b> $${(p.med_inc||p.inc||0).toLocaleString()}</div>`;
+                        L.geoJSON(f, { style: { fillColor: gradeColors[grade], fillOpacity: gradeOpacity[grade], color: gradeColors[grade], weight: 1.5, opacity: 0.6 } }).bindPopup(popup).addTo(fg.canvassZones);
+                        L.geoJSON(f, { style: { fillColor: homeColor(homeS), fillOpacity: 0.25, color: homeColor(homeS), weight: 1, opacity: 0.5 } }).bindPopup(popup).addTo(fg.homeScore);
+                    });
+                } catch(e) { console.warn('Canvass targeting error:', e); }
+            }
+            if (Object.keys(targetingData).length > 0) {
+                Object.entries(targetingData).forEach(([zip, td]) => {
+                    const feat = zipGeoFeatures[zip];
+                    if (!feat || (td.sat || 0) < 0.1) return;
+                    const sat = td.sat;
+                    const sc = sat >= 15 ? '#ff0000' : sat >= 8 ? '#ff6600' : sat >= 3 ? '#ffcc00' : '#00cc66';
+                    const so = sat >= 15 ? 0.4 : sat >= 8 ? 0.3 : sat >= 3 ? 0.2 : 0.12;
+                    L.geoJSON(feat, { style: { fillColor: sc, fillOpacity: so, color: sc, weight: 1.5, opacity: 0.6 } }).bindPopup(`<b style="color:${sc}">ZIP ${zip} — SATURATION</b><br>Enrolled: <b>${td.es}</b> (${sat}% of HH)<br>Arcadia: ${td.eat}/${td.ep} payable<br>${sat>=10?'🔴 SATURATED':sat>=5?'🟡 MODERATE':'🟢 FRESH'}<br><span style="color:#888;font-size:10px;">Pop: ${td.pop.toLocaleString()} · Inc: $${td.inc.toLocaleString()} · LMI: ${td.lp}%</span>`).addTo(fg.saturationMap);
+                });
+            }
+        }
+
         // ── Init ──
         async function loadAllData() {
             try {
@@ -1845,6 +1896,7 @@
                 loadAutoQualifyZones();
                 await loadTrailerParks();
                 loadCountyBoundaries();
+                await loadCanvassTargeting();
                 updateLoading('Complete', 100);
                 setTimeout(hideLoading, 500);
             } catch (e) {
