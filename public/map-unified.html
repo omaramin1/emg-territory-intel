@@ -209,7 +209,7 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
-            { id: 'canvassZones', label: '🗺 Canvass Targeting (Tract)', default: false },
+            { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
             { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
             '_divider',
@@ -250,7 +250,7 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
-            { id: 'canvassZones', label: '🗺 Canvass Targeting (Tract)', default: false },
+            { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
             { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
             '_divider',
@@ -338,7 +338,7 @@ const STATE_CONFIG = {
             { id: 'targetZones', label: '🎯 Priority Targets', default: false },
             { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
             '_divider',
-            { id: 'canvassZones', label: '🗺 Canvass Targeting (Tract)', default: false },
+            { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
             { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
             '_divider',
@@ -950,101 +950,146 @@ function getUtilityOutageLinks(name, color) {
 
 // ═══════════════════════════════════════════════════
 // ██  CANVASS TARGETING + HOME SCORE + SATURATION   ██
+// ══  Block-group level (zoom ≥12) / Tract fallback ═
 // ═══════════════════════════════════════════════════
+let _canvassData = { tracts: null, blockgroups: null, targeting: null };
+let _canvassRenderedBounds = null;
+const CANVASS_DETAIL_ZOOM = 12;
+
+const gradeColors = { 'A': '#00cc66', 'B': '#ffcc00', 'C': '#ff8844', 'D': '#ff3333' };
+const gradeOpacity = { 'A': 0.30, 'B': 0.22, 'C': 0.18, 'D': 0.12 };
+const gradeLabels = { 'A': 'TOP PRIORITY', 'B': 'HIGH VALUE', 'C': 'MODERATE', 'D': 'LOW PRIORITY' };
+function homeColor(s) { return s >= 60 ? '#00ff88' : s >= 45 ? '#88ff44' : s >= 30 ? '#ffcc00' : '#ff6644'; }
+
+function canvassPopup(p, isBG) {
+    const grade = p.cg || p.canvass_grade || 'D';
+    const homeS = p.hs || p.home_score || p.daytime_home || 0;
+    const oppS = p.os || p.opp_score || 0;
+    const lmiEst = p.le || p.lmi_est || 0;
+    const wfh = p.wfh || p.wfh_pct || 0;
+    const dh = p.dh || p.daytime_home || 0;
+    const bt = p.bt || p.best_time || '';
+    const eh = p.eh || p.eh_pct || 0;
+    const op = p.op || p.own_pct || 0;
+    const rp = p.rp || p.rent_pct || 0;
+    const mi = p.mi || p.med_inc || p.inc || 0;
+    const pop = p.pop || 0;
+    const hh = p.hh || 0;
+    const county = p.county || '';
+    const geoid = p.GEOID || '';
+    const level = isBG ? 'Block Group' : 'Tract';
+    return `<div style="min-width:260px;font-size:12px;">
+        <b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b>
+        <br><span style="color:#888;">${level} ${geoid} · ${county}</span>
+        <hr style="border-color:#333;margin:4px 0;">
+        <b>🎯 Opportunity:</b> ${oppS}/100<br>
+        <b>🏠 Home Score:</b> ${homeS}/100 (${Math.round(dh)}% daytime)<br>
+        <b>💼 WFH:</b> ${wfh}%<br>
+        <b>⏰ Best Time:</b> ${bt || 'N/A'}<br>
+        <hr style="border-color:#333;margin:4px 0;">
+        <b>📋 LMI Est:</b> ${lmiEst}%<br>
+        <b>⚡ EH:</b> ${eh}%<br>
+        <b>🏠 Own/Rent:</b> ${op}% / ${rp}%<br>
+        <b>👥 Pop:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br>
+        <b>💰 Income:</b> $${mi.toLocaleString()}<br>
+    </div>`;
+}
+
+function renderCanvassFeatures(features, isBG, targetGroup) {
+    features.forEach(f => {
+        const p = f.properties;
+        const grade = p.cg || p.canvass_grade || 'D';
+        const homeS = p.hs || p.home_score || p.daytime_home || 0;
+        const popup = canvassPopup(p, isBG);
+        if (targetGroup === 'canvassZones') {
+            L.geoJSON(f, { style: { fillColor: gradeColors[grade], fillOpacity: gradeOpacity[grade], color: gradeColors[grade], weight: isBG ? 1 : 1.5, opacity: 0.6 } }).bindPopup(popup).addTo(fg.canvassZones);
+        } else if (targetGroup === 'homeScore') {
+            L.geoJSON(f, { style: { fillColor: homeColor(homeS), fillOpacity: 0.25, color: homeColor(homeS), weight: isBG ? 0.8 : 1, opacity: 0.5 } }).bindPopup(popup).addTo(fg.homeScore);
+        }
+    });
+}
+
+function featureInBounds(f, bounds) {
+    // Quick bounding box check using first coordinate
+    const coords = f.geometry.coordinates;
+    let c = coords;
+    while (Array.isArray(c[0]) && Array.isArray(c[0][0])) c = c[0];
+    if (!Array.isArray(c[0])) return true; // fallback: include
+    const pt = c[0];
+    // Use a generous buffer around viewport
+    const buf = 0.05;
+    return pt[1] >= bounds.getSouth() - buf && pt[1] <= bounds.getNorth() + buf &&
+           pt[0] >= bounds.getWest() - buf && pt[0] <= bounds.getEast() + buf;
+}
+
+function refreshCanvassLayers() {
+    if (!_canvassData.tracts) return;
+    const zoom = map.getZoom();
+    const bounds = map.getBounds();
+    const boundsKey = `${zoom}_${bounds.toBBoxString()}`;
+    if (_canvassRenderedBounds === boundsKey) return;
+    _canvassRenderedBounds = boundsKey;
+
+    const useBG = zoom >= CANVASS_DETAIL_ZOOM && _canvassData.blockgroups;
+    const canvassVisible = map.hasLayer(fg.canvassZones);
+    const homeVisible = map.hasLayer(fg.homeScore);
+    if (!canvassVisible && !homeVisible) return;
+
+    fg.canvassZones.clearLayers();
+    fg.homeScore.clearLayers();
+
+    if (useBG) {
+        const visible = _canvassData.blockgroups.features.filter(f => featureInBounds(f, bounds));
+        if (canvassVisible) renderCanvassFeatures(visible, true, 'canvassZones');
+        if (homeVisible) renderCanvassFeatures(visible, true, 'homeScore');
+    } else {
+        const feats = _canvassData.tracts.features;
+        if (canvassVisible) renderCanvassFeatures(feats, false, 'canvassZones');
+        if (homeVisible) renderCanvassFeatures(feats, false, 'homeScore');
+    }
+}
+
 async function loadCanvassTargeting() {
     const cfg = STATE_CONFIG[currentState];
     updateLoading('Loading canvass targeting data...', 85);
 
-    // Load tract-level auto_qualify GeoJSON (has canvass_grade, home_score, opp_score, daytime_home)
-    const [tractResp, targetResp] = await Promise.all([
+    // Load tract-level, block-group-level, and ZIP targeting in parallel
+    const [tractResp, bgResp, targetResp] = await Promise.all([
         fetch(`${cfg.dataPrefix}_auto_qualify.geojson`).catch(() => null),
+        fetch(`${cfg.dataPrefix}_blockgroups.geojson`).catch(() => null),
         fetch(`${cfg.dataPrefix}_targeting.json`).catch(() => null)
     ]);
 
-    let targetingData = {};
+    _canvassData = { tracts: null, blockgroups: null, targeting: null };
+    _canvassRenderedBounds = null;
+
     if (targetResp && targetResp.ok) {
-        try { targetingData = await targetResp.json(); } catch(e) {}
+        try { _canvassData.targeting = await targetResp.json(); } catch(e) {}
+    }
+    if (tractResp && tractResp.ok) {
+        try { _canvassData.tracts = await tractResp.json(); } catch(e) {}
+    }
+    if (bgResp && bgResp.ok) {
+        try { _canvassData.blockgroups = await bgResp.json(); } catch(e) {}
     }
 
-    if (tractResp && tractResp.ok) {
-        try {
-            const tractGeo = await tractResp.json();
-
-            // Canvass Grade colors
-            const gradeColors = { 'A': '#00cc66', 'B': '#ffcc00', 'C': '#ff8844', 'D': '#ff3333' };
-            const gradeOpacity = { 'A': 0.30, 'B': 0.22, 'C': 0.18, 'D': 0.12 };
-            const gradeLabels = { 'A': 'TOP PRIORITY', 'B': 'HIGH VALUE', 'C': 'MODERATE', 'D': 'LOW PRIORITY' };
-
-            // Home Score gradient: blue (low) → green (mid) → red (high home probability)
-            function homeColor(score) {
-                if (score >= 60) return '#00ff88';
-                if (score >= 45) return '#88ff44';
-                if (score >= 30) return '#ffcc00';
-                return '#ff6644';
-            }
-
-            tractGeo.features.forEach(f => {
-                const p = f.properties;
-                const grade = p.canvass_grade || 'D';
-                const homeS = p.home_score || p.daytime_home || 0;
-                const oppS = p.opp_score || 0;
-                const lmiEst = p.lmi_est || 0;
-                const pop = p.pop || 0;
-                const hh = p.hh || 0;
-                const county = p.county || '';
-                const wfhPct = p.wfh_pct || 0;
-                const daytimeHome = p.daytime_home || 0;
-                const bestTime = p.best_time || '';
-                const ehPct = p.eh_pct || 0;
-                const rentPct = p.rent_pct || 0;
-                const ownPct = p.own_pct || 0;
-                const medInc = p.med_inc || p.inc || 0;
-
-                const popupHtml = `
-                    <div style="min-width:260px;font-size:12px;">
-                    <b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b>
-                    <br><span style="color:#888;">Tract ${p.GEOID || ''} · ${county}</span>
-                    <hr style="border-color:#333;margin:4px 0;">
-                    <b>🎯 Opportunity Score:</b> ${oppS}/100<br>
-                    <b>🏠 Home Score:</b> ${homeS}/100 (${Math.round(daytimeHome)}% daytime home)<br>
-                    <b>💼 WFH Rate:</b> ${wfhPct}%<br>
-                    <b>⏰ Best Canvass Time:</b> ${bestTime}<br>
-                    <hr style="border-color:#333;margin:4px 0;">
-                    <b>📋 LMI Qualify Est:</b> ${lmiEst}%<br>
-                    <b>⚡ Electric Heat:</b> ${ehPct}%<br>
-                    <b>🏠 Own/Rent:</b> ${ownPct}% / ${rentPct}%<br>
-                    <b>👥 Population:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br>
-                    <b>💰 Median Income:</b> $${medInc.toLocaleString()}<br>
-                    </div>`;
-
-                // Canvass Zones layer (colored by grade)
-                L.geoJSON(f, {
-                    style: { fillColor: gradeColors[grade], fillOpacity: gradeOpacity[grade], color: gradeColors[grade], weight: 1.5, opacity: 0.6 }
-                }).bindPopup(popupHtml).addTo(fg.canvassZones);
-
-                // Home Score layer (colored by daytime home %)
-                L.geoJSON(f, {
-                    style: { fillColor: homeColor(homeS), fillOpacity: 0.25, color: homeColor(homeS), weight: 1, opacity: 0.5 }
-                }).bindPopup(popupHtml).addTo(fg.homeScore);
-            });
-        } catch(e) { console.warn('Canvass targeting load error:', e); }
+    // Initial render (tract-level since we start zoomed out)
+    if (_canvassData.tracts) {
+        renderCanvassFeatures(_canvassData.tracts.features, false, 'canvassZones');
+        renderCanvassFeatures(_canvassData.tracts.features, false, 'homeScore');
     }
 
     // Saturation layer — ZIP-level from targeting data
-    if (boundaryFeatures && Object.keys(targetingData).length > 0) {
-        Object.entries(targetingData).forEach(([zip, td]) => {
+    if (boundaryFeatures && _canvassData.targeting) {
+        Object.entries(_canvassData.targeting).forEach(([zip, td]) => {
             const feat = zipGeoFeatures[zip];
             if (!feat) return;
             const sat = td.sat || 0;
-            if (sat < 0.1) return; // Skip ZIPs with no enrollments
-
-            const satColor = sat >= 15 ? '#ff0000' : sat >= 8 ? '#ff6600' : sat >= 3 ? '#ffcc00' : '#00cc66';
-            const satOpacity = sat >= 15 ? 0.4 : sat >= 8 ? 0.3 : sat >= 3 ? 0.2 : 0.12;
-
-            L.geoJSON(feat, {
-                style: { fillColor: satColor, fillOpacity: satOpacity, color: satColor, weight: 1.5, opacity: 0.6 }
-            }).bindPopup(`
-                <b style="color:${satColor}">ZIP ${zip} — SATURATION</b>
+            if (sat < 0.1) return;
+            const sc = sat >= 15 ? '#ff0000' : sat >= 8 ? '#ff6600' : sat >= 3 ? '#ffcc00' : '#00cc66';
+            const so = sat >= 15 ? 0.4 : sat >= 8 ? 0.3 : sat >= 3 ? 0.2 : 0.12;
+            L.geoJSON(feat, { style: { fillColor: sc, fillOpacity: so, color: sc, weight: 1.5, opacity: 0.6 } }).bindPopup(`
+                <b style="color:${sc}">ZIP ${zip} — SATURATION</b>
                 <br>Enrolled: <b>${td.es}</b> orders (${sat}% of HH)
                 <br>Arcadia: ${td.eat} total / ${td.ep} payable
                 <br>${sat >= 10 ? '🔴 SATURATED — skip or revisit later' : sat >= 5 ? '🟡 MODERATE — declining returns' : '🟢 FRESH — high potential'}
@@ -1052,6 +1097,9 @@ async function loadCanvassTargeting() {
             `).addTo(fg.saturationMap);
         });
     }
+
+    // Listen for zoom/pan to swap between tract and block-group detail
+    map.off('moveend.canvass').on('moveend.canvass', refreshCanvassLayers);
 }
 
 function loadUtilityTerritories() {
