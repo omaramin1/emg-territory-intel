@@ -618,35 +618,35 @@
             // NYSEG — Southern Tier, Finger Lakes, parts of Capital Region (Avangrid)
             const nysegCoords = [[42.00,-79.76],[42.00,-76.80],[42.20,-76.20],[42.50,-75.80],[42.80,-75.20],[43.00,-75.00],[42.80,-74.80],[42.50,-74.50],[42.20,-74.80],[42.00,-75.00],[41.80,-75.30],[41.99,-76.50],[42.00,-79.76]];
             L.polygon(nysegCoords, { color: '#00cc88', weight: 3, opacity: 0.6, fillColor: '#00cc88', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#00cc88">NYSEG</b><br>Southern Tier / Finger Lakes / Capital Region<br>Parent: Avangrid (Iberdrola)')
+            .bindPopup('<b style="color:#00cc88">NYSEG</b><br>Southern Tier / Finger Lakes / Capital Region<br>Parent: Avangrid (Iberdrola) · ~900K customers<br><a href="https://outagemap.nyseg.com/" target="_blank" style="color:#00cc88;">🔴 Live Outage Map</a> · <a href="https://www.nyseg.com/outages" target="_blank" style="color:#00cc88;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
             .addTo(fg.nysegArea);
             L.marker([42.20,-76.50], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#00cc88;font-size:15px;">NYSEG</span>', iconSize:[80,20], iconAnchor:[40,10] }) }).addTo(fg.nysegArea);
 
             // National Grid — Upstate NY: Syracuse, Albany, Capital District
             const ngridCoords = [[44.00,-76.20],[44.00,-73.50],[43.50,-73.50],[43.00,-73.80],[42.60,-73.80],[42.50,-74.00],[42.50,-74.50],[42.80,-75.00],[43.00,-75.50],[43.50,-76.20],[44.00,-76.20]];
             L.polygon(ngridCoords, { color: '#4a90d9', weight: 3, opacity: 0.6, fillColor: '#4a90d9', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#4a90d9">NATIONAL GRID</b><br>Syracuse / Albany / Capital District / Utica<br>Parent: National Grid plc')
+            .bindPopup('<b style="color:#4a90d9">NATIONAL GRID</b><br>Syracuse / Albany / Capital District / Utica<br>Parent: National Grid plc · ~1.7M customers<br><a href="https://outagemap.nationalgridus.com/" target="_blank" style="color:#4a90d9;">🔴 Live Outage Map</a> · <a href="https://www.nationalgridus.com/Outages" target="_blank" style="color:#4a90d9;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
             .addTo(fg.ngridArea);
             L.marker([43.20,-75.00], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#4a90d9;font-size:15px;">NATIONAL GRID</span>', iconSize:[140,20], iconAnchor:[70,10] }) }).addTo(fg.ngridArea);
 
             // Central Hudson — Mid-Hudson Valley (Fortis)
             const chudsonCoords = [[42.10,-74.40],[42.10,-73.50],[41.60,-73.50],[41.30,-73.90],[41.30,-74.30],[41.50,-74.50],[41.80,-74.60],[42.10,-74.40]];
             L.polygon(chudsonCoords, { color: '#ff6644', weight: 3, opacity: 0.6, fillColor: '#ff6644', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#ff6644">CENTRAL HUDSON</b><br>Mid-Hudson Valley / Poughkeepsie / Kingston / Newburgh<br>Parent: Fortis Inc.')
+            .bindPopup('<b style="color:#ff6644">CENTRAL HUDSON</b><br>Mid-Hudson Valley / Poughkeepsie / Kingston / Newburgh<br>Parent: Fortis Inc. · ~300K customers<br><a href="https://www.cenhud.com/en/outages/outage-map/" target="_blank" style="color:#ff6644;">🔴 Live Outage Map</a> · <a href="https://www.cenhud.com/en/outages/report-an-outage/" target="_blank" style="color:#ff6644;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible (CDG)</span>')
             .addTo(fg.chudsonArea);
             L.marker([41.75,-74.00], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ff6644;font-size:14px;">CENTRAL HUDSON</span>', iconSize:[130,20], iconAnchor:[65,10] }) }).addTo(fg.chudsonArea);
 
             // ORU — Orange & Rockland (Con Ed subsidiary)
             const oruCoords = [[41.50,-74.50],[41.50,-73.90],[41.10,-73.90],[41.00,-74.10],[41.00,-74.40],[41.20,-74.60],[41.50,-74.50]];
             L.polygon(oruCoords, { color: '#aa66ff', weight: 3, opacity: 0.6, fillColor: '#aa66ff', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#aa66ff">ORU (Orange & Rockland)</b><br>Orange / Rockland / Sullivan Counties<br>Parent: Consolidated Edison')
+            .bindPopup('<b style="color:#aa66ff">ORU (Orange & Rockland)</b><br>Orange / Rockland / Sullivan Counties<br>Parent: Consolidated Edison · ~300K customers<br><a href="https://www.oru.com/en/outages/storm-center" target="_blank" style="color:#aa66ff;">🔴 Live Outage Map</a> · <a href="https://www.oru.com/en/outages" target="_blank" style="color:#aa66ff;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible (CDG)</span>')
             .addTo(fg.oruArea);
             L.marker([41.25,-74.25], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#aa66ff;font-size:14px;">ORU</span>', iconSize:[60,20], iconAnchor:[30,10] }) }).addTo(fg.oruArea);
 
             // RGE — Rochester Gas & Electric (Avangrid)
             const rgeCoords = [[43.40,-77.90],[43.40,-77.20],[43.00,-77.20],[42.90,-77.40],[42.90,-77.90],[43.10,-77.90],[43.40,-77.90]];
             L.polygon(rgeCoords, { color: '#ffcc00', weight: 3, opacity: 0.6, fillColor: '#ffcc00', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#ffcc00">RGE</b><br>Rochester / Monroe County area<br>Parent: Avangrid (Iberdrola)')
+            .bindPopup('<b style="color:#ffcc00">RGE</b><br>Rochester / Monroe County area<br>Parent: Avangrid (Iberdrola) · ~370K customers<br><a href="https://outagemap.rge.com/" target="_blank" style="color:#ffcc00;">🔴 Live Outage Map</a> · <a href="https://www.rge.com/outages" target="_blank" style="color:#ffcc00;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
             .addTo(fg.rgeArea);
             L.marker([43.15,-77.55], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ffcc00;font-size:15px;">RGE</span>', iconSize:[60,20], iconAnchor:[30,10] }) }).addTo(fg.rgeArea);
         }

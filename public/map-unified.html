@@ -917,6 +917,24 @@ function pointInGeoJSONPoly(lat, lon, ring) {
 // ═══════════════════════════════════════════════════
 // ██  UTILITY TERRITORIES                          ██
 // ═══════════════════════════════════════════════════
+function getUtilityOutageLinks(name, color) {
+    const links = {
+        'Dominion Virginia': { outage: 'https://outagemap.dominionenergy.com/external/default.html', report: 'https://www.dominionenergy.com/virginia/report-outage', customers: '~2.7M', solar: 'Community Solar: SCC-approved shared solar' },
+        'AEP Appalachian': { outage: 'https://outagemap.appalachianpower.com/external/default.html', report: 'https://www.appalachianpower.com/outages/report-an-outage', customers: '~530K', solar: 'Community Solar: Limited availability' },
+        'Pepco': { outage: 'https://outagemap.pepco.com/', report: 'https://www.pepco.com/Outages/CheckOutageStatus', customers: '~600K', solar: 'Community Solar: MD PSC eligible' },
+        'Potomac Edison': { outage: 'https://www.firstenergycorp.com/outages_help/current-outages.html', report: 'https://www.firstenergycorp.com/outages_help/report-an-outage.html', customers: '~275K', solar: 'Community Solar: MD PSC eligible' },
+        'BGE': { outage: 'https://outagemap.bge.com/', report: 'https://www.bge.com/outages/checkmyoutage', customers: '~1.3M', solar: 'Community Solar: MD PSC eligible' },
+        'Central Hudson': { outage: 'https://www.cenhud.com/en/outages/outage-map/', report: 'https://www.cenhud.com/en/outages/report-an-outage/', customers: '~300K', solar: 'Community Solar: VDER eligible (CDG)' },
+        'NYSEG': { outage: 'https://outagemap.nyseg.com/', report: 'https://www.nyseg.com/outages', customers: '~900K', solar: 'Community Solar: VDER eligible' },
+        'RGE': { outage: 'https://outagemap.rge.com/', report: 'https://www.rge.com/outages', customers: '~370K', solar: 'Community Solar: VDER eligible' },
+        'National Grid': { outage: 'https://outagemap.nationalgridus.com/', report: 'https://www.nationalgridus.com/Report-Outage', customers: '~1.7M', solar: 'Community Solar: VDER eligible (CDG)' },
+        'ORU': { outage: 'https://www.oru.com/en/outages/storm-center', report: 'https://www.oru.com/en/outages', customers: '~300K', solar: 'Community Solar: VDER eligible (CDG)' }
+    };
+    const l = links[name];
+    if (!l) return '';
+    return `· ${l.customers} customers<br><a href="${l.outage}" target="_blank" style="color:${color};">🔴 Live Outage Map</a> · <a href="${l.report}" target="_blank" style="color:${color};">Report Outage</a><br><span style="font-size:10px;color:#888;">${l.solar}</span>`;
+}
+
 function loadUtilityTerritories() {
     const cfg = STATE_CONFIG[currentState];
     updateLoading('Drawing utility territories...', 80);
@@ -927,7 +945,7 @@ function loadUtilityTerritories() {
             color: u.color, weight: 3, opacity: 0.6,
             fillColor: u.color, fillOpacity: 0.04, dashArray: '10, 6'
         })
-        .bindPopup(`<b style="color:${u.color}">${name}</b><br>${u.desc}<br>Parent: ${u.parent}`)
+        .bindPopup(`<b style="color:${u.color}">${name}</b><br>${u.desc}<br>Parent: ${u.parent}<br>${getUtilityOutageLinks(name, u.color)}`)
         .addTo(fg[groupId]);
 
         L.marker(u.label, {
