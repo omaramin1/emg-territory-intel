@@ -212,6 +212,7 @@ const STATE_CONFIG = {
             { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
             { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
+            { id: 'canvassTurfs', label: '📋 Canvass Turfs (8hr Shift)', default: false },
             '_divider',
             { id: 'util_Central Hudson', label: '⚡ Central Hudson', default: false },
             { id: 'util_NYSEG', label: '⚡ NYSEG', default: false },
@@ -253,6 +254,7 @@ const STATE_CONFIG = {
             { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
             { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
+            { id: 'canvassTurfs', label: '📋 Canvass Turfs (8hr Shift)', default: false },
             '_divider',
             { id: 'util_Pepco', label: '⚡ Pepco', default: false },
             { id: 'util_Potomac Edison', label: '⚡ Potomac Edison', default: false }
@@ -341,6 +343,7 @@ const STATE_CONFIG = {
             { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
             { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
+            { id: 'canvassTurfs', label: '📋 Canvass Turfs (8hr Shift)', default: false },
             '_divider',
             { id: 'util_Dominion Virginia', label: '⚡ Dominion Virginia', default: false }
         ],
@@ -513,7 +516,7 @@ async function switchState(stateCode) {
     priorityData = {};
 
     // Initialize feature groups
-    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight','canvassZones','homeScore','saturationMap'];
+    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight','canvassZones','homeScore','saturationMap','canvassTurfs'];
     if (cfg.hasExtras) { groupIds.push('ordersLayer','lmiOutlines','housingPins','allElectricPins'); }
     if (cfg.lmiData) groupIds.push('lmiOutlines');
     if (cfg.housingPins) groupIds.push('housingPins');
@@ -1052,13 +1055,14 @@ async function loadCanvassTargeting() {
     updateLoading('Loading canvass targeting data...', 85);
 
     // Load tract-level, block-group-level, and ZIP targeting in parallel
-    const [tractResp, bgResp, targetResp] = await Promise.all([
+    const [tractResp, bgResp, targetResp, turfResp] = await Promise.all([
         fetch(`${cfg.dataPrefix}_auto_qualify.geojson`).catch(() => null),
         fetch(`${cfg.dataPrefix}_blockgroups.geojson`).catch(() => null),
-        fetch(`${cfg.dataPrefix}_targeting.json`).catch(() => null)
+        fetch(`${cfg.dataPrefix}_targeting.json`).catch(() => null),
+        fetch(`${cfg.dataPrefix}_turfs.geojson`).catch(() => null)
     ]);
 
-    _canvassData = { tracts: null, blockgroups: null, targeting: null };
+    _canvassData = { tracts: null, blockgroups: null, targeting: null, turfs: null };
     _canvassRenderedBounds = null;
 
     if (targetResp && targetResp.ok) {
@@ -1069,6 +1073,9 @@ async function loadCanvassTargeting() {
     }
     if (bgResp && bgResp.ok) {
         try { _canvassData.blockgroups = await bgResp.json(); } catch(e) {}
+    }
+    if (turfResp && turfResp.ok) {
+        try { _canvassData.turfs = await turfResp.json(); } catch(e) {}
     }
 
     // Initial render (tract-level since we start zoomed out)
@@ -1090,8 +1097,50 @@ async function loadCanvassTargeting() {
         });
     }
 
-    // Listen for zoom/pan to swap between tract and block-group detail
-    map.off('moveend.canvass').on('moveend.canvass', refreshCanvassLayers);
+    // Canvass Turfs layer — 8hr shift sized zones
+    if (_canvassData.turfs) {
+        renderTurfs();
+    }
+
+    // Listen for zoom/pan to swap between tract and block-group detail + turfs
+    map.off('moveend.canvass').on('moveend.canvass', function() {
+        refreshCanvassLayers();
+        if (_canvassData.turfs && map.hasLayer(fg.canvassTurfs)) renderTurfs();
+    });
+}
+
+function renderTurfs() {
+    if (!_canvassData.turfs) return;
+    fg.canvassTurfs.clearLayers();
+    const bounds = map.getBounds();
+    const turfColors = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+
+    _canvassData.turfs.features.forEach(f => {
+        const p = f.properties;
+        // Viewport filter
+        if (p.clat < bounds.getSouth() - 0.1 || p.clat > bounds.getNorth() + 0.1 ||
+            p.clon < bounds.getWest() - 0.1 || p.clon > bounds.getEast() + 0.1) return;
+
+        const grade = p.grade || 'C';
+        const col = turfColors[grade] || '#888';
+
+        L.geoJSON(f, {
+            interactive: false,
+            style: { fillColor: col, fillOpacity: 0.20, color: col, weight: 2.5, opacity: 0.8, dashArray: '6, 3' }
+        }).addTo(fg.canvassTurfs);
+
+        // Turf label at center
+        L.marker([p.clat, p.clon], {
+            interactive: false,
+            icon: L.divIcon({
+                className: '',
+                html: `<div style="background:rgba(0,0,0,0.85);color:${col};font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid ${col}44;white-space:nowrap;text-align:center;">
+                    T${p.id} · ${p.doors} doors · Grade ${grade}
+                </div>`,
+                iconSize: [140, 24], iconAnchor: [70, 12]
+            })
+        }).addTo(fg.canvassTurfs);
+    });
 }
 
 function loadUtilityTerritories() {
@@ -1495,6 +1544,14 @@ function findBlockGroupAtPoint(lat, lon) {
     return null;
 }
 
+function findTurfAtPoint(lat, lon) {
+    if (!_canvassData.turfs) return null;
+    for (const f of _canvassData.turfs.features) {
+        if (geoContainsPoint(f.geometry, lat, lon)) return f.properties;
+    }
+    return null;
+}
+
 function setupUniversalClick() {
     map.on('click', function(e) {
         const { lat, lng } = e.latlng;
@@ -1510,9 +1567,10 @@ function setupUniversalClick() {
         const lmi = cfg.lmiData ? cfg.lmiData[zip] : null;
         const targeting = _canvassData.targeting ? _canvassData.targeting[zip] : null;
 
-        // Find tract + block group at click point
+        // Find tract + block group + turf at click point
         const tract = findTractAtPoint(lat, lng);
         const bg = findBlockGroupAtPoint(lat, lng);
+        const turf = findTurfAtPoint(lat, lng);
         const detail = bg || tract; // prefer block group
         const detailLevel = bg ? 'Block Group' : (tract ? 'Tract' : null);
 
@@ -1608,6 +1666,24 @@ function setupUniversalClick() {
             h += `<div style="border-top:1px solid #333;padding-top:6px;">`;
             if (dac) h += `<div><span style="color:#ff66aa;font-weight:700;">DAC Zone</span> — ${dac.pct}% coverage</div>`;
             if (lmi) h += `<div><span style="color:${lmi.util === 'Pepco' ? '#00aaff' : '#ff8800'};font-weight:700;">${lmi.util}</span> — LMI: ${lmi.lmi}% · ${lmi.type}</div>`;
+            h += `</div>`;
+        }
+
+        // Canvass Turf assignment
+        if (turf) {
+            const tc = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+            const tg = turf.grade || 'C';
+            h += `<div style="border-top:1px solid #333;padding-top:6px;margin-top:4px;">`;
+            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">📋 Canvass Turf #${turf.id} <span style="color:${tc[tg]};font-weight:700;">(Grade ${tg})</span></div>`;
+            h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">`;
+            h += `<div><span style="color:#888;">Est. Doors:</span> <b style="color:${tc[tg]}">${turf.doors}</b></div>`;
+            h += `<div><span style="color:#888;">Households:</span> ${turf.hh.toLocaleString()}</div>`;
+            h += `<div><span style="color:#888;">Block Groups:</span> ${turf.bgs}</div>`;
+            h += `<div><span style="color:#888;">Area:</span> ${turf.area} sq mi</div>`;
+            h += `<div><span style="color:#888;">Opp Score:</span> ${turf.opp}/100</div>`;
+            h += `<div><span style="color:#888;">Home Score:</span> ${turf.hs}/100</div>`;
+            h += `</div>`;
+            h += `<div style="margin-top:4px;padding:4px 8px;background:rgba(0,255,136,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ${turf.county}</div>`;
             h += `</div>`;
         }
 

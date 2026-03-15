@@ -343,6 +343,7 @@
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc66;"></div><span class="toggle-label">🗺 Canvass Targeting (Block Group)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('homeScore',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#88ff44;"></div><span class="toggle-label">🏠 Home Score (Daytime)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('saturationMap',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6600;"></div><span class="toggle-label">📊 Saturation (Enrolled)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassTurfs',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📋 Canvass Turfs (8hr Shift)</span></label>
             </div>
 
             <div class="toggle-section">
@@ -514,7 +515,8 @@
             lmiIncomeOnly: L.featureGroup(),
             canvassZones: L.featureGroup(),
             homeScore: L.featureGroup(),
-            saturationMap: L.featureGroup()
+            saturationMap: L.featureGroup(),
+            canvassTurfs: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -546,7 +548,7 @@
             kwhHeat: fg.kwhHeat,
             nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
             oru: fg.oruArea, rge: fg.rgeArea,
-            canvassZones: fg.canvassZones, homeScore: fg.homeScore, saturationMap: fg.saturationMap
+            canvassZones: fg.canvassZones, homeScore: fg.homeScore, saturationMap: fg.saturationMap, canvassTurfs: fg.canvassTurfs
         };
 
         function toggleLayer(name, on) {
@@ -1611,18 +1613,33 @@
                 if (hv) renderCanvassFeatures(_canvassData.tracts.features, false, 'homeScore');
             }
         }
+        function renderTurfs() {
+            if (!_canvassData.turfs) return;
+            fg.canvassTurfs.clearLayers();
+            const bounds = map.getBounds();
+            const tc = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+            _canvassData.turfs.features.forEach(f => {
+                const p = f.properties;
+                if (p.clat < bounds.getSouth()-0.1 || p.clat > bounds.getNorth()+0.1 || p.clon < bounds.getWest()-0.1 || p.clon > bounds.getEast()+0.1) return;
+                const col = tc[p.grade] || '#888';
+                L.geoJSON(f, { interactive: false, style: { fillColor: col, fillOpacity: 0.20, color: col, weight: 2.5, opacity: 0.8, dashArray: '6, 3' } }).addTo(fg.canvassTurfs);
+                L.marker([p.clat, p.clon], { interactive: false, icon: L.divIcon({ className: '', html: '<div style="background:rgba(0,0,0,0.85);color:'+col+';font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid '+col+'44;white-space:nowrap;text-align:center;">T'+p.id+' · '+p.doors+' doors · Grade '+p.grade+'</div>', iconSize: [140, 24], iconAnchor: [70, 12] }) }).addTo(fg.canvassTurfs);
+            });
+        }
         async function loadCanvassTargeting() {
             updateLoading('Loading canvass targeting...', 88);
-            const [tractResp, bgResp, targetResp] = await Promise.all([
+            const [tractResp, bgResp, targetResp, turfResp] = await Promise.all([
                 fetch('ny_auto_qualify.geojson'+CB).catch(() => null),
                 fetch('ny_blockgroups.geojson'+CB).catch(() => null),
-                fetch('ny_targeting.json'+CB).catch(() => null)
+                fetch('ny_targeting.json'+CB).catch(() => null),
+                fetch('ny_turfs.geojson'+CB).catch(() => null)
             ]);
-            _canvassData = { tracts: null, blockgroups: null, targeting: null };
+            _canvassData = { tracts: null, blockgroups: null, targeting: null, turfs: null };
             _canvassRenderedBounds = null;
             if (targetResp && targetResp.ok) { try { _canvassData.targeting = await targetResp.json(); } catch(e) {} }
             if (tractResp && tractResp.ok) { try { _canvassData.tracts = await tractResp.json(); } catch(e) {} }
             if (bgResp && bgResp.ok) { try { _canvassData.blockgroups = await bgResp.json(); } catch(e) {} }
+            if (turfResp && turfResp.ok) { try { _canvassData.turfs = await turfResp.json(); } catch(e) {} }
             if (_canvassData.tracts) {
                 renderCanvassFeatures(_canvassData.tracts.features, false, 'canvassZones');
                 renderCanvassFeatures(_canvassData.tracts.features, false, 'homeScore');
@@ -1636,7 +1653,8 @@
                     L.geoJSON(feat, { interactive: false, style: { fillColor: sc, fillOpacity: so, color: sc, weight: 1.5, opacity: 0.6 } }).addTo(fg.saturationMap);
                 });
             }
-            map.off('moveend.canvass').on('moveend.canvass', refreshCanvassLayers);
+            if (_canvassData.turfs) renderTurfs();
+            map.off('moveend.canvass').on('moveend.canvass', function() { refreshCanvassLayers(); if (_canvassData.turfs && map.hasLayer(fg.canvassTurfs)) renderTurfs(); });
         }
 
         // ── Init ──
@@ -1693,6 +1711,11 @@
             for (const f of _canvassData.blockgroups.features) { if (geoContainsPoint(f.geometry, lat, lon)) return f.properties; }
             return null;
         }
+        function findTurfAtPoint(lat, lon) {
+            if (!_canvassData.turfs) return null;
+            for (const f of _canvassData.turfs.features) { if (geoContainsPoint(f.geometry, lat, lon)) return f.properties; }
+            return null;
+        }
         function setupUniversalClick() {
             map.on('click', function(e) {
                 const { lat, lng } = e.latlng;
@@ -1703,6 +1726,7 @@
                 const targeting = _canvassData.targeting ? _canvassData.targeting[zip] : null;
                 const tract = findTractAtPoint(lat, lng);
                 const bg = findBlockGroupAtPoint(lat, lng);
+                const turf = findTurfAtPoint(lat, lng);
                 const detail = bg || tract;
                 const detailLevel = bg ? 'Block Group' : (tract ? 'Tract' : null);
                 const util = getUtilityForPoint(e.latlng);
@@ -1764,6 +1788,22 @@
                     h += '<div><span style="color:#888;">HH Size:</span> ' + demo.hhs + '</div>';
                     if (demo.ehp !== undefined) h += '<div><span style="color:#888;">EH Rate:</span> <span style="color:' + (demo.ehp >= 40 ? '#ff3333' : demo.ehp >= 20 ? '#ffaa44' : '#aaa') + ';">' + demo.ehp + '%</span></div>';
                     h += '</div></div>';
+                }
+                if (turf) {
+                    var tc2 = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+                    var tg = turf.grade || 'C';
+                    h += '<div style="border-top:1px solid #333;padding-top:6px;margin-top:4px;">';
+                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">📋 Canvass Turf #' + turf.id + ' <span style="color:' + tc2[tg] + ';font-weight:700;">(Grade ' + tg + ')</span></div>';
+                    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">';
+                    h += '<div><span style="color:#888;">Est. Doors:</span> <b style="color:' + tc2[tg] + '">' + turf.doors + '</b></div>';
+                    h += '<div><span style="color:#888;">Households:</span> ' + turf.hh.toLocaleString() + '</div>';
+                    h += '<div><span style="color:#888;">Block Groups:</span> ' + turf.bgs + '</div>';
+                    h += '<div><span style="color:#888;">Area:</span> ' + turf.area + ' sq mi</div>';
+                    h += '<div><span style="color:#888;">Opp Score:</span> ' + turf.opp + '/100</div>';
+                    h += '<div><span style="color:#888;">Home Score:</span> ' + turf.hs + '/100</div>';
+                    h += '</div>';
+                    h += '<div style="margin-top:4px;padding:4px 8px;background:rgba(0,255,136,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ' + turf.county + '</div>';
+                    h += '</div>';
                 }
                 h += '</div>';
                 L.popup({ maxWidth: 400 }).setLatLng(e.latlng).setContent(h).openOn(map);
