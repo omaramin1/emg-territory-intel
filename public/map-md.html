@@ -554,7 +554,8 @@
                 if(r.utility)h+=' <span style="color:#10b981;font-size:9px;">'+r.utility+'</span>';
                 h += '</div><div style="margin-top:1px;"><span style="padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;">'+tag+'</span></div>';
                 h += '<div style="font-size:10px;color:#888;">Old:'+r.old_deals+' New:'+r.new_deals+' Pay:'+r.payable+'</div></div>';
-                h += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\''+r.zip_code+' '+(r.city||'')+' '+r.state+' '+nav+'\');this.textContent=\'✓\';setTimeout(()=>this.textContent=\'📤\',1500);">📤</button>';
+                const shareUrl = window.location.href.split('?')[0] + '?zip=' + r.zip_code;
+                h += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\''+shareUrl+'\');this.textContent=\'✓\';setTimeout(()=>this.textContent=\'📤\',1500);">📤</button>';
                 h += '</div></div>';
             });
 
