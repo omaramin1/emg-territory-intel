@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMG Targeting Map - New York Territory</title>
+    <title>Territory Intel — New York</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-    <style>
+        <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a12; color: #e0e0e0; overflow: hidden; }
         #map { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; }
 
-        .leaflet-popup-content-wrapper { background: rgba(10,10,18,0.96) !important; color: #e0e0e0; border-radius: 8px; border: 1px solid rgba(255,136,0,0.4) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+        .leaflet-popup-content-wrapper { background: rgba(10,10,18,0.96) !important; color: #e0e0e0; border-radius: 8px; border: 1px solid rgba(59,130,246,0.4) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
         .leaflet-popup-tip { background: rgba(10,10,18,0.96); }
-        .leaflet-popup-content b { color: #ff8800; }
+        .leaflet-popup-content b { color: #3b82f6; }
         .leaflet-popup-content { font-size: 13px; line-height: 1.6; }
         .leaflet-control-layers { display: none !important; }
 
-        .marker-cluster-small { background-color: rgba(255,136,0,0.4); }
-        .marker-cluster-small div { background-color: rgba(255,136,0,0.7); color: #fff; }
+        .marker-cluster-small { background-color: rgba(59,130,246,0.4); }
+        .marker-cluster-small div { background-color: rgba(59,130,246,0.7); color: #fff; }
         .marker-cluster-medium { background-color: rgba(255,80,0,0.4); }
         .marker-cluster-medium div { background-color: rgba(255,80,0,0.7); color: #fff; }
         .marker-cluster-large { background-color: rgba(220,20,0,0.4); }
@@ -29,8 +28,8 @@
 
         .zone-label { background: none !important; border: none !important; box-shadow: none !important; color: #fff; font-size: 11px; font-weight: 700; text-shadow: 0 0 4px #000, 0 0 8px #000, 1px 1px 2px #000; white-space: nowrap; }
 
-        .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 12px 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); }
-        .header h1 { font-size: 16px; color: #ff8800; font-weight: 600; }
+        .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 12px 16px; border-radius: 8px; border: 1px solid #3b82f6; backdrop-filter: blur(10px); }
+        .header h1 { font-size: 16px; color: #3b82f6; font-weight: 600; }
         .header .sub { font-size: 11px; color: #aaa; margin-top: 3px; }
         .utility-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 10px; font-weight: 600; margin: 1px; }
         .badge-nyseg { background: #00cc88; color: #000; }
@@ -44,8 +43,8 @@
         .panel-minimized .legend-body { display: none !important; }
         .panel-minimized { width: auto !important; min-width: 0 !important; }
 
-        .toggle-panel { position: absolute; top: 10px; right: 10px; z-index: 1200; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 30px); overflow-y: auto; transition: width 0.2s; }
-        .toggle-panel h3 { color: #ff8800; font-size: 13px; margin-bottom: 10px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .toggle-panel { position: absolute; top: 10px; right: 10px; z-index: 1200; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #3b82f6; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 30px); overflow-y: auto; transition: width 0.2s; }
+        .toggle-panel h3 { color: #3b82f6; font-size: 13px; margin-bottom: 10px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
         .toggle-panel h3 .arrow { transition: transform 0.2s; font-size: 10px; }
         .toggle-panel.panel-minimized h3 .arrow { transform: rotate(-90deg); }
         .toggle-panel.panel-minimized h3 { margin-bottom: 0; }
@@ -53,28 +52,28 @@
         .toggle-section { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .toggle-section-title { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
         .toggle-row { display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; padding: 3px 4px; border-radius: 4px; transition: background 0.15s; }
-        .toggle-row:hover { background: rgba(255,136,0,0.1); }
+        .toggle-row:hover { background: rgba(59,130,246,0.1); }
         .toggle-row input[type="checkbox"] { display: none; }
         .toggle-switch { width: 32px; height: 18px; background: #333; border-radius: 9px; position: relative; margin-right: 8px; flex-shrink: 0; transition: background 0.2s; }
         .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #666; transition: all 0.2s; }
-        .toggle-row input:checked + .toggle-switch { background: #ff8800; }
+        .toggle-row input:checked + .toggle-switch { background: #3b82f6; }
         .toggle-row input:checked + .toggle-switch::after { left: 16px; background: #fff; }
         .toggle-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
         .toggle-dot.square { border-radius: 2px; }
         .toggle-label { font-size: 12px; color: #ccc; }
 
         .basemap-row { display: flex; align-items: center; margin-bottom: 4px; cursor: pointer; padding: 2px 4px; }
-        .basemap-row input { margin-right: 6px; accent-color: #ff8800; }
+        .basemap-row input { margin-right: 6px; accent-color: #3b82f6; }
         .basemap-label { font-size: 12px; color: #ccc; }
 
         .search-panel { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1100; display: flex; gap: 4px; }
         .search-panel input { background: rgba(10,10,18,0.95); border: 1px solid #555; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
-        .search-panel input:focus { border-color: #ff8800; }
-        .search-btn { background: #ff8800; color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
+        .search-panel input:focus { border-color: #3b82f6; }
+        .search-btn { background: #3b82f6; color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
 
-        .info-panel { position: absolute; bottom: 20px; left: 20px; z-index: 1100; background: rgba(10,10,18,0.97); padding: 16px; border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); max-width: 340px; max-height: 450px; overflow-y: auto; display: none; }
+        .info-panel { position: absolute; bottom: 20px; left: 20px; z-index: 1100; background: rgba(10,10,18,0.97); padding: 16px; border-radius: 8px; border: 1px solid #3b82f6; backdrop-filter: blur(10px); max-width: 340px; max-height: 450px; overflow-y: auto; display: none; }
         .info-panel.active { display: block; }
-        .info-panel h3 { color: #ff8800; font-size: 15px; margin-bottom: 10px; padding-right: 24px; }
+        .info-panel h3 { color: #3b82f6; font-size: 15px; margin-bottom: 10px; padding-right: 24px; }
         .close-button { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer; }
         .info-section { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
         .info-section-title { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
@@ -84,48 +83,15 @@
 
         .status-banner { position: absolute; bottom: 10px; right: 10px; z-index: 1100; background: rgba(10,10,18,0.9); padding: 6px 12px; border-radius: 6px; font-size: 11px; color: #888; border: 1px solid #333; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* ── PRIORITY DROP PINS ── */
-        .priority-pin { width: 28px; height: 36px; position: relative; }
-        .priority-pin .pin-head { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-        .priority-pin .pin-num { transform: rotate(45deg); font-weight: 700; font-size: 11px; color: #000; }
-        .priority-pin .pin-tail { width: 2px; height: 10px; background: #fff; position: absolute; bottom: 0; left: 13px; }
-
-        /* ── PRIORITY RANKING PANEL ── */
-        /* ── TARGET SUMMARY PANEL ── */
-        .target-summary { position: absolute; right: 10px; bottom: 60px; z-index: 1100; background: rgba(10, 10, 18, 0.97); padding: 12px 14px; border-radius: 8px; border: 1px solid #00bcd4; backdrop-filter: blur(10px); width: 280px; max-height: 380px; overflow-y: auto; }
-        .target-summary h4 { color: #00bcd4; font-size: 12px; cursor: pointer; user-select: none; margin: 0; display: flex; justify-content: space-between; align-items: center; }
-        .target-summary h4 .arrow { transition: transform 0.2s; font-size: 10px; }
-        .target-summary.panel-minimized h4 .arrow { transform: rotate(-90deg); }
-        .target-summary .panel-body { margin-top: 8px; }
-        .util-group { margin-bottom: 8px; }
-        .util-header { color: #00bcd4; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 6px; background: rgba(0,188,212,0.1); border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; }
-        .util-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; padding: 2px 6px; font-size: 10px; color: #bbb; }
-        .util-stats b { color: #fff; }
-        .demo-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 4px 6px; }
-        .demo-bar div { transition: width 0.3s; }
-
-        .priority-panel { position: absolute; top: 10px; left: 10px; z-index: 1150; background: rgba(10,10,18,0.97); border-radius: 8px; border: 1px solid #ff8800; backdrop-filter: blur(10px); width: 260px; max-height: calc(100vh - 100px); overflow-y: auto; margin-top: 75px; transition: width 0.2s; }
-        .priority-panel h4 { color: #ff8800; font-size: 13px; padding: 10px 12px; margin: 0; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(10,10,18,0.97); border-bottom: 1px solid rgba(255,136,0,0.3); z-index: 2; }
-        .priority-panel h4 .arrow { font-size: 10px; transition: transform 0.2s; }
-        .priority-panel.panel-minimized h4 .arrow { transform: rotate(-90deg); }
-        .priority-tier-header { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 12px; background: rgba(255,136,0,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .priority-item { display: flex; align-items: center; padding: 6px 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
-        .priority-item:hover { background: rgba(255,136,0,0.1); }
-        .priority-rank { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; color: #000; flex-shrink: 0; margin-right: 8px; }
-        .priority-info { flex: 1; min-width: 0; }
-        .priority-zip { font-size: 12px; font-weight: 600; color: #fff; }
-        .priority-city { font-size: 10px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .priority-score { font-size: 13px; font-weight: 700; margin-left: 6px; }
-
         .util-tabs { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; padding: 0 10px; }
         .util-tab { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid #444; color: #aaa; background: none; transition: all 0.2s; white-space: nowrap; }
-        .util-tab:hover { border-color: #ff8800; color: #fff; }
-        .util-tab.active { background: #ff8800; color: #0a0a12; border-color: #ff8800; }
+        .util-tab:hover { border-color: #3b82f6; color: #fff; }
+        .util-tab.active { background: #3b82f6; color: #0a0a12; border-color: #3b82f6; }
         .util-tab .tab-count { font-weight: 400; opacity: 0.7; margin-left: 2px; }
 
         /* ── MAP LEGEND ── */
         .legend { position: absolute; bottom: 20px; right: 10px; z-index: 1100; background: rgba(10,10,18,0.97); padding: 10px 12px; border-radius: 8px; border: 1px solid #555; backdrop-filter: blur(10px); width: 210px; max-height: calc(100vh - 80px); overflow-y: auto; transition: width 0.2s; }
-        .legend h4 { color: #ff8800; font-size: 12px; margin-bottom: 8px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .legend h4 { color: #3b82f6; font-size: 12px; margin-bottom: 8px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
         .legend h4 .arrow { font-size: 10px; transition: transform 0.2s; }
         .legend.panel-minimized h4 .arrow { transform: rotate(-90deg); }
         .legend.panel-minimized h4 { margin-bottom: 0; }
@@ -139,11 +105,11 @@
         /* ── LOADING ── */
         .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a12; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
         .loading-screen.hidden { opacity: 0; pointer-events: none; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #ff8800; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-text { color: #888; margin-top: 16px; font-size: 14px; }
         .loading-progress { width: 200px; height: 4px; background: #222; border-radius: 2px; margin-top: 12px; overflow: hidden; }
-        .loading-bar { height: 100%; background: #ff8800; width: 0%; transition: width 0.3s; }
+        .loading-bar { height: 100%; background: #3b82f6; width: 0%; transition: width 0.3s; }
 
         /* ── MOBILE RESPONSIVE ── */
         @media (max-width: 768px) {
@@ -151,15 +117,11 @@
             .header h1 { font-size: 13px; }
             .toggle-panel { width: 180px; max-height: 50vh; }
             .info-panel { max-width: 280px; max-height: 350px; }
-            .priority-panel { width: 220px; max-height: 280px; }
-            .legend { width: 180px; max-height: 300px; }
             .search-panel input { width: 140px; }
         }
         @media (max-width: 480px) {
             .header { max-width: 160px; }
             .toggle-panel { width: 160px; top: 5px; right: 5px; }
-            .priority-panel { width: 190px; }
-            .legend { width: 160px; }
             .search-panel input { width: 110px; }
         }
 
@@ -171,26 +133,26 @@
         .trailer-marker { animation: trailerPulse 3s ease-in-out infinite; }
 
         /* ── FILTER BAR ── */
-        .filter-bar { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1200; background: rgba(10,10,18,0.97); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,136,0,0.5); backdrop-filter: blur(10px); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; max-width: 95vw; }
+        .filter-bar { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1200; background: rgba(10,10,18,0.97); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(59,130,246,0.5); backdrop-filter: blur(10px); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; max-width: 95vw; }
         .filter-bar.collapsed .filter-body { display: none; }
-        .filter-bar .filter-toggle { color: #ff8800; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .filter-bar .filter-toggle { color: #3b82f6; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
         .filter-bar .filter-toggle .arrow { font-size: 9px; transition: transform 0.2s; }
         .filter-bar.collapsed .filter-toggle .arrow { transform: rotate(-90deg); }
         .filter-body { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 4px; width: 100%; }
         .filter-group { display: flex; flex-direction: column; gap: 2px; }
         .filter-group label { color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
         .filter-group select, .filter-group input { background: rgba(255,255,255,0.08); border: 1px solid #444; color: #e0e0e0; padding: 4px 6px; border-radius: 4px; font-size: 11px; min-width: 80px; outline: none; }
-        .filter-group select:focus, .filter-group input:focus { border-color: #ff8800; }
+        .filter-group select:focus, .filter-group input:focus { border-color: #3b82f6; }
         .filter-group select option { background: #1a1a2e; color: #e0e0e0; }
-        .filter-count { color: #ff8800; font-size: 11px; font-weight: 700; white-space: nowrap; margin-left: 4px; }
-        .filter-reset { background: none; border: 1px solid #ff8800; color: #ff8800; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
-        .filter-reset:hover { background: #ff8800; color: #0a0a12; }
+        .filter-count { color: #3b82f6; font-size: 11px; font-weight: 700; white-space: nowrap; margin-left: 4px; }
+        .filter-reset { background: none; border: 1px solid #3b82f6; color: #3b82f6; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
+        .filter-reset:hover { background: #3b82f6; color: #0a0a12; }
 
         /* ── GPS LOCATE BUTTON ── */
-        .gps-btn { position: absolute; bottom: 80px; left: 10px; z-index: 1100; width: 36px; height: 36px; background: rgba(10,10,18,0.95); border: 1px solid #ff8800; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #ff8800; transition: all 0.2s; }
-        .gps-btn:hover { background: #ff8800; color: #0a0a12; }
+        .gps-btn { position: absolute; bottom: 80px; left: 10px; z-index: 1100; width: 36px; height: 36px; background: rgba(10,10,18,0.95); border: 1px solid #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #3b82f6; transition: all 0.2s; }
+        .gps-btn:hover { background: #3b82f6; color: #0a0a12; }
         .gps-btn.locating { animation: gpsPulse 1s infinite; }
-        @keyframes gpsPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,136,0,0.4); } 50% { box-shadow: 0 0 0 10px rgba(255,136,0,0); } }
+        @keyframes gpsPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); } 50% { box-shadow: 0 0 0 10px rgba(59,130,246,0); } }
 
         /* ── CANVASS TIME BADGES ── */
         .canvass-badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; }
@@ -208,8 +170,6 @@
             .leaflet-popup-content { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
             .gps-btn { bottom: 110px; width: 40px; height: 40px; font-size: 18px; }
             .target-summary { display: none !important; }
-            .priority-panel { display: none !important; }
-            .header { max-width: 55vw; }
         }
         @media (max-width: 480px) {
             .filter-bar { padding: 5px 8px; bottom: 45px; }
@@ -240,7 +200,7 @@
     <div id="map"></div>
 
     <div class="header">
-        <h1>EMG Targeting Map — New York</h1>
+        <h1>Territory Intel — New York</h1>
         <div class="sub">
             <span class="utility-badge badge-nyseg">NYSEG</span>
             <span class="utility-badge badge-ngrid">NATIONAL GRID</span>
@@ -255,7 +215,7 @@
     <!-- ── FILTER BAR ── -->
     <div class="filter-bar" id="filterBar">
         <div class="filter-toggle" onclick="document.getElementById('filterBar').classList.toggle('collapsed')">
-            🔍 Filter Zones <span class="arrow">▼</span> <span class="filter-count" id="filterCount"></span>
+             Filter Zones <span class="arrow">▼</span> <span class="filter-count" id="filterCount"></span>
         </div>
         <div class="filter-body" id="filterBody">
             <div class="filter-group">
@@ -297,10 +257,10 @@
                 <label>Best Time</label>
                 <select id="fTime" onchange="applyFilters()">
                     <option value="">All</option>
-                    <option value="anytime">🟢 Anytime (WFH)</option>
-                    <option value="daytime">🟡 Daytime</option>
-                    <option value="afternoon">🟠 Afternoon</option>
-                    <option value="evening">🟣 Evening</option>
+                    <option value="anytime"> Anytime (WFH)</option>
+                    <option value="daytime">Daytime</option>
+                    <option value="afternoon">Afternoon</option>
+                    <option value="evening">Evening</option>
                 </select>
             </div>
             <button class="filter-reset" onclick="resetFilters()">Reset</button>
@@ -308,7 +268,7 @@
     </div>
 
     <!-- ── GPS LOCATE BUTTON ── -->
-    <div class="gps-btn" id="gpsBtn" onclick="gpsLocate()" title="Find my location">📍</div>
+    <div class="gps-btn" id="gpsBtn" onclick="gpsLocate()" title="Find my location"></div>
 
 
     <!-- ── CUSTOM TOGGLE PANEL (collapsible) ── -->
@@ -325,49 +285,49 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Zone Overlays</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('zipZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9900;"></div><span class="toggle-label">ZIP Sales Density</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">💰 LMI Income (County)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label">🏦 80% AMI Zones Only</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">🎯 Target Zones (by Demo)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">🏢 Apt/Mobile Concentrations</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('trailerParks',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff5722;"></div><span class="toggle-label">🏘️ Trailer Parks</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('kwhHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#0000ff,#00ff00,#ff0000);"></div><span class="toggle-label">⚡ kWh Demand Heat</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('incomeOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e53935;"></div><span class="toggle-label">LMI Income (County)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lmiIncomeOnly',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#b71c1c,#ff6f00,#fdd835);"></div><span class="toggle-label"> 80% AMI Zones Only</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('autoQualifyZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6d00;"></div><span class="toggle-label">Target Zones (by Demo)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('housingConcentration',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff6d00;"></div><span class="toggle-label">Apt/Mobile Concentrations</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('trailerParks',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff5722;"></div><span class="toggle-label">Trailer Parks</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('kwhHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(90deg,#0000ff,#00ff00,#ff0000);"></div><span class="toggle-label">kWh Demand Heat</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('dacZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">⚖️ NY DAC Zones</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">👥 Race / Ethnicity</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">🔥 Electric Heat Zones</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📌 Priority Highlights</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('countyRoutes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffffff;"></div><span class="toggle-label">🗺 County Boundaries</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('raceOverlay',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9b59b6;"></div><span class="toggle-label">Race / Ethnicity</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('ehZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff3333;"></div><span class="toggle-label">Electric Heat Zones</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('priorityHighlight',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#10b981;"></div><span class="toggle-label"> Priority Highlights</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('countyRoutes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffffff;"></div><span class="toggle-label">County Boundaries</span></label>
             </div>
 
             <div class="toggle-section">
                 <div class="toggle-section-title">D2D Canvass Intelligence</div>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc66;"></div><span class="toggle-label">🗺 Canvass Targeting (Block Group)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('homeScore',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#88ff44;"></div><span class="toggle-label">🏠 Home Score (Daytime)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('saturationMap',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6600;"></div><span class="toggle-label">📊 Saturation (Enrolled)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassTurfs',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00ff88;"></div><span class="toggle-label">📋 Canvass Turfs (8hr Shift)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassZones',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc66;"></div><span class="toggle-label">Canvass Targeting (Block Group)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('homeScore',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#88ff44;"></div><span class="toggle-label">Home Score (Daytime)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('saturationMap',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6600;"></div><span class="toggle-label">Saturation (Enrolled)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('canvassTurfs',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#10b981;"></div><span class="toggle-label">Canvass Turfs (8hr Shift)</span></label>
             </div>
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff8800;"></div><span class="toggle-label">📍 Sales Pins (90K+)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label">📌 Priority Targets</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Pins (90K+)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label"> Priority Targets</span></label>
             </div>
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Utility Territories</div>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('nyseg',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc88;"></div><span class="toggle-label">⚡ NYSEG</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('ngrid',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#4a90d9;"></div><span class="toggle-label">⚡ National Grid</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('chudson',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6644;"></div><span class="toggle-label">⚡ Central Hudson</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('oru',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#aa66ff;"></div><span class="toggle-label">⚡ ORU</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('rge',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffcc00;"></div><span class="toggle-label">⚡ RGE</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('nyseg',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00cc88;"></div><span class="toggle-label">NYSEG</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('ngrid',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#4a90d9;"></div><span class="toggle-label">National Grid</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('chudson',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff6644;"></div><span class="toggle-label">Central Hudson</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('oru',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#aa66ff;"></div><span class="toggle-label">ORU</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('rge',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffcc00;"></div><span class="toggle-label">RGE</span></label>
             </div>
 
             <div class="toggle-section" style="border-bottom:none;">
                 <div class="toggle-section-title">Stats</div>
-                <div style="font-size:11px;">Total Sales: <span style="color:#ff8800;font-weight:700;" id="statTotal">—</span></div>
-                <div style="font-size:11px;">ZIP Zones: <span style="color:#ff8800;font-weight:700;" id="statZips">—</span></div>
-                <div style="font-size:11px;">Cities: <span style="color:#ff8800;font-weight:700;" id="statCities">—</span></div>
+                <div style="font-size:11px;">Total Sales: <span style="color:#3b82f6;font-weight:700;" id="statTotal">—</span></div>
+                <div style="font-size:11px;">ZIP Zones: <span style="color:#3b82f6;font-weight:700;" id="statZips">—</span></div>
+                <div style="font-size:11px;">Cities: <span style="color:#3b82f6;font-weight:700;" id="statCities">—</span></div>
                 <div style="font-size:11px;">Priorities: <span style="color:#00ff44;font-weight:700;" id="statTargets">—</span></div>
-                <div style="font-size:11px;">In View: <span style="color:#ff8800;font-weight:700;" id="statVisible">—</span></div>
+                <div style="font-size:11px;">In View: <span style="color:#3b82f6;font-weight:700;" id="statVisible">—</span></div>
             </div>
         </div>
     </div>
@@ -385,7 +345,7 @@
 
     <!-- ── PRIORITY RANKING PANEL (by utility) ── -->
     <div class="priority-panel" id="priorityPanel" style="display:none;">
-        <h4 onclick="document.getElementById('priorityPanel').classList.toggle('panel-minimized')">📌 Priority Rankings <span class="arrow">▼</span></h4>
+        <h4 onclick="document.getElementById('priorityPanel').classList.toggle('panel-minimized')"> Priority Rankings <span class="arrow">▼</span></h4>
         <div class="panel-body">
             <div class="util-tabs" id="utilTabs"></div>
             <div id="priorityList"></div>
@@ -394,13 +354,13 @@
 
     <!-- ── TARGET ZONE SUMMARY (by Utility) ── -->
     <div class="target-summary" id="targetSummary" style="display:none;">
-        <h4 onclick="document.getElementById('targetSummary').classList.toggle('panel-minimized')">⚡ Target Zones by Utility <span class="arrow">▼</span></h4>
+        <h4 onclick="document.getElementById('targetSummary').classList.toggle('panel-minimized')">Target Zones by Utility <span class="arrow">▼</span></h4>
         <div class="panel-body" id="targetSummaryBody"></div>
     </div>
 
     <!-- ── MAP LEGEND (collapsible) ── -->
     <div class="legend" id="mapLegend">
-        <h4 onclick="document.getElementById('mapLegend').classList.toggle('panel-minimized')">🗺 Map Key <span class="arrow">▼</span></h4>
+        <h4 onclick="document.getElementById('mapLegend').classList.toggle('panel-minimized')">Map Key <span class="arrow">▼</span></h4>
         <div class="legend-body">
             <div class="legend-section">
                 <div class="legend-section-title">Sales Density (ZIP Fill)</div>
@@ -416,22 +376,22 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#00ff44;"></div> Tier 1 — LMI + Low Sat + High kWh</div>
                 <div class="legend-item"><div class="legend-circle" style="background:#00ccff;"></div> Tier 2 — ~80% Median + Partial Sat</div>
                 <div class="legend-item"><div class="legend-circle" style="background:#ffcc00;"></div> Tier 3 — Moderate Opportunity</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ff8800;"></div> Tier 4 — Growth Potential</div>
+                <div class="legend-item"><div class="legend-circle" style="background:#3b82f6;"></div> Tier 4 — Growth Potential</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">💰 LMI Income (County)</div>
+                <div class="legend-section-title">LMI Income (County)</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#e53935;"></div> ≤80% of County Median — LMI</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#1e88e5;"></div> &gt;80% of County Median</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">🎯 Target Zones — Rep Assignment</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#ff6d00;"></div> 🟠 Hispanic — Spanish rep</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#7c4dff;"></div> 🟣 Black — Black rep</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#2196f3;"></div> 🔵 White — White rep</div>
-                <div class="legend-item"><div class="legend-swatch" style="background:#ffd600;"></div> 🟡 Mixed — Bilingual rep</div>
+                <div class="legend-section-title">Target Zones — Rep Assignment</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff6d00;"></div> Hispanic — Spanish rep</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#7c4dff;"></div> Black — Black rep</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#2196f3;"></div> White — White rep</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ffd600;"></div> Mixed — Bilingual rep</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">👥 Race / Ethnicity (toggle on)</div>
+                <div class="legend-section-title">Race / Ethnicity (toggle on)</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#e8d4a8;"></div> Majority White</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#4a90d9;"></div> Majority Black</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#e67e22;"></div> Majority Hispanic</div>
@@ -467,7 +427,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script>
         // ── Supabase Config ──
@@ -587,7 +546,7 @@
             const t = getZipThreshold(zip);
             const entry = lmiThresholds[zip];
             const county = entry ? entry.c : '';
-            return inc <= t ? '🔴 LMI (' + county + ')' : '🔵 Above 80% (' + county + ')';
+            return inc <= t ? ' LMI (' + county + ')' : 'Above 80% (' + county + ')';
         }
 
         function getRaceDominant(d) {
@@ -619,9 +578,9 @@
             if (count >= 1)  return 0.12; return 0.05;
         }
         function getDensityLabel(count) {
-            if (count >= 500) return '🔥 HOT ZONE'; if (count >= 200) return '⬆ HIGH';
-            if (count >= 100) return '📈 MODERATE'; if (count >= 20) return '📊 LOW';
-            if (count >= 1)  return '🔹 MINIMAL'; return '—';
+            if (count >= 500) return 'HOT ZONE'; if (count >= 200) return 'HIGH';
+            if (count >= 100) return 'MODERATE'; if (count >= 20) return 'LOW';
+            if (count >= 1)  return 'MINIMAL'; return '—';
         }
 
         // ══════════════════════════════════════════════
@@ -631,37 +590,37 @@
             // NYSEG — Southern Tier, Finger Lakes, parts of Capital Region (Avangrid)
             const nysegCoords = [[42.00,-79.76],[42.00,-76.80],[42.20,-76.20],[42.50,-75.80],[42.80,-75.20],[43.00,-75.00],[42.80,-74.80],[42.50,-74.50],[42.20,-74.80],[42.00,-75.00],[41.80,-75.30],[41.99,-76.50],[42.00,-79.76]];
             L.polygon(nysegCoords, { color: '#00cc88', weight: 3, opacity: 0.6, fillColor: '#00cc88', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#00cc88">NYSEG</b><br>Southern Tier / Finger Lakes / Capital Region<br>Parent: Avangrid (Iberdrola) · ~900K customers<br><a href="https://outagemap.nyseg.com/" target="_blank" style="color:#00cc88;">🔴 Live Outage Map</a> · <a href="https://www.nyseg.com/outages" target="_blank" style="color:#00cc88;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
+            .bindPopup('<b style="color:#00cc88">NYSEG</b><br>Southern Tier / Finger Lakes / Capital Region<br>Parent: Avangrid (Iberdrola) · ~900K customers<br><a href="https://outagemap.nyseg.com/" target="_blank" style="color:#00cc88;"> Live Outage Map</a> · <a href="https://www.nyseg.com/outages" target="_blank" style="color:#00cc88;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
             .addTo(fg.nysegArea);
-            L.marker([42.20,-76.50], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#00cc88;font-size:15px;">NYSEG</span>', iconSize:[80,20], iconAnchor:[40,10] }) }).addTo(fg.nysegArea);
+            
 
             // National Grid — Upstate NY: Syracuse, Albany, Capital District
             const ngridCoords = [[44.00,-76.20],[44.00,-73.50],[43.50,-73.50],[43.00,-73.80],[42.60,-73.80],[42.50,-74.00],[42.50,-74.50],[42.80,-75.00],[43.00,-75.50],[43.50,-76.20],[44.00,-76.20]];
             L.polygon(ngridCoords, { color: '#4a90d9', weight: 3, opacity: 0.6, fillColor: '#4a90d9', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#4a90d9">NATIONAL GRID</b><br>Syracuse / Albany / Capital District / Utica<br>Parent: National Grid plc · ~1.7M customers<br><a href="https://outagemap.nationalgridus.com/" target="_blank" style="color:#4a90d9;">🔴 Live Outage Map</a> · <a href="https://www.nationalgridus.com/Outages" target="_blank" style="color:#4a90d9;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
+            .bindPopup('<b style="color:#4a90d9">NATIONAL GRID</b><br>Syracuse / Albany / Capital District / Utica<br>Parent: National Grid plc · ~1.7M customers<br><a href="https://outagemap.nationalgridus.com/" target="_blank" style="color:#4a90d9;"> Live Outage Map</a> · <a href="https://www.nationalgridus.com/Outages" target="_blank" style="color:#4a90d9;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
             .addTo(fg.ngridArea);
-            L.marker([43.20,-75.00], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#4a90d9;font-size:15px;">NATIONAL GRID</span>', iconSize:[140,20], iconAnchor:[70,10] }) }).addTo(fg.ngridArea);
+            
 
             // Central Hudson — Mid-Hudson Valley (Fortis)
             const chudsonCoords = [[42.10,-74.40],[42.10,-73.50],[41.60,-73.50],[41.30,-73.90],[41.30,-74.30],[41.50,-74.50],[41.80,-74.60],[42.10,-74.40]];
             L.polygon(chudsonCoords, { color: '#ff6644', weight: 3, opacity: 0.6, fillColor: '#ff6644', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#ff6644">CENTRAL HUDSON</b><br>Mid-Hudson Valley / Poughkeepsie / Kingston / Newburgh<br>Parent: Fortis Inc. · ~300K customers<br><a href="https://www.cenhud.com/en/outages/outage-map/" target="_blank" style="color:#ff6644;">🔴 Live Outage Map</a> · <a href="https://www.cenhud.com/en/outages/report-an-outage/" target="_blank" style="color:#ff6644;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible (CDG)</span>')
+            .bindPopup('<b style="color:#ff6644">CENTRAL HUDSON</b><br>Mid-Hudson Valley / Poughkeepsie / Kingston / Newburgh<br>Parent: Fortis Inc. · ~300K customers<br><a href="https://www.cenhud.com/en/outages/outage-map/" target="_blank" style="color:#ff6644;"> Live Outage Map</a> · <a href="https://www.cenhud.com/en/outages/report-an-outage/" target="_blank" style="color:#ff6644;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible (CDG)</span>')
             .addTo(fg.chudsonArea);
-            L.marker([41.75,-74.00], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ff6644;font-size:14px;">CENTRAL HUDSON</span>', iconSize:[130,20], iconAnchor:[65,10] }) }).addTo(fg.chudsonArea);
+            
 
             // ORU — Orange & Rockland (Con Ed subsidiary)
             const oruCoords = [[41.50,-74.50],[41.50,-73.90],[41.10,-73.90],[41.00,-74.10],[41.00,-74.40],[41.20,-74.60],[41.50,-74.50]];
             L.polygon(oruCoords, { color: '#aa66ff', weight: 3, opacity: 0.6, fillColor: '#aa66ff', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#aa66ff">ORU (Orange & Rockland)</b><br>Orange / Rockland / Sullivan Counties<br>Parent: Consolidated Edison · ~300K customers<br><a href="https://www.oru.com/en/outages/storm-center" target="_blank" style="color:#aa66ff;">🔴 Live Outage Map</a> · <a href="https://www.oru.com/en/outages" target="_blank" style="color:#aa66ff;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible (CDG)</span>')
+            .bindPopup('<b style="color:#aa66ff">ORU (Orange & Rockland)</b><br>Orange / Rockland / Sullivan Counties<br>Parent: Consolidated Edison · ~300K customers<br><a href="https://www.oru.com/en/outages/storm-center" target="_blank" style="color:#aa66ff;"> Live Outage Map</a> · <a href="https://www.oru.com/en/outages" target="_blank" style="color:#aa66ff;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible (CDG)</span>')
             .addTo(fg.oruArea);
-            L.marker([41.25,-74.25], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#aa66ff;font-size:14px;">ORU</span>', iconSize:[60,20], iconAnchor:[30,10] }) }).addTo(fg.oruArea);
+            
 
             // RGE — Rochester Gas & Electric (Avangrid)
             const rgeCoords = [[43.40,-77.90],[43.40,-77.20],[43.00,-77.20],[42.90,-77.40],[42.90,-77.90],[43.10,-77.90],[43.40,-77.90]];
             L.polygon(rgeCoords, { color: '#ffcc00', weight: 3, opacity: 0.6, fillColor: '#ffcc00', fillOpacity: 0.04, dashArray: '10, 6' })
-            .bindPopup('<b style="color:#ffcc00">RGE</b><br>Rochester / Monroe County area<br>Parent: Avangrid (Iberdrola) · ~370K customers<br><a href="https://outagemap.rge.com/" target="_blank" style="color:#ffcc00;">🔴 Live Outage Map</a> · <a href="https://www.rge.com/outages" target="_blank" style="color:#ffcc00;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
+            .bindPopup('<b style="color:#ffcc00">RGE</b><br>Rochester / Monroe County area<br>Parent: Avangrid (Iberdrola) · ~370K customers<br><a href="https://outagemap.rge.com/" target="_blank" style="color:#ffcc00;"> Live Outage Map</a> · <a href="https://www.rge.com/outages" target="_blank" style="color:#ffcc00;">Report Outage</a><br><span style="font-size:10px;color:#888;">Community Solar: VDER eligible</span>')
             .addTo(fg.rgeArea);
-            L.marker([43.15,-77.55], { icon: L.divIcon({ className:'zone-label', html:'<span style="color:#ffcc00;font-size:15px;">RGE</span>', iconSize:[60,20], iconAnchor:[30,10] }) }).addTo(fg.rgeArea);
+            
         }
 
         // ── LOAD ZIP BOUNDARIES ──
@@ -740,7 +699,7 @@
                                         <div class="info-section">
                                             <div class="info-section-title">Demographics</div>
                                             <div class="info-row"><span class="info-label">Population:</span><span class="info-value">${demo.pop.toLocaleString()}</span></div>
-                                            <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value" style="color:#00ff88;">$${demo.inc.toLocaleString()}</span></div>
+                                            <div class="info-row"><span class="info-label">Per Capita Income:</span><span class="info-value" style="color:#10b981;">$${demo.inc.toLocaleString()}</span></div>
                                             <div class="info-row"><span class="info-label">Median Age:</span><span class="info-value">${demo.age}</span></div>
                                             <div class="info-row"><span class="info-label">Avg Household Size:</span><span class="info-value">${demo.hhs}</span></div>
                                         </div>
@@ -748,9 +707,9 @@
                                             <div class="info-section-title">Electric Heating</div>
                                             <div class="info-row"><span class="info-label">Electric Heat HH:</span><span class="info-value" style="color:#ff3333;font-weight:700;">${demo.ehe.toLocaleString()}</span></div>
                                             <div class="info-row"><span class="info-label">Total Housing Units:</span><span class="info-value">${demo.eht.toLocaleString()}</span></div>
-                                            <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#aaa'};">${demo.ehp}%</span></div>
+                                            <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#60a5fa' : '#aaa'};">${demo.ehp}%</span></div>
                                             <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
-                                                <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#ffaa44' : '#666'};"></div>
+                                                <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= 50 ? '#ff3333' : demo.ehp >= 30 ? '#60a5fa' : '#666'};"></div>
                                             </div>
                                         </div>`;
                                 }
@@ -852,7 +811,7 @@
                     const isApt = p.type === 'apt';
                     const icon = L.divIcon({
                         className: 'housing-pin',
-                        html: '<div style="font-size:14px;text-shadow:0 0 3px #000;">' + (isApt ? '🏢' : '🏘️') + '</div>',
+                        html: '<div style="font-size:14px;text-shadow:0 0 3px #000;">' + (isApt ? '' : '') + '</div>',
                         iconSize: [20, 20],
                         iconAnchor: [10, 10]
                     });
@@ -861,7 +820,7 @@
                     const pct = isApt ? p.apt_pct + '% apartments' : p.mobile_pct + '% mobile homes';
                     marker.bindPopup(
                         '<div style="font-size:12px;line-height:1.5;">' +
-                        '<b style="color:#ff6d00;">' + (isApt ? '🏢' : '🏘️') + ' ' + label + '</b><br>' +
+                        '<b style="color:#ff6d00;">' + (isApt ? '' : '') + ' ' + label + '</b><br>' +
                         '<b>Tract:</b> ' + p.GEOID + '<br>' +
                         '<b>Housing Mix:</b> ' + pct + '<br>' +
                         '<b>Total Units:</b> ' + (p.total_units || 0).toLocaleString() + '<br>' +
@@ -918,7 +877,7 @@
                 '<tr><td style="padding:3px 0;"><b>Apartments</b></td><td style="text-align:right;">' + fmtP(p.apt_pct) + '</td>' +
                 '<td style="padding:3px 0 3px 12px;"><b>Mobile Homes</b></td><td style="text-align:right;">' + fmtP(p.mobile_pct) + '</td></tr>' +
 
-                '<tr><td style="padding:3px 0;" colspan="4"><b>🕐 Best Canvass Time:</b> ' +
+                '<tr><td style="padding:3px 0;" colspan="4"><b> Best Canvass Time:</b> ' +
                 (function(bt, wfh, day) {
                     if (bt === 'anytime') return '<span class="canvass-badge canvass-anytime">ANYTIME</span> <span style="color:#888;font-size:10px;">' + wfh + '% WFH</span>';
                     if (bt === 'daytime') return '<span class="canvass-badge canvass-daytime">DAYTIME</span> <span style="color:#888;font-size:10px;">' + day + '% home daytime</span>';
@@ -1044,9 +1003,9 @@
                 const latlng = L.latLng(pos.coords.latitude, pos.coords.longitude);
                 if (gpsMarker) map.removeLayer(gpsMarker);
                 gpsMarker = L.circleMarker(latlng, {
-                    radius: 10, fillColor: '#00ff88', fillOpacity: 0.8,
+                    radius: 10, fillColor: '#10b981', fillOpacity: 0.8,
                     color: '#fff', weight: 2
-                }).addTo(map).bindPopup('<b>📍 You are here</b>').openPopup();
+                }).addTo(map).bindPopup('<b>You are here</b>').openPopup();
                 map.setView(latlng, 13);
             }, function(err) {
                 btn.classList.remove('locating');
@@ -1098,11 +1057,11 @@
                     onEachFeature: function(feature, layer) {
                         const p = feature.properties;
                         const pct = p.pct_of_median || 0;
-                        const severity = pct <= 40 ? '🔴 Deep Poverty' : pct <= 60 ? '🟠 Low Income' : '🟡 Moderate-Low';
+                        const severity = pct <= 40 ? ' Deep Poverty' : pct <= 60 ? 'Low Income' : 'Moderate-Low';
                         layer.on('click', function() {
                             layer.bindPopup(
                                 '<div style="font-family:Segoe UI,sans-serif;">' +
-                                '<b style="font-size:14px;color:#ff6f00;">🏦 80% AMI Income Zone</b><br>' +
+                                '<b style="font-size:14px;color:#ff6f00;"> 80% AMI Income Zone</b><br>' +
                                 '<div style="margin:6px 0;padding:6px;background:rgba(255,111,0,0.1);border-radius:4px;">' +
                                 '<b>' + severity + '</b><br>' +
                                 'Tract Income: <b>$' + (p.med_inc || p.inc || 0).toLocaleString() + '</b><br>' +
@@ -1155,10 +1114,10 @@
                 if (!g) return;
                 const total = g.tracts;
                 const hPct = Math.round(g.hisp/total*100), bPct = Math.round(g.black/total*100), wPct = Math.round(g.white/total*100), mPct = 100-hPct-bPct-wPct;
-                html += '<div class="util-group"><div class="util-header"><span>⚡ ' + uName + '</span><span>' + total + ' zones</span></div>' +
+                html += '<div class="util-group"><div class="util-header"><span>' + uName + '</span><span>' + total + ' zones</span></div>' +
                     '<div class="demo-bar"><div style="width:' + hPct + '%;background:#ff6d00;"></div><div style="width:' + bPct + '%;background:#7c4dff;"></div><div style="width:' + wPct + '%;background:#2196f3;"></div><div style="width:' + mPct + '%;background:#ffd600;"></div></div>' +
                     '<div class="util-stats"><span><b>' + g.hh.toLocaleString() + '</b> households</span><span><b>' + g.eh.toLocaleString() + '</b> EH homes</span>' +
-                    '<span><b>' + g.pop.toLocaleString() + '</b> population</span><span>🟠' + g.hisp + ' 🟣' + g.black + ' 🔵' + g.white + ' 🟡' + g.mixed + '</span></div></div>';
+                    '<span><b>' + g.pop.toLocaleString() + '</b> population</span><span>' + g.hisp + ' ' + g.black + ' ' + g.white + ' ' + g.mixed + '</span></div></div>';
             });
             document.getElementById('targetSummaryBody').innerHTML = html;
             document.getElementById('targetSummary').style.display = 'block';
@@ -1189,7 +1148,7 @@
             try {
                 updateLoading('Loading sales from Supabase...', 40);
                 const statusColors = {
-                    'Payable':'#00c853','Completed':'#00c853','Sent':'#ff8800',
+                    'Payable':'#00c853','Completed':'#00c853','Sent':'#3b82f6',
                     'Cancelled':'#ff1744','Invalid':'#d50000','Duplicate':'#757575',
                     'Rejected':'#ff1744','Void':'#aa00ff','Draft':'#bdbdbd',
                     'Test':'#9e9e9e','Pending':'#ffd600'
@@ -1225,7 +1184,7 @@
                     const [lat, lon, city, zip, status, state] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                    const sc = statusColors[status] || '#ff8800';
+                    const sc = statusColors[status] || '#3b82f6';
                     const m = L.circleMarker([lat, lon], pinStyle(status, sc));
                     m.bindTooltip((city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
                     m.on('click', function() {
@@ -1234,8 +1193,8 @@
                         sbFetch('/v_sale_points?select=latitude,longitude,zip_code,city,sale_date,order_status,dwelling_type,rep_name,campaign,utility_name,customer_name,state,address&latitude=eq.' + lat + '&longitude=eq.' + lon + '&limit=1')
                             .then(rows => {
                                 const p = rows[0] || {};
-                                const di = {'Apartment (MDU)':'🏢','House (SFU)':'🏠','Single Family Home':'🏠','Townhouse':'🏘️','Condo':'🏙️','Mobile Home':'🏕️','Commercial':'🏪'}[p.dwelling_type] || '📍';
-                                const psc = statusColors[p.order_status] || '#ff8800';
+                                const di = {'Apartment (MDU)':'','House (SFU)':'','Single Family Home':'','Townhouse':'','Condo':'','Mobile Home':'','Commercial':''}[p.dwelling_type] || '';
+                                const psc = statusColors[p.order_status] || '#3b82f6';
                                 m.setPopupContent(
                                     '<div style="font-family:Segoe UI,sans-serif;min-width:200px;">' +
                                     '<b style="font-size:13px;">' + di + ' ' + (p.customer_name ? esc(p.customer_name) : 'Sale') + '</b><br>' +
@@ -1273,9 +1232,9 @@
                         for (const [lat,lon,city,zip,date,status,rep] of salesData) {
                             if (city) cityStats[city] = (cityStats[city]||0)+1;
                             if (zip) zipStats[zip] = (zipStats[zip]||0)+1;
-                            const sc2 = statusColors[status] || '#ff8800';
+                            const sc2 = statusColors[status] || '#3b82f6';
                             const m = L.circleMarker([lat,lon], pinStyle(status, sc2));
-                            m.bindPopup(`<b>📍 Sale</b><br><b>${city||''}</b> ${zip||''}<br>📅 ${date||''}<br>Status: ${status||'N/A'}<br>Rep: ${rep||'N/A'}`);
+                            m.bindPopup(`<b>Sale</b><br><b>${city||''}</b> ${zip||''}<br> ${date||''}<br>Status: ${status||'N/A'}<br>Rep: ${rep||'N/A'}`);
                             markers.push(m);
                         }
                         salesCluster.addLayers(markers);
@@ -1331,14 +1290,14 @@
                 const ehHigh = d.ehp >= 30;
 
                 let tier, tierColor, tierLabel;
-                if (isLMI && satLevel === 'low' && ehHigh) { tier = 1; tierColor = '#00ff44'; tierLabel = '🔥 TIER 1 — TOP PRIORITY'; }
-                else if (isLMI && satLevel === 'low' && d.ehp >= 20) { tier = 1; tierColor = '#00ff44'; tierLabel = '🔥 TIER 1 — TOP PRIORITY'; }
-                else if ((isLMI || isNearLMI) && satLevel === 'partial' && ehHigh) { tier = 2; tierColor = '#00ccff'; tierLabel = '⬆ TIER 2 — HIGH VALUE'; }
-                else if (isNearLMI && satLevel === 'low') { tier = 2; tierColor = '#00ccff'; tierLabel = '⬆ TIER 2 — HIGH VALUE'; }
-                else if (isLMI && satLevel === 'partial') { tier = 2; tierColor = '#00ccff'; tierLabel = '⬆ TIER 2 — HIGH VALUE'; }
-                else if ((isLMI || isNearLMI) && ehHigh) { tier = 3; tierColor = '#ffcc00'; tierLabel = '📊 TIER 3 — MODERATE'; }
-                else if (satLevel === 'low' && d.ehp >= 20 && d.pop >= 5000) { tier = 3; tierColor = '#ffcc00'; tierLabel = '📊 TIER 3 — MODERATE'; }
-                else if (satLevel !== 'high' && (ehHigh || isLMI) && d.pop >= 3000) { tier = 4; tierColor = '#ff8800'; tierLabel = '🔹 TIER 4 — GROWTH'; }
+                if (isLMI && satLevel === 'low' && ehHigh) { tier = 1; tierColor = '#00ff44'; tierLabel = 'TIER 1 — TOP PRIORITY'; }
+                else if (isLMI && satLevel === 'low' && d.ehp >= 20) { tier = 1; tierColor = '#00ff44'; tierLabel = 'TIER 1 — TOP PRIORITY'; }
+                else if ((isLMI || isNearLMI) && satLevel === 'partial' && ehHigh) { tier = 2; tierColor = '#00ccff'; tierLabel = 'TIER 2 — HIGH VALUE'; }
+                else if (isNearLMI && satLevel === 'low') { tier = 2; tierColor = '#00ccff'; tierLabel = 'TIER 2 — HIGH VALUE'; }
+                else if (isLMI && satLevel === 'partial') { tier = 2; tierColor = '#00ccff'; tierLabel = 'TIER 2 — HIGH VALUE'; }
+                else if ((isLMI || isNearLMI) && ehHigh) { tier = 3; tierColor = '#ffcc00'; tierLabel = 'TIER 3 — MODERATE'; }
+                else if (satLevel === 'low' && d.ehp >= 20 && d.pop >= 5000) { tier = 3; tierColor = '#ffcc00'; tierLabel = 'TIER 3 — MODERATE'; }
+                else if (satLevel !== 'high' && (ehHigh || isLMI) && d.pop >= 3000) { tier = 4; tierColor = '#3b82f6'; tierLabel = 'TIER 4 — GROWTH'; }
                 else { continue; }
 
                 const incGapScore = Math.max(0, Math.min(30, ((lmiThreshold - d.inc) / lmiThreshold) * 40));
@@ -1380,7 +1339,7 @@
                 const pinIcon = L.divIcon({ className: '', html: pinHtml, iconSize: [28, 36], iconAnchor: [14, 36], popupAnchor: [0, -36] });
                 const marker = L.marker([t.la, t.lo], { icon: pinIcon, zIndexOffset: 1000 - rank });
 
-                marker.bindPopup(`<b>📌 #${rank} — ${t.zip} ${t.city}</b><br><span style="color:${t.tierColor};font-weight:700;">${t.tierLabel}</span><br>${t.why}<br><small>Income: $${t.inc.toLocaleString()} (${t.incomeRatio}% of median) | EH: ${t.ehp}% | Sat: ${t.satRate}/1K</small>`);
+                marker.bindPopup(`<b> #${rank} — ${t.zip} ${t.city}</b><br><span style="color:${t.tierColor};font-weight:700;">${t.tierLabel}</span><br>${t.why}<br><small>Income: $${t.inc.toLocaleString()} (${t.incomeRatio}% of median) | EH: ${t.ehp}% | Sat: ${t.satRate}/1K</small>`);
 
                 marker.on('click', () => showInfoPanel(`#${rank} — ${t.zip} ${t.city || ''}`, `
                     <div class="info-row"><span class="info-label">Priority:</span><span class="info-value" style="color:${t.tierColor};font-weight:700;">#${rank}</span></div>
@@ -1389,15 +1348,15 @@
                     <div class="info-section"><div class="info-section-title">Why This Priority</div><div class="info-row"><span class="info-value">${t.why}</span></div></div>
                     <div class="info-section"><div class="info-section-title">Income</div>
                         <div class="info-row"><span class="info-label">Per Capita:</span><span class="info-value">$${t.inc.toLocaleString()}</span></div>
-                        <div class="info-row"><span class="info-label">% of State Median:</span><span class="info-value" style="color:${t.inc < lmiThreshold ? '#00ff88' : '#ffaa44'};">${t.incomeRatio}%</span></div>
+                        <div class="info-row"><span class="info-label">% of State Median:</span><span class="info-value" style="color:${t.inc < lmiThreshold ? '#10b981' : '#60a5fa'};">${t.incomeRatio}%</span></div>
                     </div>
                     <div class="info-section"><div class="info-section-title">Saturation</div>
                         <div class="info-row"><span class="info-label">Sales/1K pop:</span><span class="info-value">${t.satRate}</span></div>
-                        <div class="info-row"><span class="info-label">Level:</span><span class="info-value" style="color:${t.satLevel === 'low' ? '#00ff88' : t.satLevel === 'partial' ? '#ffcc00' : '#ff4444'};">${t.satLabel}</span></div>
+                        <div class="info-row"><span class="info-label">Level:</span><span class="info-value" style="color:${t.satLevel === 'low' ? '#10b981' : t.satLevel === 'partial' ? '#ffcc00' : '#ff4444'};">${t.satLabel}</span></div>
                         <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value">${t.sales.toLocaleString()}</span></div>
                     </div>
                     <div class="info-section"><div class="info-section-title">Electric Heating</div>
-                        <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${t.ehp >= 50 ? '#ff3333' : t.ehp >= 30 ? '#ffaa44' : '#aaa'};font-weight:700;">${t.ehp}%</span></div>
+                        <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${t.ehp >= 50 ? '#ff3333' : t.ehp >= 30 ? '#60a5fa' : '#aaa'};font-weight:700;">${t.ehp}%</span></div>
                         <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value">${t.ehe.toLocaleString()}</span></div>
                     </div>
                     <div class="info-section"><div class="info-section-title">Demographics</div>
@@ -1412,7 +1371,7 @@
             });
 
             // ── Build priority panel (grouped by utility) ──
-            const tierNames = { 1: '🔥 Tier 1 — Top Priority', 2: '⬆ Tier 2 — High Value', 3: '📊 Tier 3 — Moderate', 4: '🔹 Tier 4 — Growth' };
+            const tierNames = { 1: 'Tier 1 — Top Priority', 2: 'Tier 2 — High Value', 3: 'Tier 3 — Moderate', 4: 'Tier 4 — Growth' };
 
             // Group targets by utility
             const utilityGroups = {};
@@ -1449,7 +1408,7 @@
                         '<div class="priority-rank" style="background:' + t.tierColor + ';">' + (i + 1) + '</div>' +
                         '<div class="priority-info">' +
                         '<div class="priority-zip">' + t.zip + ' <span style="color:#aaa;font-weight:400;">' + t.city + '</span>' +
-                        ' <span style="color:' + (utilColors[t.utility]||'#888') + ';font-size:9px;">⚡' + (t.utility||'') + '</span></div>' +
+                        ' <span style="color:' + (utilColors[t.utility]||'#888') + ';font-size:9px;">' + (t.utility||'') + '</span></div>' +
                         '<div class="priority-city">' + t.why + '</div>' +
                         '</div>' +
                         '<div class="priority-score" style="color:' + t.tierColor + ';">' + t.score.toFixed(0) + '</div>' +
@@ -1485,14 +1444,14 @@
                 parks.forEach(p => {
                     const icon = L.divIcon({
                         className: '',
-                        html: '<div class="trailer-marker">🏘️ ' + p.name.substring(0, 30) + (p.name.length > 30 ? '…' : '') + '</div>',
+                        html: '<div class="trailer-marker">' + p.name.substring(0, 30) + (p.name.length > 30 ? '…' : '') + '</div>',
                         iconSize: [200, 28],
                         iconAnchor: [100, 14]
                     });
                     const marker = L.marker([p.lat, p.lon], { icon: icon, zIndexOffset: 1000 });
                     const popupHtml =
                         '<div style="font-family:Segoe UI,sans-serif;">' +
-                        '<b style="font-size:14px;color:#ff5722;">🏘️ ' + p.name + '</b><br>' +
+                        '<b style="font-size:14px;color:#ff5722;">' + p.name + '</b><br>' +
                         '<div style="margin:4px 0;padding:5px;background:rgba(255,87,34,0.1);border-radius:4px;">' +
                         (p.city ? '<b>City:</b> ' + p.city + '<br>' : '') +
                         (p.zip ? '<b>ZIP:</b> ' + p.zip + '<br>' : '') +
@@ -1544,7 +1503,7 @@
             if (heatPoints.length) {
                 const heat = L.heatLayer(heatPoints, {
                     radius: 28, blur: 22, maxZoom: 14, max: 30,
-                    gradient: { 0.2: '#0000ff', 0.4: '#00ffff', 0.55: '#00ff00', 0.7: '#ffff00', 0.85: '#ff8800', 1.0: '#ff0000' }
+                    gradient: { 0.2: '#0000ff', 0.4: '#00ffff', 0.55: '#00ff00', 0.7: '#ffff00', 0.85: '#3b82f6', 1.0: '#ff0000' }
                 });
                 heat.addTo(fg.kwhHeat);
             }
@@ -1572,14 +1531,14 @@
         const gradeColors = { 'A': '#00cc66', 'B': '#ffcc00', 'C': '#ff8844', 'D': '#ff3333' };
         const gradeOpacity = { 'A': 0.30, 'B': 0.22, 'C': 0.18, 'D': 0.12 };
         const gradeLabels = { 'A': 'TOP PRIORITY', 'B': 'HIGH VALUE', 'C': 'MODERATE', 'D': 'LOW PRIORITY' };
-        function homeColor(s) { return s >= 60 ? '#00ff88' : s >= 45 ? '#88ff44' : s >= 30 ? '#ffcc00' : '#ff6644'; }
+        function homeColor(s) { return s >= 60 ? '#10b981' : s >= 45 ? '#88ff44' : s >= 30 ? '#ffcc00' : '#ff6644'; }
         function canvassPopup(p, isBG) {
             const grade = p.cg||p.canvass_grade||'D', homeS = p.hs||p.home_score||p.daytime_home||0, oppS = p.os||p.opp_score||0;
             const lmiEst = p.le||p.lmi_est||0, wfh = p.wfh||p.wfh_pct||0, dh = p.dh||p.daytime_home||0;
             const bt = p.bt||p.best_time||'', eh = p.eh||p.eh_pct||0, op = p.op||p.own_pct||0, rp = p.rp||p.rent_pct||0;
             const mi = p.mi||p.med_inc||p.inc||0, pop = p.pop||0, hh = p.hh||0;
             const level = isBG ? 'Block Group' : 'Tract';
-            return `<div style="min-width:260px;font-size:12px;"><b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b><br><span style="color:#888;">${level} ${p.GEOID||''} · ${p.county||''}</span><hr style="border-color:#333;margin:4px 0;"><b>🎯 Opportunity:</b> ${oppS}/100<br><b>🏠 Home Score:</b> ${homeS}/100 (${Math.round(dh)}% daytime)<br><b>💼 WFH:</b> ${wfh}%<br><b>⏰ Best Time:</b> ${bt||'N/A'}<hr style="border-color:#333;margin:4px 0;"><b>📋 LMI Est:</b> ${lmiEst}%<br><b>⚡ EH:</b> ${eh}%<br><b>🏠 Own/Rent:</b> ${op}%/${rp}%<br><b>👥 Pop:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br><b>💰 Income:</b> $${mi.toLocaleString()}</div>`;
+            return `<div style="min-width:260px;font-size:12px;"><b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b><br><span style="color:#888;">${level} ${p.GEOID||''} · ${p.county||''}</span><hr style="border-color:#333;margin:4px 0;"><b>Opportunity:</b> ${oppS}/100<br><b>Home Score:</b> ${homeS}/100 (${Math.round(dh)}% daytime)<br><b> WFH:</b> ${wfh}%<br><b>⏰ Best Time:</b> ${bt||'N/A'}<hr style="border-color:#333;margin:4px 0;"><b>LMI Est:</b> ${lmiEst}%<br><b>EH:</b> ${eh}%<br><b>Own/Rent:</b> ${op}%/${rp}%<br><b>Pop:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br><b>Income:</b> $${mi.toLocaleString()}</div>`;
         }
         function renderCanvassFeatures(features, isBG, group) {
             features.forEach(f => {
@@ -1617,7 +1576,7 @@
             if (!_canvassData.turfs) return;
             fg.canvassTurfs.clearLayers();
             const bounds = map.getBounds();
-            const tc = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+            const tc = { 'A': '#10b981', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
             _canvassData.turfs.features.forEach(f => {
                 const p = f.properties;
                 if (p.clat < bounds.getSouth()-0.1 || p.clat > bounds.getNorth()+0.1 || p.clon < bounds.getWest()-0.1 || p.clon > bounds.getEast()+0.1) return;
@@ -1740,12 +1699,12 @@
 
                 const sColor = getDensityColor(sales.n);
                 h += '<div style="margin-bottom:8px;">';
-                h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">📊 Sales Activity</div>';
+                h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">Sales Activity</div>';
                 h += '<div style="display:flex;gap:12px;"><div><span style="color:#888;">Orders:</span> <b style="color:' + sColor + '">' + sales.n.toLocaleString() + '</b></div>';
                 h += '<div><span style="color:#888;">Density:</span> ' + getDensityLabel(sales.n) + '</div></div>';
                 if (targeting) {
                     const sat = targeting.sat || 0;
-                    const satIcon = sat >= 10 ? '🔴' : sat >= 5 ? '🟡' : '🟢';
+                    const satIcon = sat >= 10 ? '' : sat >= 5 ? '' : '';
                     h += '<div style="margin-top:3px;"><span style="color:#888;">Saturation:</span> <b>' + sat + '%</b> ' + satIcon + ' · Arcadia: ' + (targeting.ep||0) + ' payable / ' + (targeting.eat||0) + ' total</div>';
                 }
                 h += '</div>';
@@ -1757,7 +1716,7 @@
                     const bt = detail.bt||detail.best_time||'', eh = detail.eh||detail.eh_pct||0;
                     const op = detail.op||detail.own_pct||0, rp = detail.rp||detail.rent_pct||0;
                     h += '<div style="border-top:1px solid #333;padding-top:6px;margin-bottom:8px;">';
-                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">🎯 Canvass Intelligence <span style="color:#666;font-weight:400;">(' + detailLevel + ')</span></div>';
+                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">Canvass Intelligence <span style="color:#666;font-weight:400;">(' + detailLevel + ')</span></div>';
                     h += '<div style="display:inline-block;padding:2px 8px;border-radius:3px;font-weight:700;background:' + gradeColors[grade] + '22;color:' + gradeColors[grade] + ';border:1px solid ' + gradeColors[grade] + '44;margin-bottom:4px;">GRADE ' + grade + ': ' + gradeLabels[grade] + '</div>';
                     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">';
                     h += '<div><span style="color:#888;">Opportunity:</span> <b>' + oppS + '</b>/100</div>';
@@ -1773,7 +1732,7 @@
 
                 if (demo) {
                     h += '<div style="border-top:1px solid #333;padding-top:6px;margin-bottom:8px;">';
-                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">👥 Demographics</div>';
+                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">Demographics</div>';
                     h += '<div style="display:flex;height:10px;border-radius:3px;overflow:hidden;margin-bottom:3px;">';
                     h += '<div style="width:' + demo.rw + '%;background:#e8d4a8;"></div>';
                     h += '<div style="width:' + demo.rb + '%;background:#4a90d9;"></div>';
@@ -1786,14 +1745,14 @@
                     h += '<div><span style="color:#888;">Income:</span> $' + demo.inc.toLocaleString() + '</div>';
                     h += '<div><span style="color:#888;">Median Age:</span> ' + demo.age + '</div>';
                     h += '<div><span style="color:#888;">HH Size:</span> ' + demo.hhs + '</div>';
-                    if (demo.ehp !== undefined) h += '<div><span style="color:#888;">EH Rate:</span> <span style="color:' + (demo.ehp >= 40 ? '#ff3333' : demo.ehp >= 20 ? '#ffaa44' : '#aaa') + ';">' + demo.ehp + '%</span></div>';
+                    if (demo.ehp !== undefined) h += '<div><span style="color:#888;">EH Rate:</span> <span style="color:' + (demo.ehp >= 40 ? '#ff3333' : demo.ehp >= 20 ? '#60a5fa' : '#aaa') + ';">' + demo.ehp + '%</span></div>';
                     h += '</div></div>';
                 }
                 if (turf) {
-                    var tc2 = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+                    var tc2 = { 'A': '#10b981', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
                     var tg = turf.grade || 'C';
                     h += '<div style="border-top:1px solid #333;padding-top:6px;margin-top:4px;">';
-                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">📋 Canvass Turf #' + turf.id + ' <span style="color:' + tc2[tg] + ';font-weight:700;">(Grade ' + tg + ')</span></div>';
+                    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px;">Canvass Turf #' + turf.id + ' <span style="color:' + tc2[tg] + ';font-weight:700;">(Grade ' + tg + ')</span></div>';
                     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">';
                     h += '<div><span style="color:#888;">Est. Doors:</span> <b style="color:' + tc2[tg] + '">' + turf.doors + '</b></div>';
                     h += '<div><span style="color:#888;">Households:</span> ' + turf.hh.toLocaleString() + '</div>';
@@ -1802,7 +1761,7 @@
                     h += '<div><span style="color:#888;">Opp Score:</span> ' + turf.opp + '/100</div>';
                     h += '<div><span style="color:#888;">Home Score:</span> ' + turf.hs + '/100</div>';
                     h += '</div>';
-                    h += '<div style="margin-top:4px;padding:4px 8px;background:rgba(0,255,136,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ' + turf.county + '</div>';
+                    h += '<div style="margin-top:4px;padding:4px 8px;background:rgba(16,185,129,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ' + turf.county + '</div>';
                     h += '</div>';
                 }
                 h += '</div>';
@@ -1812,7 +1771,7 @@
     
         // ── CLAIM / DRAW TERRITORY ──
         const claimedAreas = L.featureGroup().addTo(map);
-        const CLAIM_STORAGE_KEY = 'emg_claims_ny';
+        const CLAIM_STORAGE_KEY = 'amin_claims_ny';
         let drawControl = null;
         let isDrawing = false;
 
@@ -1833,7 +1792,7 @@
             layer.eachLayer(l => {
                 l._claimName = geojsonFeature.properties?.name || 'Area ' + (claimedAreas.getLayers().length + 1);
                 l._claimDate = geojsonFeature.properties?.date || new Date().toLocaleDateString();
-                l.bindPopup('<div style="font-family:Segoe UI,sans-serif;"><b style="color:#00e676;">📐 ' + l._claimName + '</b><br><span style="color:#aaa;font-size:11px;">Claimed: ' + l._claimDate + '</span></div>');
+                l.bindPopup('<div style="font-family:Segoe UI,sans-serif;"><b style="color:#00e676;"> ' + l._claimName + '</b><br><span style="color:#aaa;font-size:11px;">Claimed: ' + l._claimDate + '</span></div>');
                 claimedAreas.addLayer(l);
             });
         }
@@ -1910,7 +1869,7 @@
             layer._claimName = name;
             layer._claimDate = new Date().toLocaleDateString();
             layer.setStyle({ color: '#00e676', fillColor: '#00e676', fillOpacity: 0.15, weight: 2, dashArray: '6,4' });
-            layer.bindPopup('<div style="font-family:Segoe UI,sans-serif;"><b style="color:#00e676;">📐 ' + name + '</b><br><span style="color:#aaa;font-size:11px;">Claimed: ' + layer._claimDate + '</span></div>');
+            layer.bindPopup('<div style="font-family:Segoe UI,sans-serif;"><b style="color:#00e676;"> ' + name + '</b><br><span style="color:#aaa;font-size:11px;">Claimed: ' + layer._claimDate + '</span></div>');
             claimedAreas.addLayer(layer);
             saveClaims();
             toggleDrawMode();
@@ -1934,11 +1893,11 @@
     </script>
 
         <div class="claim-panel" id="claimPanel">
-            <h4 onclick="document.getElementById('claimPanel').classList.toggle('panel-minimized')">📐 Claimed Areas <span class="claim-count" id="claimCount">(0)</span> <span class="arrow">▼</span></h4>
+            <h4 onclick="document.getElementById('claimPanel').classList.toggle('panel-minimized')"> Claimed Areas <span class="claim-count" id="claimCount">(0)</span> <span class="arrow">▼</span></h4>
             <div class="panel-body">
                 <div class="claim-list" id="claimList"><div style="color:#666;font-size:10px;">No areas claimed yet</div></div>
                 <button class="claim-btn" id="claimBtn" onclick="toggleDrawMode()">✏️ Draw to Claim</button>
-                <button class="claim-btn" style="background:#ff8800;margin-top:4px;" onclick="exportClaims()">📋 Copy All to Clipboard</button>
+                <button class="claim-btn" style="background:#3b82f6;margin-top:4px;" onclick="exportClaims()">Copy All to Clipboard</button>
             </div>
         </div>
 

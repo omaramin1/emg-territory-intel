@@ -48,23 +48,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .info-label{color:#888}
 .info-value{color:#fff;font-weight:600}
 
-/* PRIORITY PANEL */
-#priority-panel{position:fixed;bottom:0;left:0;right:0;z-index:1050;background:#111;border-top:1px solid #333;display:none;max-height:45vh}
-#priority-tabs{display:flex;background:#0a0a0a;border-bottom:1px solid #333;overflow-x:auto;padding:0 8px}
-#priority-tabs button{padding:8px 14px;background:transparent;border:none;color:#888;font-size:11px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
-#priority-tabs button.active{color:#00aaff;border-bottom-color:#00aaff}
-#priority-tabs button:hover{color:#fff}
-#priority-body{overflow-y:auto;max-height:calc(45vh - 40px);padding:8px 12px}
-.priority-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;border-bottom:1px solid #1a1a1a}
-.priority-row:hover{background:#1a1a2e}
-.priority-rank{font-weight:700;color:#00aaff;width:24px;text-align:center}
-.priority-zip{font-weight:600;color:#fff;width:50px}
-.priority-city{color:#aaa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.priority-score{font-weight:700;width:36px;text-align:right}
-.priority-badges{display:flex;gap:3px}
-.priority-badges span{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600}
-#priority-toggle{position:fixed;bottom:8px;right:12px;z-index:1060;padding:6px 14px;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer}
-#priority-toggle:hover{color:#fff;border-color:#00aaff}
+
+
+
+
+
+
+
+
 
 /* UPLOAD OVERLAY */
 #upload-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:2000;justify-content:center;align-items:center}
@@ -115,7 +106,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <span class="badge" id="stats-badge">Loading...</span>
     <div id="search-box">
         <input type="text" id="search-input" placeholder="Search ZIP or city..." onkeydown="if(event.key==='Enter')searchZip(this.value)"/>
-        <button onclick="searchZip(document.getElementById('search-input').value)">🔍</button>
+        <button onclick="searchZip(document.getElementById('search-input').value)"></button>
     </div>
 </div>
 
@@ -132,11 +123,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <!-- PRIORITY PANEL -->
-<div id="priority-panel">
-    <div id="priority-tabs"></div>
-    <div id="priority-body"></div>
+<div id="priority-body"></div>
 </div>
-<button id="priority-toggle" onclick="togglePriority()">📊 Priority Rankings</button>
+
 
 <!-- LEGEND -->
 <div id="legend">
@@ -148,7 +137,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="upload-overlay" onclick="if(event.target===this)closeUpload()">
     <span id="upload-close" onclick="closeUpload()">&times;</span>
     <div id="upload-box">
-        <h2>📂 Upload Sales Data</h2>
+        <h2> Upload Sales Data</h2>
         <p>Drag & drop CSV / XLSX or click to browse.<br>Auto-detects lat/lon, address, ZIP columns.</p>
         <input type="file" id="upload-file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0])"/>
         <button id="upload-btn" onclick="document.getElementById('upload-file-input').click()">Choose File</button>
@@ -188,7 +177,7 @@ const STATE_CONFIG = {
         densityThresholds: [500, 200, 100, 20, 1],
         densityColors: ['#ff2200','#ff6600','#ff9900','#ffcc44','#ffe888'],
         densityOpacities: [0.45, 0.35, 0.28, 0.20, 0.12],
-        densityLabels: ['🔥 HOT ZONE','⬆ HIGH','📈 MODERATE','📊 LOW','🔹 MINIMAL'],
+        densityLabels: ['HOT ZONE','HIGH','MODERATE','LOW','MINIMAL'],
         ehThreshold: 35,
         ehCritical: 50,
         utilities: {
@@ -199,26 +188,25 @@ const STATE_CONFIG = {
             'ORU': { coords: [[41.50,-74.50],[41.50,-73.90],[41.10,-73.90],[41.00,-74.10],[41.00,-74.40],[41.20,-74.60],[41.50,-74.50]], color: '#aa66ff', label: [41.25,-74.25], desc: 'Orange / Rockland / Sullivan Counties', parent: 'Consolidated Edison' }
         },
         toggles: [
-            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: false },
-            { id: 'salesCluster', label: '📍 Sales Pins', default: false },
-            { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
-            { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
-            { id: 'ehZones', label: '⚡ Electric Heat Zones', default: false },
-            { id: 'dacZones', label: '🏘 DAC Zones', default: false },
+            { id: 'zipZones', label: 'ZIP Sales Density', default: false },
+            { id: 'salesCluster', label: 'Sales Pins', default: false },
+            { id: 'incomeOverlay', label: 'Income Overlay', default: false },
+            { id: 'raceOverlay', label: 'Race / Ethnicity', default: false },
+            { id: 'ehZones', label: 'Electric Heat Zones', default: false },
+            { id: 'dacZones', label: ' DAC Zones', default: false },
             '_divider',
-            { id: 'targetZones', label: '🎯 Priority Targets', default: false },
-            { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            { id: 'targetZones', label: 'Priority Targets', default: false },
             '_divider',
-            { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
-            { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
-            { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
-            { id: 'canvassTurfs', label: '📋 Canvass Turfs (8hr Shift)', default: false },
+            { id: 'canvassZones', label: 'Canvass Targeting (Block Group)', default: false },
+            { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
+            { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
             '_divider',
-            { id: 'util_Central Hudson', label: '⚡ Central Hudson', default: false },
-            { id: 'util_NYSEG', label: '⚡ NYSEG', default: false },
-            { id: 'util_RGE', label: '⚡ RGE', default: false },
-            { id: 'util_National Grid', label: '⚡ National Grid', default: false },
-            { id: 'util_ORU', label: '⚡ ORU', default: false }
+            { id: 'util_Central Hudson', label: 'Central Hudson', default: false },
+            { id: 'util_NYSEG', label: 'NYSEG', default: false },
+            { id: 'util_RGE', label: 'RGE', default: false },
+            { id: 'util_National Grid', label: 'National Grid', default: false },
+            { id: 'util_ORU', label: 'ORU', default: false }
         ],
         lmiData: null,
         housingPins: null
@@ -231,33 +219,32 @@ const STATE_CONFIG = {
         densityThresholds: [200, 100, 50, 10, 1],
         densityColors: ['#ff2200','#ff6600','#ff9900','#ffcc44','#ffe888'],
         densityOpacities: [0.45, 0.35, 0.28, 0.20, 0.12],
-        densityLabels: ['🔥 HOT ZONE','⬆ HIGH','📈 MODERATE','📊 LOW','🔹 MINIMAL'],
+        densityLabels: ['HOT ZONE','HIGH','MODERATE','LOW','MINIMAL'],
         ehThreshold: 55,
         ehCritical: 65,
         utilities: {
             'Pepco': { coords: [[39.35,-77.35],[39.35,-76.75],[39.15,-76.55],[38.85,-76.55],[38.75,-76.75],[38.80,-76.95],[38.79,-77.05],[38.82,-77.12],[38.88,-77.15],[38.95,-77.25],[39.00,-77.30],[39.10,-77.35],[39.20,-77.40],[39.35,-77.35]], color: '#00aaff', label: [39.0,-76.95], desc: 'DC Metro / PG County / Montgomery County', parent: 'Exelon' },
-            'Potomac Edison': { coords: [[39.72,-79.50],[39.72,-77.35],[39.35,-77.35],[39.20,-77.40],[39.10,-77.50],[39.10,-77.70],[39.20,-77.85],[39.30,-78.00],[39.25,-78.30],[39.30,-78.60],[39.40,-78.80],[39.50,-79.10],[39.60,-79.30],[39.65,-79.50],[39.72,-79.50]], color: '#ff8800', label: [39.45,-78.30], desc: 'Western MD / Frederick / Hagerstown / Cumberland', parent: 'FirstEnergy' }
+            'Potomac Edison': { coords: [[39.72,-79.50],[39.72,-77.35],[39.35,-77.35],[39.20,-77.40],[39.10,-77.50],[39.10,-77.70],[39.20,-77.85],[39.30,-78.00],[39.25,-78.30],[39.30,-78.60],[39.40,-78.80],[39.50,-79.10],[39.60,-79.30],[39.65,-79.50],[39.72,-79.50]], color: '#3b82f6', label: [39.45,-78.30], desc: 'Western MD / Frederick / Hagerstown / Cumberland', parent: 'FirstEnergy' }
         },
         toggles: [
-            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: false },
-            { id: 'salesCluster', label: '📍 Sales Pins', default: false },
-            { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
-            { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
-            { id: 'ehZones', label: '⚡ Electric Heat Zones', default: false },
-            { id: 'dacZones', label: '🏘 DAC Zones', default: false },
-            { id: 'lmiOutlines', label: '📋 LMI Target Outlines', default: false },
-            { id: 'housingPins', label: '🏠 Housing Facilities', default: false },
+            { id: 'zipZones', label: 'ZIP Sales Density', default: false },
+            { id: 'salesCluster', label: 'Sales Pins', default: false },
+            { id: 'incomeOverlay', label: 'Income Overlay', default: false },
+            { id: 'raceOverlay', label: 'Race / Ethnicity', default: false },
+            { id: 'ehZones', label: 'Electric Heat Zones', default: false },
+            { id: 'dacZones', label: ' DAC Zones', default: false },
+            { id: 'lmiOutlines', label: 'LMI Target Outlines', default: false },
+            { id: 'housingPins', label: 'Housing Facilities', default: false },
             '_divider',
-            { id: 'targetZones', label: '🎯 Priority Targets', default: false },
-            { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            { id: 'targetZones', label: 'Priority Targets', default: false },
             '_divider',
-            { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
-            { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
-            { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
-            { id: 'canvassTurfs', label: '📋 Canvass Turfs (8hr Shift)', default: false },
+            { id: 'canvassZones', label: 'Canvass Targeting (Block Group)', default: false },
+            { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
+            { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
             '_divider',
-            { id: 'util_Pepco', label: '⚡ Pepco', default: false },
-            { id: 'util_Potomac Edison', label: '⚡ Potomac Edison', default: false }
+            { id: 'util_Pepco', label: 'Pepco', default: false },
+            { id: 'util_Potomac Edison', label: 'Potomac Edison', default: false }
         ],
         lmiData: {
             '20743': { city: 'Capitol Heights', lmi: 78, eh: 62, hh: 4200, income: 42500, type: 'Suburban Apt Dense', util: 'Pepco' },
@@ -319,33 +306,32 @@ const STATE_CONFIG = {
         densityThresholds: [200, 100, 50, 10, 1],
         densityColors: ['#ff2200','#ff6600','#ff9900','#ffcc44','#ffe888'],
         densityOpacities: [0.45, 0.35, 0.28, 0.20, 0.12],
-        densityLabels: ['🔥 HOT ZONE','⬆ HIGH','📈 MODERATE','📊 LOW','🔹 MINIMAL'],
+        densityLabels: ['HOT ZONE','HIGH','MODERATE','LOW','MINIMAL'],
         ehThreshold: 50,
         ehCritical: 75,
         utilities: {
             'Dominion Virginia': { coords: [[39.00,-77.50],[39.00,-76.00],[37.80,-76.00],[37.00,-76.30],[36.55,-76.00],[36.55,-76.70],[36.60,-77.20],[36.80,-77.80],[37.20,-78.50],[37.80,-79.00],[38.20,-79.00],[38.50,-78.30],[38.80,-77.80],[39.00,-77.50]], color: '#00cc88', label: [37.50,-77.50], desc: 'Hampton Roads / Richmond / NoVA / Tidewater', parent: 'Dominion Energy' }
         },
         toggles: [
-            { id: 'zipZones', label: '🗺 ZIP Sales Density', default: false },
-            { id: 'salesCluster', label: '📍 Sales History (orange dots)', default: false },
+            { id: 'zipZones', label: 'ZIP Sales Density', default: false },
+            { id: 'salesCluster', label: 'Sales History (orange dots)', default: false },
             { id: 'ordersLayer', label: '◆ Recent Orders (diamonds)', default: false },
-            { id: 'incomeOverlay', label: '💰 Income Overlay', default: false },
-            { id: 'raceOverlay', label: '👥 Race / Ethnicity', default: false },
-            { id: 'ehZones', label: '⚡ Electric Heat Zones', default: false },
-            { id: 'lmiOutlines', label: '📋 LMI Qualify Zones (Arcadia)', default: false },
-            { id: 'dacZones', label: '🏘 DAC Zones', default: false },
-            { id: 'housingPins', label: '🏠 Communities Database', default: false },
-            { id: 'allElectricPins', label: '⚡🏠 All-Electric Communities', default: false },
+            { id: 'incomeOverlay', label: 'Income Overlay', default: false },
+            { id: 'raceOverlay', label: 'Race / Ethnicity', default: false },
+            { id: 'ehZones', label: 'Electric Heat Zones', default: false },
+            { id: 'lmiOutlines', label: 'LMI Qualify Zones (Arcadia)', default: false },
+            { id: 'dacZones', label: ' DAC Zones', default: false },
+            { id: 'housingPins', label: 'Communities Database', default: false },
+            { id: 'allElectricPins', label: 'All-Electric Communities', default: false },
             '_divider',
-            { id: 'targetZones', label: '🎯 Priority Targets', default: false },
-            { id: 'priorityHighlight', label: '🏆 Top 25 Highlight', default: false },
+            { id: 'targetZones', label: 'Priority Targets', default: false },
             '_divider',
-            { id: 'canvassZones', label: '🗺 Canvass Targeting (Block Group)', default: false },
-            { id: 'homeScore', label: '🏠 Home Score (Daytime)', default: false },
-            { id: 'saturationMap', label: '📊 Saturation (Enrolled)', default: false },
-            { id: 'canvassTurfs', label: '📋 Canvass Turfs (8hr Shift)', default: false },
+            { id: 'canvassZones', label: 'Canvass Targeting (Block Group)', default: false },
+            { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
+            { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
             '_divider',
-            { id: 'util_Dominion Virginia', label: '⚡ Dominion Virginia', default: false }
+            { id: 'util_Dominion Virginia', label: 'Dominion Virginia', default: false }
         ],
         lmiData: null,
         housingPins: null,
@@ -465,7 +451,7 @@ function buildTogglePanel() {
         html += `<label><input type="checkbox" id="tog-${t.id}" ${checked} onchange="toggleLayer('${t.id}',this.checked)"/>${t.label}</label>`;
     });
     html += '<div class="toggle-divider"></div>';
-    html += '<label style="color:#00aaff;cursor:pointer" onclick="openUpload()">📂 Upload Data</label>';
+    html += '<label style="color:#00aaff;cursor:pointer" onclick="openUpload()"> Upload Data</label>';
     panel.innerHTML = html;
 }
 
@@ -516,7 +502,6 @@ async function switchState(stateCode) {
     priorityData = {};
 
     // Initialize feature groups
-    const groupIds = ['zipZones','salesCluster','incomeOverlay','raceOverlay','ehZones','dacZones','targetZones','priorityHighlight','canvassZones','homeScore','saturationMap','canvassTurfs'];
     if (cfg.hasExtras) { groupIds.push('ordersLayer','lmiOutlines','housingPins','allElectricPins'); }
     if (cfg.lmiData) groupIds.push('lmiOutlines');
     if (cfg.housingPins) groupIds.push('housingPins');
@@ -629,7 +614,7 @@ async function loadZipBoundaries() {
                     popup += `<br>Demo: <span style="color:${rDom.color};">${rDom.top3}</span>`;
                 }
                 if (dac) popup += `<br><span style="color:#ff66aa;font-weight:bold;">DAC Zone (${dac.pct}%)</span>`;
-                if (lmi) popup += `<br><span style="color:${lmi.util === 'Pepco' ? '#00aaff' : '#ff8800'};font-weight:bold;">${lmi.util}</span>`;
+                if (lmi) popup += `<br><span style="color:${lmi.util === 'Pepco' ? '#00aaff' : '#3b82f6'};font-weight:bold;">${lmi.util}</span>`;
                 layer.bindTooltip(popup, { sticky: true, opacity: 0.95 });
             }
         }).addTo(fg.zipZones);
@@ -673,7 +658,7 @@ async function loadSalesData() {
     updateLoading('Loading sales data from Supabase...', 50);
 
     const statusColors = {
-        'Payable':'#00c853','Completed':'#00c853','Processed':'#00c853','Sent':'#ff8800',
+        'Payable':'#00c853','Completed':'#00c853','Processed':'#00c853','Sent':'#3b82f6',
         'Cancelled':'#ff1744','Cannot Process':'#ff1744','Denied':'#d50000',
         'Invalid':'#d50000','Chargeback':'#aa00ff','Void':'#aa00ff',
         'Rejected':'#ff1744','Duplicate':'#757575','Draft':'#bdbdbd',
@@ -709,7 +694,7 @@ async function loadSalesData() {
 
         salesData.forEach((d, i) => {
             const [lat, lon, city, zip, status, state] = d;
-            const sc = statusColors[status] || '#ff8800';
+            const sc = statusColors[status] || '#3b82f6';
             const marker = L.circleMarker([lat, lon], pinStyle(status, sc));
             marker.bindTooltip(`${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
             marker.on('click', async function () {
@@ -719,8 +704,8 @@ async function loadSalesData() {
                     if (rows.length) {
                         const s = rows[0];
                         marker.setPopupContent(
-                            `<div style="min-width:220px;"><b>📍 ${esc(s.city||'')} ${esc(s.zip_code||'')}</b><br>` +
-                            `📅 ${s.sale_date||'N/A'}<br>` +
+                            `<div style="min-width:220px;"><b>${esc(s.city||'')} ${esc(s.zip_code||'')}</b><br>` +
+                            ` ${s.sale_date||'N/A'}<br>` +
                             `Status: <span style="color:${sc};font-weight:700">${esc(s.order_status||'N/A')}</span><br>` +
                             `Rep: ${esc(s.rep_name||'N/A')}<br>` +
                             `${s.customer_name ? 'Customer: '+esc(s.customer_name)+'<br>' : ''}` +
@@ -732,7 +717,7 @@ async function loadSalesData() {
                         );
                     }
                 } catch (e) {
-                    marker.setPopupContent(`<b>📍 ${esc(city||'')} ${esc(zip||'')}</b><br>Status: ${esc(status||'N/A')}`);
+                    marker.setPopupContent(`<b>${esc(city||'')} ${esc(zip||'')}</b><br>Status: ${esc(status||'N/A')}`);
                 }
             });
             marker.addTo(fg.salesCluster);
@@ -746,9 +731,9 @@ async function loadSalesData() {
             updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins (static)...`, 65);
             salesData.forEach(d => {
                 const [lat, lon, city, zip, date, status, rep] = d;
-                const sc = statusColors[status] || '#ff8800';
+                const sc = statusColors[status] || '#3b82f6';
                 const marker = L.circleMarker([lat, lon], pinStyle(status, sc));
-                marker.bindPopup(`<b>📍 ${city||''}</b> ${zip||''}<br>📅 ${date||'N/A'}<br>Status: <span style="color:${sc};font-weight:700">${status||'N/A'}</span><br>Rep: ${rep||'N/A'}`);
+                marker.bindPopup(`<b>${city||''}</b> ${zip||''}<br> ${date||'N/A'}<br>Status: <span style="color:${sc};font-weight:700">${status||'N/A'}</span><br>Rep: ${rep||'N/A'}`);
                 marker.addTo(fg.salesCluster);
             });
         } catch (e) {
@@ -801,10 +786,10 @@ async function loadVAExtras() {
                 'Mobile Home Park': '#00ddff'
             };
             const commEmoji = {
-                'LIHTC Affordable': '🏢', 'Public Housing': '🏘',
-                'Section 8/Assisted': '🏠', 'HUD Insured': '🏠',
-                'Senior Housing (202)': '👴', 'USDA Rural': '🌾',
-                'Mobile Home Park': '🏕'
+                'LIHTC Affordable': '', 'Public Housing': '',
+                'Section 8/Assisted': '', 'HUD Insured': '',
+                'Senior Housing (202)': '', 'USDA Rural': '',
+                'Mobile Home Park': ''
             };
 
             communities.features.forEach(f => {
@@ -813,7 +798,7 @@ async function loadVAExtras() {
                 const p = f.properties;
                 const propType = p.prop_type || 'Unknown';
                 const col = commColors[propType] || '#888';
-                const emoji = commEmoji[propType] || '📍';
+                const emoji = commEmoji[propType] || '';
                 const units = p.units || 'N/A';
 
                 const marker = L.circleMarker([lat, lon], {
@@ -873,7 +858,7 @@ async function loadVAExtras() {
                     iconSize: [11, 11], iconAnchor: [5.5, 5.5]
                 });
                 const marker = L.marker([jLat, jLon], { icon });
-                marker.bindPopup(`<b style="color:${col}">📋 ${o.st}</b><br>${o.c} (${o.z})<br>Date: ${o.d}<br>Campaign: ${o.camp}<br>Rep: ${o.rep || 'N/A'}<br>TPV: ${o.tpv || 'N/A'}<br>Type: ${o.dw || 'N/A'}${o.lmi ? '<br><span style="color:#00cc66;">LMI: ' + o.lmi + '</span>' : ''}`);
+                marker.bindPopup(`<b style="color:${col}">${o.st}</b><br>${o.c} (${o.z})<br>Date: ${o.d}<br>Campaign: ${o.camp}<br>Rep: ${o.rep || 'N/A'}<br>TPV: ${o.tpv || 'N/A'}<br>Type: ${o.dw || 'N/A'}${o.lmi ? '<br><span style="color:#00cc66;">LMI: ' + o.lmi + '</span>' : ''}`);
                 marker.addTo(fg.ordersLayer);
             });
         } catch(e) { console.warn('Orders load error:', e); }
@@ -911,7 +896,7 @@ function loadAllElectricPins(communities) {
             radius: 9, fillColor: '#ff00ff', color: '#fff',
             weight: 2, fillOpacity: 0.9
         });
-        marker.bindPopup(`<b>⚡🏠 ALL-ELECTRIC ZONE</b><br><b>${p.name || 'Community'}</b><br>${p.prop_type || 'Unknown'}<br>City: ${p.city || 'N/A'}<br>Units: <b>${p.units || 'N/A'}</b><br><span style="color:#ff00ff;">High Electric Heat Area (75%+)</span>`);
+        marker.bindPopup(`<b>ALL-ELECTRIC ZONE</b><br><b>${p.name || 'Community'}</b><br>${p.prop_type || 'Unknown'}<br>City: ${p.city || 'N/A'}<br>Units: <b>${p.units || 'N/A'}</b><br><span style="color:#ff00ff;">High Electric Heat Area (75%+)</span>`);
         marker.addTo(fg.allElectricPins);
     });
 }
@@ -947,7 +932,7 @@ function getUtilityOutageLinks(name, color) {
     };
     const l = links[name];
     if (!l) return '';
-    return `· ${l.customers} customers<br><a href="${l.outage}" target="_blank" style="color:${color};">🔴 Live Outage Map</a> · <a href="${l.report}" target="_blank" style="color:${color};">Report Outage</a><br><span style="font-size:10px;color:#888;">${l.solar}</span>`;
+    return `· ${l.customers} customers<br><a href="${l.outage}" target="_blank" style="color:${color};"> Live Outage Map</a> · <a href="${l.report}" target="_blank" style="color:${color};">Report Outage</a><br><span style="font-size:10px;color:#888;">${l.solar}</span>`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -961,7 +946,7 @@ const CANVASS_DETAIL_ZOOM = 12;
 const gradeColors = { 'A': '#00cc66', 'B': '#ffcc00', 'C': '#ff8844', 'D': '#ff3333' };
 const gradeOpacity = { 'A': 0.30, 'B': 0.22, 'C': 0.18, 'D': 0.12 };
 const gradeLabels = { 'A': 'TOP PRIORITY', 'B': 'HIGH VALUE', 'C': 'MODERATE', 'D': 'LOW PRIORITY' };
-function homeColor(s) { return s >= 60 ? '#00ff88' : s >= 45 ? '#88ff44' : s >= 30 ? '#ffcc00' : '#ff6644'; }
+function homeColor(s) { return s >= 60 ? '#10b981' : s >= 45 ? '#88ff44' : s >= 30 ? '#ffcc00' : '#ff6644'; }
 
 function canvassPopup(p, isBG) {
     const grade = p.cg || p.canvass_grade || 'D';
@@ -984,16 +969,16 @@ function canvassPopup(p, isBG) {
         <b style="color:${gradeColors[grade]};font-size:14px;">GRADE ${grade}: ${gradeLabels[grade]}</b>
         <br><span style="color:#888;">${level} ${geoid} · ${county}</span>
         <hr style="border-color:#333;margin:4px 0;">
-        <b>🎯 Opportunity:</b> ${oppS}/100<br>
-        <b>🏠 Home Score:</b> ${homeS}/100 (${Math.round(dh)}% daytime)<br>
-        <b>💼 WFH:</b> ${wfh}%<br>
+        <b>Opportunity:</b> ${oppS}/100<br>
+        <b>Home Score:</b> ${homeS}/100 (${Math.round(dh)}% daytime)<br>
+        <b> WFH:</b> ${wfh}%<br>
         <b>⏰ Best Time:</b> ${bt || 'N/A'}<br>
         <hr style="border-color:#333;margin:4px 0;">
-        <b>📋 LMI Est:</b> ${lmiEst}%<br>
-        <b>⚡ EH:</b> ${eh}%<br>
-        <b>🏠 Own/Rent:</b> ${op}% / ${rp}%<br>
-        <b>👥 Pop:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br>
-        <b>💰 Income:</b> $${mi.toLocaleString()}<br>
+        <b>LMI Est:</b> ${lmiEst}%<br>
+        <b>EH:</b> ${eh}%<br>
+        <b>Own/Rent:</b> ${op}% / ${rp}%<br>
+        <b>Pop:</b> ${pop.toLocaleString()} · ${hh.toLocaleString()} HH<br>
+        <b>Income:</b> $${mi.toLocaleString()}<br>
     </div>`;
 }
 
@@ -1113,7 +1098,7 @@ function renderTurfs() {
     if (!_canvassData.turfs) return;
     fg.canvassTurfs.clearLayers();
     const bounds = map.getBounds();
-    const turfColors = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+    const turfColors = { 'A': '#10b981', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
 
     _canvassData.turfs.features.forEach(f => {
         const p = f.properties;
@@ -1192,7 +1177,7 @@ function loadLMIOutlines() {
         L.geoJSON(feature, {
             style: {
                 fillColor: 'transparent', fillOpacity: 0,
-                color: lmi.util === 'Pepco' ? '#00aaff' : '#ff8800',
+                color: lmi.util === 'Pepco' ? '#00aaff' : '#3b82f6',
                 weight: 3, opacity: 0.8,
                 dashArray: isCritical ? null : '8, 4'
             }
@@ -1206,7 +1191,7 @@ function loadHousingPins() {
     updateLoading('Loading housing database...', 85);
 
     const tc = { 'LIHTC':'#aa66ff','Public Housing':'#ff6666','Section 8':'#66aaff','Senior Housing':'#ffcc66','Mobile Home':'#00ddff' };
-    const te = { 'LIHTC':'🏢','Public Housing':'🏘','Section 8':'🏠','Senior Housing':'👴','Mobile Home':'🏕' };
+    const te = { 'LIHTC':'','Public Housing':'','Section 8':'','Senior Housing':'','Mobile Home':'' };
 
     cfg.housingPins.forEach(x => {
         const col = tc[x.t] || '#888';
@@ -1227,8 +1212,8 @@ function loadHousingPins() {
             radius: Math.max(8, Math.min(18, Math.sqrt(x.u) / 1.5)),
             fillColor: col, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
         });
-        const ehBadge = x.eh && ehPct >= cfg.ehThreshold ? `<br><span style="color:#ff3333;">🔥 Electric Heat: ${ehPct}%</span>` : '';
-        marker.bindPopup(`<b>${te[x.t]||'📍'} ${x.n}</b><br>${x.t} | ${x.c}<br>Units: <b>${x.u}</b>${ehBadge}<br>Deals in ZIP: <b style="color:#ff8800;">${zipDeals}</b>`);
+        const ehBadge = x.eh && ehPct >= cfg.ehThreshold ? `<br><span style="color:#ff3333;">Electric Heat: ${ehPct}%</span>` : '';
+        marker.bindPopup(`<b>${te[x.t]||''} ${x.n}</b><br>${x.t} | ${x.c}<br>Units: <b>${x.u}</b>${ehBadge}<br>Deals in ZIP: <b style="color:#3b82f6;">${zipDeals}</b>`);
         marker.addTo(fg.housingPins);
     });
 }
@@ -1327,12 +1312,12 @@ function loadTargetZones() {
             if (!centroid) return;
 
             // Target pin
-            const pinColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#ff8800' : '#ffcc44';
+            const pinColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#3b82f6' : '#ffcc44';
             const marker = L.circleMarker(centroid, {
                 radius: Math.max(6, Math.min(14, s.score / 8)),
                 fillColor: pinColor, color: '#fff', weight: 2, fillOpacity: 0.85
             });
-            marker.bindPopup(`<b>🎯 #${i + 1} ${s.city}</b><br>ZIP: ${s.zip}<br>Score: <b style="color:${pinColor}">${s.score}/100</b><br>Utility: <span style="color:${utilColor}">${utilName}</span><br>${s.dac ? '<span style="color:#ff66aa;">DAC Zone</span><br>' : ''}Income: $${s.inc.toLocaleString()} | EH: ${s.ehp}%`);
+            marker.bindPopup(`<b>#${i + 1} ${s.city}</b><br>ZIP: ${s.zip}<br>Score: <b style="color:${pinColor}">${s.score}/100</b><br>Utility: <span style="color:${utilColor}">${utilName}</span><br>${s.dac ? '<span style="color:#ff66aa;">DAC Zone</span><br>' : ''}Income: $${s.inc.toLocaleString()} | EH: ${s.ehp}%`);
             marker.addTo(fg.targetZones);
 
             // Priority highlight (top 25 globally)
@@ -1340,8 +1325,7 @@ function loadTargetZones() {
                 const feature = zipGeoFeatures[s.zip];
                 if (feature) {
                     L.geoJSON(feature, {
-                        style: { fillColor: '#00ff88', fillOpacity: 0.25, color: '#00ff88', weight: 3, opacity: 0.8 }
-                    }).addTo(fg.priorityHighlight);
+                        style: { fillColor: '#10b981', fillOpacity: 0.25, color: '#10b981', weight: 3, opacity: 0.8 }
                 }
             }
         });
@@ -1379,7 +1363,6 @@ function showPriorityTab(utilName, btn) {
     const cfg = STATE_CONFIG[currentState];
     // Update active tab
     if (btn) {
-        document.querySelectorAll('#priority-tabs button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
     }
 
@@ -1400,7 +1383,7 @@ function showPriorityTab(utilName, btn) {
 
     let html = '';
     items.slice(0, 50).forEach((s, i) => {
-        const scoreColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#ff8800' : '#ffcc44';
+        const scoreColor = s.score >= 70 ? '#ff3333' : s.score >= 50 ? '#3b82f6' : '#ffcc44';
         const utilColor = cfg.utilities[s.utility] ? cfg.utilities[s.utility].color : '#888';
         html += `<div class="priority-row" onclick="focusZip('${s.zip}')">
             <span class="priority-rank">${i + 1}</span>
@@ -1417,10 +1400,7 @@ function showPriorityTab(utilName, btn) {
     body.innerHTML = html;
 }
 
-function togglePriority() {
-    const panel = document.getElementById('priority-panel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
+
 
 function focusZip(zip) {
     const centroid = zipCentroids[zip];
@@ -1471,9 +1451,9 @@ function showZipDetail(zip, count, cities, demo, dac, lmi) {
             <div class="info-section">
                 <div class="info-section-title">Electric Heating</div>
                 <div class="info-row"><span class="info-label">EH Households:</span><span class="info-value" style="color:#ff3333;">${demo.ehe ? demo.ehe.toLocaleString() : 'N/A'}</span></div>
-                <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= cfg.ehCritical ? '#ff3333' : demo.ehp >= cfg.ehThreshold ? '#ffaa44' : '#aaa'};">${demo.ehp}%</span></div>
+                <div class="info-row"><span class="info-label">EH Rate:</span><span class="info-value" style="color:${demo.ehp >= cfg.ehCritical ? '#ff3333' : demo.ehp >= cfg.ehThreshold ? '#60a5fa' : '#aaa'};">${demo.ehp}%</span></div>
                 <div style="height:8px;background:#333;border-radius:4px;margin-top:4px;overflow:hidden;">
-                    <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= cfg.ehCritical ? '#ff3333' : demo.ehp >= cfg.ehThreshold ? '#ffaa44' : '#666'};"></div>
+                    <div style="width:${Math.min(demo.ehp,100)}%;height:100%;background:${demo.ehp >= cfg.ehCritical ? '#ff3333' : demo.ehp >= cfg.ehThreshold ? '#60a5fa' : '#666'};"></div>
                 </div>
             </div>`;
     }
@@ -1487,7 +1467,7 @@ function showZipDetail(zip, count, cities, demo, dac, lmi) {
     }
 
     if (lmi) {
-        const uc = lmi.util === 'Pepco' ? '#00aaff' : '#ff8800';
+        const uc = lmi.util === 'Pepco' ? '#00aaff' : '#3b82f6';
         html += `<div class="info-section">
             <div class="info-section-title">LMI Target Intel</div>
             <div class="info-row"><span class="info-label">Utility:</span><span class="info-value" style="color:${uc}">${lmi.util}</span></div>
@@ -1591,14 +1571,14 @@ function setupUniversalClick() {
         // Sales Activity
         const sColor = getDensityColor(sales.n);
         h += `<div style="margin-bottom:8px;">`;
-        h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">📊 Sales Activity</div>`;
+        h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">Sales Activity</div>`;
         h += `<div style="display:flex;gap:12px;">`;
         h += `<div><span style="color:#888;">Orders:</span> <b style="color:${sColor}">${sales.n.toLocaleString()}</b></div>`;
         h += `<div><span style="color:#888;">Density:</span> ${getDensityLabel(sales.n)}</div>`;
         h += `</div>`;
         if (targeting) {
             const sat = targeting.sat || 0;
-            const satIcon = sat >= 10 ? '🔴' : sat >= 5 ? '🟡' : '🟢';
+            const satIcon = sat >= 10 ? '' : sat >= 5 ? '' : '';
             h += `<div style="margin-top:3px;"><span style="color:#888;">Saturation:</span> <b>${sat}%</b> ${satIcon} · Arcadia: ${targeting.ep || 0} payable / ${targeting.eat || 0} total</div>`;
         }
         h += `</div>`;
@@ -1617,7 +1597,7 @@ function setupUniversalClick() {
             const rp = detail.rp || detail.rent_pct || 0;
 
             h += `<div style="border-top:1px solid #333;padding-top:6px;margin-bottom:8px;">`;
-            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">🎯 Canvass Intelligence <span style="color:#666;font-weight:400;">(${detailLevel})</span></div>`;
+            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">Canvass Intelligence <span style="color:#666;font-weight:400;">(${detailLevel})</span></div>`;
             h += `<div style="display:inline-block;padding:2px 8px;border-radius:3px;font-weight:700;background:${gradeColors[grade]}22;color:${gradeColors[grade]};border:1px solid ${gradeColors[grade]}44;margin-bottom:4px;">GRADE ${grade}: ${gradeLabels[grade]}</div>`;
             h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">`;
             h += `<div><span style="color:#888;">Opportunity:</span> <b>${oppS}</b>/100</div>`;
@@ -1634,7 +1614,7 @@ function setupUniversalClick() {
         // Demographics
         if (demo) {
             h += `<div style="border-top:1px solid #333;padding-top:6px;margin-bottom:8px;">`;
-            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">👥 Demographics</div>`;
+            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">Demographics</div>`;
             // Race bar
             h += `<div style="display:flex;height:10px;border-radius:3px;overflow:hidden;margin-bottom:3px;">`;
             h += `<div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>`;
@@ -1655,7 +1635,7 @@ function setupUniversalClick() {
             h += `<div><span style="color:#888;">Median Age:</span> ${demo.age}</div>`;
             h += `<div><span style="color:#888;">HH Size:</span> ${demo.hhs}</div>`;
             if (demo.ehp !== undefined) {
-                h += `<div><span style="color:#888;">EH Rate:</span> <span style="color:${demo.ehp >= 40 ? '#ff3333' : demo.ehp >= 20 ? '#ffaa44' : '#aaa'};">${demo.ehp}%</span></div>`;
+                h += `<div><span style="color:#888;">EH Rate:</span> <span style="color:${demo.ehp >= 40 ? '#ff3333' : demo.ehp >= 20 ? '#60a5fa' : '#aaa'};">${demo.ehp}%</span></div>`;
                 h += `<div><span style="color:#888;">EH HH:</span> ${demo.ehe ? demo.ehe.toLocaleString() : 'N/A'}</div>`;
             }
             h += `</div></div>`;
@@ -1665,16 +1645,16 @@ function setupUniversalClick() {
         if (dac || lmi) {
             h += `<div style="border-top:1px solid #333;padding-top:6px;">`;
             if (dac) h += `<div><span style="color:#ff66aa;font-weight:700;">DAC Zone</span> — ${dac.pct}% coverage</div>`;
-            if (lmi) h += `<div><span style="color:${lmi.util === 'Pepco' ? '#00aaff' : '#ff8800'};font-weight:700;">${lmi.util}</span> — LMI: ${lmi.lmi}% · ${lmi.type}</div>`;
+            if (lmi) h += `<div><span style="color:${lmi.util === 'Pepco' ? '#00aaff' : '#3b82f6'};font-weight:700;">${lmi.util}</span> — LMI: ${lmi.lmi}% · ${lmi.type}</div>`;
             h += `</div>`;
         }
 
         // Canvass Turf assignment
         if (turf) {
-            const tc = { 'A': '#00ff88', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
+            const tc = { 'A': '#10b981', 'B': '#ffdd00', 'C': '#ff8844', 'D': '#ff4444' };
             const tg = turf.grade || 'C';
             h += `<div style="border-top:1px solid #333;padding-top:6px;margin-top:4px;">`;
-            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">📋 Canvass Turf #${turf.id} <span style="color:${tc[tg]};font-weight:700;">(Grade ${tg})</span></div>`;
+            h += `<div style="font-weight:700;color:#fff;margin-bottom:4px;">Canvass Turf #${turf.id} <span style="color:${tc[tg]};font-weight:700;">(Grade ${tg})</span></div>`;
             h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">`;
             h += `<div><span style="color:#888;">Est. Doors:</span> <b style="color:${tc[tg]}">${turf.doors}</b></div>`;
             h += `<div><span style="color:#888;">Households:</span> ${turf.hh.toLocaleString()}</div>`;
@@ -1683,7 +1663,7 @@ function setupUniversalClick() {
             h += `<div><span style="color:#888;">Opp Score:</span> ${turf.opp}/100</div>`;
             h += `<div><span style="color:#888;">Home Score:</span> ${turf.hs}/100</div>`;
             h += `</div>`;
-            h += `<div style="margin-top:4px;padding:4px 8px;background:rgba(0,255,136,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ${turf.county}</div>`;
+            h += `<div style="margin-top:4px;padding:4px 8px;background:rgba(16,185,129,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ${turf.county}</div>`;
             h += `</div>`;
         }
 
@@ -1902,9 +1882,9 @@ function processUpload() {
     // Add to sales cluster
     points.forEach(d => {
         const marker = L.circleMarker([d[0], d[1]], {
-            radius: 4, fillColor: '#00ff88', color: '#00ff88', weight: 0, fillOpacity: 0.7
+            radius: 4, fillColor: '#10b981', color: '#10b981', weight: 0, fillOpacity: 0.7
         });
-        marker.bindPopup(`<b style="color:#00ff88;">📂 Uploaded</b><br>${d[2]}<br>ZIP: ${d[3]}<br>${d[4]}`);
+        marker.bindPopup(`<b style="color:#10b981;"> Uploaded</b><br>${d[2]}<br>ZIP: ${d[3]}<br>${d[4]}`);
         marker.addTo(fg.salesCluster);
     });
 
