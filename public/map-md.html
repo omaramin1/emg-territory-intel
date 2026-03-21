@@ -501,7 +501,7 @@
         // ── AI RECOMMENDATIONS PANEL ──
         async function loadRecommendations() {
             try {
-                const recs = await sbFetch('/v_recommended_areas?select=zip_code,city,state,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,last_7d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc&limit=15');
+                const recs = await sbFetch('/v_recommended_areas?select=zip_code,city,state,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,last_7d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc,old_deals.desc&limit=25');
 
                 const body = document.getElementById('recoBody');
                 if (!recs.length) { body.innerHTML = '<div style="padding:12px;color:#888;text-align:center;">No recommendations — check back after uploading new data</div>'; return; }
