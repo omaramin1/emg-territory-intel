@@ -627,17 +627,28 @@
         async function loadZipBoundaries() {
             try {
                 updateLoading('Loading ZIP code boundaries...', 10);
-                const [geoResp, dataResp, demoResp, lmiResp] = await Promise.all([
+                const [geoResp, demoResp, lmiResp] = await Promise.all([
                     fetch('ny_zip_boundaries.geojson'),
-                    fetch('ny_zip_data.json'),
                     fetch('ny_demographics.json'),
                     fetch('ny_lmi_thresholds.json')
                 ]);
                 if (!geoResp.ok) throw new Error('Failed to load boundaries');
                 const boundaries = await geoResp.json();
-                zipSalesData = dataResp.ok ? await dataResp.json() : {};
                 demoData = demoResp.ok ? await demoResp.json() : {};
                 lmiThresholds = lmiResp.ok ? await lmiResp.json() : {};
+                // Load ZIP sales from Supabase (live) with static fallback
+                try {
+                    const sbZips = await sbFetch('/v_zip_sales?select=zip_code,city,total_sales,payable,cancelled,reps_deployed,close_rate,first_sale,last_sale,last_30d,last_7d&state=eq.NY&limit=5000');
+                    zipSalesData = {};
+                    sbZips.forEach(z => {
+                        zipSalesData[z.zip_code] = { n: z.total_sales, c: z.city||'', completed: z.payable, sent: 0, cancelled: z.cancelled, reps: z.reps_deployed, closeRate: z.close_rate, first: z.first_sale, last: z.last_sale, last30d: z.last_30d, last7d: z.last_7d };
+                    });
+                    console.log('ZIP sales from Supabase:', Object.keys(zipSalesData).length, 'ZIPs');
+                } catch(sbErr) {
+                    console.warn('Supabase ZIP sales fallback:', sbErr);
+                    const dataResp = await fetch('ny_zip_data.json');
+                    zipSalesData = dataResp.ok ? await dataResp.json() : {};
+                }
 
                 updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
 
@@ -662,6 +673,11 @@
                             let popup = `<b>ZIP ${zip}</b>`;
                             if (cities) popup += `<br>${cities}`;
                             popup += `<br>Sales: <b style="color:${color}">${count.toLocaleString()}</b> ${getDensityLabel(count)}`;
+                            if (sales.completed != null) {
+                                popup += `<br><span style="color:#27ae60;">Payable: ${sales.completed||0}</span> · <span style="color:#e74c3c;">Cancelled: ${sales.cancelled||0}</span>`;
+                                if (sales.closeRate) popup += ` · <span style="color:#10b981;">Close: ${sales.closeRate}%</span>`;
+                            }
+                            if (sales.last30d || sales.last7d) popup += `<br><span style="color:#60a5fa;">Last 30d: ${sales.last30d||0} · Last 7d: ${sales.last7d||0} · Reps: ${sales.reps||0}</span>`;
                             if (dTip && dTip.inc > 0) {
                                 const incCol = getIncomeColor(dTip.inc, zip);
                                 popup += `<br>Income/capita: <b style="color:${incCol};">$${dTip.inc.toLocaleString()}</b>`;
@@ -677,6 +693,15 @@
                                     <div class="info-row"><span class="info-label">Total Sales:</span><span class="info-value" style="color:${color}">${count.toLocaleString()}</span></div>
                                     <div class="info-row"><span class="info-label">Density:</span><span class="info-value">${getDensityLabel(count)}</span></div>
                                     ${cities ? `<div class="info-row"><span class="info-label">Cities:</span><span class="info-value">${cities}</span></div>` : ''}`;
+                                if (sales.completed != null) {
+                                    html += `<div class="info-row"><span class="info-label">Payable:</span><span class="info-value" style="color:#27ae60;">${sales.completed||0}</span></div>`;
+                                    html += `<div class="info-row"><span class="info-label">Cancelled:</span><span class="info-value" style="color:#e74c3c;">${sales.cancelled||0}</span></div>`;
+                                    if (sales.closeRate) html += `<div class="info-row"><span class="info-label">Close Rate:</span><span class="info-value" style="color:#10b981;">${sales.closeRate}%</span></div>`;
+                                    if (sales.reps) html += `<div class="info-row"><span class="info-label">Reps Deployed:</span><span class="info-value">${sales.reps}</span></div>`;
+                                    if (sales.last30d || sales.last7d) html += `<div class="info-row"><span class="info-label">Last 30d / 7d:</span><span class="info-value" style="color:#60a5fa;">${sales.last30d||0} / ${sales.last7d||0}</span></div>`;
+                                    if (sales.first) html += `<div class="info-row"><span class="info-label">First Sale:</span><span class="info-value">${sales.first}</span></div>`;
+                                    if (sales.last) html += `<div class="info-row"><span class="info-label">Last Sale:</span><span class="info-value">${sales.last}</span></div>`;
+                                }
                                 if (demo) {
                                     const raceBar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;margin:4px 0;">
                                         <div style="width:${demo.rw}%;background:#e8d4a8;" title="White ${demo.rw}%"></div>

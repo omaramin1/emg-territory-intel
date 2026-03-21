@@ -560,18 +560,30 @@ async function loadZipBoundaries() {
     const prefix = cfg.dataPrefix;
     updateLoading('Loading ZIP boundaries...', 10);
 
-    const [geoResp, dataResp, demoResp, dacResp] = await Promise.all([
+    const [geoResp, demoResp, dacResp] = await Promise.all([
         fetch(`${prefix}_zip_boundaries.geojson`),
-        fetch(`${prefix}_zip_data.json`),
         fetch(`${prefix}_demographics.json`),
         fetch(`${prefix}_dac.json`).catch(() => null)
     ]);
 
     if (!geoResp.ok) throw new Error('Failed to load boundaries');
     const boundaries = await geoResp.json();
-    zipSalesData = dataResp.ok ? await dataResp.json() : {};
     demoData = demoResp.ok ? await demoResp.json() : {};
     dacData = (dacResp && dacResp.ok) ? await dacResp.json() : {};
+    // Load ZIP sales from Supabase (live) with static fallback
+    try {
+        const stateParam = currentState ? `&state=eq.${currentState}` : '';
+        const sbZips = await sbFetch('/v_zip_sales?select=zip_code,city,total_sales,payable,cancelled,reps_deployed,close_rate,first_sale,last_sale,last_30d,last_7d' + stateParam + '&limit=5000');
+        zipSalesData = {};
+        sbZips.forEach(z => {
+            zipSalesData[z.zip_code] = { n: z.total_sales, c: z.city||'', completed: z.payable, sent: 0, cancelled: z.cancelled, reps: z.reps_deployed, closeRate: z.close_rate, first: z.first_sale, last: z.last_sale, last30d: z.last_30d, last7d: z.last_7d };
+        });
+        console.log('ZIP sales from Supabase:', Object.keys(zipSalesData).length, 'ZIPs');
+    } catch(sbErr) {
+        console.warn('Supabase ZIP sales fallback:', sbErr);
+        const dataResp = await fetch(`${prefix}_zip_data.json`);
+        zipSalesData = dataResp.ok ? await dataResp.json() : {};
+    }
     boundaryFeatures = boundaries.features;
 
     updateLoading(`Rendering ${boundaries.features.length} ZIP zones...`, 25);
@@ -1576,6 +1588,13 @@ function setupUniversalClick() {
         h += `<div><span style="color:#888;">Orders:</span> <b style="color:${sColor}">${sales.n.toLocaleString()}</b></div>`;
         h += `<div><span style="color:#888;">Density:</span> ${getDensityLabel(sales.n)}</div>`;
         h += `</div>`;
+        if (sales.completed != null) {
+            h += `<div style="margin-top:3px;font-size:11px;"><span style="color:#27ae60;">Payable: ${sales.completed||0}</span> · <span style="color:#e74c3c;">Cancelled: ${sales.cancelled||0}</span>`;
+            if (sales.closeRate) h += ` · <span style="color:#10b981;">Close: ${sales.closeRate}%</span>`;
+            h += `</div>`;
+            if (sales.last30d || sales.last7d) h += `<div style="font-size:11px;color:#60a5fa;">Last 30d: ${sales.last30d||0} · Last 7d: ${sales.last7d||0} · Reps: ${sales.reps||0}</div>`;
+            if (sales.first || sales.last) h += `<div style="font-size:11px;color:#888;">First: ${sales.first||'—'} · Last: ${sales.last||'—'}</div>`;
+        }
         if (targeting) {
             const sat = targeting.sat || 0;
             const satIcon = sat >= 10 ? '' : sat >= 5 ? '' : '';
