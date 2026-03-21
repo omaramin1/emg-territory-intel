@@ -498,48 +498,72 @@
             return r.json();
         }
 
-        // ── AI RECOMMENDATIONS PANEL ──
+        // ── TODAY'S SHIFTS + UTILITY FILTER ──
+        let dailyShifts = [];
+        let zipRecos = [];
+        let selectedUtility = 'ALL';
+
         async function loadRecommendations() {
             try {
-                const recs = await sbFetch('/v_recommended_areas?select=zip_code,city,state,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,last_7d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc,old_deals.desc&limit=25');
-
-                const body = document.getElementById('recoBody');
-                if (!recs.length) { body.innerHTML = '<div style="padding:12px;color:#888;text-align:center;">No recommendations — check back after uploading new data</div>'; return; }
-
-                document.getElementById('recoCount').textContent = recs.length + ' areas';
-
-                let html = '';
-                recs.forEach((r, i) => {
-                    const rank = i + 1;
-                    const tagColor = r.recommendation.includes('REVISIT') ? '#ffd700' : r.recommendation.includes('REOPEN') ? '#ff9800' : r.recommendation.includes('UNTOUCHED') ? '#00c853' : r.recommendation.includes('ACTIVE') ? '#ff1744' : '#3b82f6';
-                    const tagBg = tagColor + '22';
-                    const tagText = r.recommendation.split('—')[0].trim();
-
-                    // Shareable link: zoom to this ZIP
-                    const shareUrl = window.location.href.split('?')[0] + '?zip=' + r.zip_code;
-
-                    html += '<div class="reco-card" onclick="if(zipCentroids[\'' + r.zip_code + '\']){map.setView(zipCentroids[\'' + r.zip_code + '\'],14);}">';
-                    html += '<div style="display:flex;align-items:center;">';
-                    html += '<div class="reco-rank" style="color:' + (rank<=3?'#ffd700':rank<=7?'#ff8c00':'#888') + ';">' + rank + '</div>';
-                    html += '<div style="flex:1;">';
-                    html += '<div><span class="reco-zip">' + r.zip_code + '</span> <span class="reco-city">' + (r.city||'') + ', ' + r.state + '</span></div>';
-                    html += '<div style="margin-top:2px;"><span class="reco-tag" style="background:' + tagBg + ';color:' + tagColor + ';border:1px solid ' + tagColor + '44;">' + tagText + '</span></div>';
-                    html += '<div class="reco-stats">';
-                    html += 'Old: ' + r.old_deals + ' · New: ' + r.new_deals + ' · Payable: ' + r.payable + ' · Close: ' + r.close_rate + '%';
-                    if (r.last_canvassed) html += '<br>Last hit: ' + r.last_canvassed + ' · Reps: ' + r.reps_deployed;
-                    if (r.recent_reps > 0) html += ' · <span style="color:#ff9800;">Active: ' + r.recent_reps + ' reps</span>';
-                    html += '</div>';
-                    html += '</div>';
-                    html += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\'' + shareUrl + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Share\',1500);">Share</button>';
-                    html += '</div></div>';
-                });
-
-                body.innerHTML = html;
+                const [shiftResp, recoData] = await Promise.all([
+                    fetch('md_daily_shifts.json' + CB),
+                    sbFetch('/v_recommended_areas?select=zip_code,city,state,utility,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc,old_deals.desc&limit=50')
+                ]);
+                dailyShifts = shiftResp.ok ? await shiftResp.json() : [];
+                zipRecos = recoData || [];
+                renderPanel();
             } catch(e) {
-                console.warn('Recommendations load error:', e);
-                document.getElementById('recoBody').innerHTML = '<div style="padding:12px;color:#888;text-align:center;">Could not load recommendations</div>';
+                console.warn('Reco error:', e);
+                document.getElementById('recoBody').innerHTML = '<div style="padding:12px;color:#888;text-align:center;">Could not load</div>';
             }
         }
+
+        function renderPanel() {
+            const body = document.getElementById('recoBody');
+            const utilities = [...new Set(zipRecos.filter(r=>r.utility).map(r=>r.utility))];
+            let h = '<div style="display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 8px;border-bottom:1px solid #333;margin-bottom:6px;">';
+            h += '<button onclick="selectedUtility=\'ALL\';renderPanel();" style="padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid '+(selectedUtility==='ALL'?'#3b82f6':'#444')+';background:'+(selectedUtility==='ALL'?'#3b82f622':'transparent')+';color:'+(selectedUtility==='ALL'?'#3b82f6':'#888')+';">ALL</button>';
+            utilities.forEach(u => {
+                const a = selectedUtility === u;
+                h += '<button onclick="selectedUtility=\''+u+'\';renderPanel();" style="padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid '+(a?'#10b981':'#444')+';background:'+(a?'#10b98122':'transparent')+';color:'+(a?'#10b981':'#888')+';">'+u+'</button>';
+            });
+            h += '</div>';
+
+            h += '<div style="font-size:11px;font-weight:700;color:#ffd700;margin-bottom:4px;">📋 8-HR CANVASS SHIFTS</div>';
+            dailyShifts.slice(0,10).forEach(s => {
+                const gc = {A:'#10b981',B:'#3b82f6',C:'#ff9800',D:'#666'}[s.grade]||'#888';
+                const nav = 'https://www.google.com/maps?q='+s.lat+','+s.lon+'&z=15';
+                h += '<div class="reco-card" onclick="map.setView(['+s.lat+','+s.lon+'],15);">';
+                h += '<div style="display:flex;align-items:center;"><div class="reco-rank" style="color:'+(s.rank<=3?'#ffd700':s.rank<=7?'#ff8c00':'#888')+';">'+s.rank+'</div>';
+                h += '<div style="flex:1;"><div><b style="color:#fff;">Turf #'+s.id+'</b> <span style="color:#aaa;font-size:10px;">'+s.county+'</span> <span style="color:'+gc+';font-weight:700;">'+s.grade+'</span></div>';
+                h += '<div style="font-size:11px;">🚪 <b>'+s.doors+'</b> doors · '+s.hh+' HH · '+s.area+' sq mi</div></div>';
+                h += '<div style="display:flex;flex-direction:column;gap:2px;">';
+                h += '<button class="reco-share" onclick="event.stopPropagation();window.open(\''+nav+'\',\'_blank\');">📍</button>';
+                h += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\'Turf '+s.id+' ('+s.county+') '+s.doors+' doors Grade '+s.grade+' '+nav+'\');this.textContent=\'✓\';setTimeout(()=>this.textContent=\'📤\',1500);">📤</button>';
+                h += '</div></div></div>';
+            });
+
+            const filt = selectedUtility==='ALL' ? zipRecos : zipRecos.filter(r=>r.utility===selectedUtility);
+            h += '<div style="font-size:11px;font-weight:700;color:#3b82f6;margin:10px 0 4px;padding-top:6px;border-top:1px solid #333;">🎯 ZIP TARGETS ('+filt.length+')</div>';
+            filt.slice(0,15).forEach((r,i) => {
+                const tc = r.recommendation.includes('REVISIT')?'#ffd700':r.recommendation.includes('REOPEN')?'#ff9800':r.recommendation.includes('UNTOUCHED')?'#00c853':'#3b82f6';
+                const tag = r.recommendation.split('—')[0].trim();
+                h += '<div class="reco-card" onclick="if(zipCentroids[\''+r.zip_code+'\'])map.setView(zipCentroids[\''+r.zip_code+'\'],14);">';
+                h += '<div style="display:flex;align-items:center;"><div style="font-size:14px;font-weight:800;color:#555;margin-right:8px;">'+(i+1)+'</div>';
+                h += '<div style="flex:1;"><div><b style="color:#fff;font-size:12px;">'+r.zip_code+'</b> <span style="color:#aaa;font-size:10px;">'+(r.city||'')+', '+r.state+'</span>';
+                if(r.utility)h+=' <span style="color:#10b981;font-size:9px;">'+r.utility+'</span>';
+                h += '</div><div style="margin-top:1px;"><span style="padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;">'+tag+'</span></div>';
+                h += '<div style="font-size:10px;color:#888;">Old:'+r.old_deals+' New:'+r.new_deals+' Pay:'+r.payable+'</div></div>';
+                h += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\''+r.zip_code+' '+(r.city||'')+' '+r.state+' '+nav+'\');this.textContent=\'✓\';setTimeout(()=>this.textContent=\'📤\',1500);">📤</button>';
+                h += '</div></div>';
+            });
+
+            body.innerHTML = h;
+            document.getElementById('recoCount').textContent = dailyShifts.length+' shifts · '+filt.length+' ZIPs';
+        }
+
+        setTimeout(loadRecommendations, 2000);
+
 
         const map = L.map('map', { zoomControl: true }).setView([39.15, -76.85], 8);
 
