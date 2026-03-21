@@ -303,6 +303,14 @@
             </div>
 
             <div class="toggle-section">
+                <div class="toggle-section-title">Dwelling Targeting</div>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('mobileHomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9800;"></div><span class="toggle-label">Mobile Homes</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('apartments',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">Apartments (5+)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('townhomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00bcd4;"></div><span class="toggle-label">Townhomes</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('elecHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#f44336;"></div><span class="toggle-label">Electric Heat 40%+</span></label>
+            </div>
+
+            <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Data</span></label>
             </div>
@@ -476,7 +484,11 @@
             canvassZones: L.featureGroup(),
             homeScore: L.featureGroup(),
             saturationMap: L.featureGroup(),
-            canvassTurfs: L.featureGroup()
+            canvassTurfs: L.featureGroup(),
+            mobileHomes: L.featureGroup(),
+            apartments: L.featureGroup(),
+            townhomes: L.featureGroup(),
+            elecHeat: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -514,7 +526,11 @@
             canvassZones: fg.canvassZones,
             homeScore: fg.homeScore,
             saturationMap: fg.saturationMap,
-            canvassTurfs: fg.canvassTurfs
+            canvassTurfs: fg.canvassTurfs,
+            mobileHomes: fg.mobileHomes,
+            apartments: fg.apartments,
+            townhomes: fg.townhomes,
+            elecHeat: fg.elecHeat
         };
 
         function toggleLayer(name, on) {
@@ -1223,6 +1239,26 @@
             if (_canvassData.tracts) {
                 renderCanvassFeatures(_canvassData.tracts.features, false, 'canvassZones');
                 renderCanvassFeatures(_canvassData.tracts.features, false, 'homeScore');
+                // Dwelling targeting overlays
+                _canvassData.tracts.features.forEach(f => {
+                    const p = f.properties;
+                    if (p.mob_pct >= 10) {
+                        const op = Math.min(0.6, 0.15 + (p.mob_pct / 100));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#ff9800', fillOpacity: op, color: '#ff9800', weight: 1.5, opacity: 0.7 } }).addTo(fg.mobileHomes);
+                    }
+                    if (p.apt_pct >= 15) {
+                        const op = Math.min(0.6, 0.1 + (p.apt_pct / 150));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#9c27b0', fillOpacity: op, color: '#9c27b0', weight: 1, opacity: 0.6 } }).addTo(fg.apartments);
+                    }
+                    if (p.th_pct >= 10) {
+                        const op = Math.min(0.6, 0.1 + (p.th_pct / 100));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#00bcd4', fillOpacity: op, color: '#00bcd4', weight: 1, opacity: 0.6 } }).addTo(fg.townhomes);
+                    }
+                    if (p.eh_pct >= 40) {
+                        const op = Math.min(0.6, 0.15 + ((p.eh_pct - 40) / 100));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#f44336', fillOpacity: op, color: '#f44336', weight: 1.5, opacity: 0.7 } }).addTo(fg.elecHeat);
+                    }
+                });
             }
             if (_canvassData.targeting && Object.keys(_canvassData.targeting).length > 0) {
                 Object.entries(_canvassData.targeting).forEach(([zip, td]) => {
@@ -1362,7 +1398,25 @@
                     h += '<div><span style="color:#888;">LMI Est:</span> ' + lmiEst + '%</div>';
                     h += '<div><span style="color:#888;">Own/Rent:</span> ' + op + '%/' + rp + '%</div>';
                     h += '<div><span style="color:#888;">Electric Heat:</span> ' + eh + '%</div>';
-                    h += '</div></div>';
+                    h += '</div>';
+                    // Dwelling targeting from Census B25024
+                    if (detail.mob_pct !== undefined) {
+                        h += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #333;">';
+                        h += '<div style="font-size:11px;color:#888;margin-bottom:2px;">Housing Structure</div>';
+                        h += '<div style="display:flex;height:12px;border-radius:3px;overflow:hidden;margin-bottom:3px;">';
+                        h += '<div style="width:' + (detail.sfh_pct||0) + '%;background:#4caf50;" title="SFH ' + (detail.sfh_pct||0) + '%"></div>';
+                        h += '<div style="width:' + (detail.th_pct||0) + '%;background:#00bcd4;" title="Townhome ' + (detail.th_pct||0) + '%"></div>';
+                        h += '<div style="width:' + (detail.apt_pct||0) + '%;background:#9c27b0;" title="Apartment ' + (detail.apt_pct||0) + '%"></div>';
+                        h += '<div style="width:' + (detail.mob_pct||0) + '%;background:#ff9800;" title="Mobile ' + (detail.mob_pct||0) + '%"></div>';
+                        h += '</div>';
+                        h += '<div style="font-size:10px;display:flex;gap:8px;flex-wrap:wrap;">';
+                        h += '<span><span style="color:#4caf50;">●</span> SFH ' + (detail.sfh_pct||0) + '%</span>';
+                        h += '<span><span style="color:#00bcd4;">●</span> TH ' + (detail.th_pct||0) + '%</span>';
+                        h += '<span><span style="color:#9c27b0;">●</span> Apt ' + (detail.apt_pct||0) + '%</span>';
+                        h += '<span><span style="color:#ff9800;">●</span> Mobile ' + (detail.mob_pct||0) + '%</span>';
+                        h += '</div></div>';
+                    }
+                    h += '</div>';
                 }
 
                 if (demo) {

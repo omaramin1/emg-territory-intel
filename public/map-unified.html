@@ -201,6 +201,10 @@ const STATE_CONFIG = {
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
             { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
+            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
+            { id: 'apartments', label: 'Apartments (5+)', default: false },
+            { id: 'townhomes', label: 'Townhomes', default: false },
+            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             '_divider',
             { id: 'util_Central Hudson', label: 'Central Hudson', default: false },
             { id: 'util_NYSEG', label: 'NYSEG', default: false },
@@ -242,6 +246,10 @@ const STATE_CONFIG = {
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
             { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
+            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
+            { id: 'apartments', label: 'Apartments (5+)', default: false },
+            { id: 'townhomes', label: 'Townhomes', default: false },
+            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             '_divider',
             { id: 'util_Pepco', label: 'Pepco', default: false },
             { id: 'util_Potomac Edison', label: 'Potomac Edison', default: false }
@@ -330,6 +338,10 @@ const STATE_CONFIG = {
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
             { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
+            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
+            { id: 'apartments', label: 'Apartments (5+)', default: false },
+            { id: 'townhomes', label: 'Townhomes', default: false },
+            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             '_divider',
             { id: 'util_Dominion Virginia', label: 'Dominion Virginia', default: false }
         ],
@@ -1080,6 +1092,26 @@ async function loadCanvassTargeting() {
     if (_canvassData.tracts) {
         renderCanvassFeatures(_canvassData.tracts.features, false, 'canvassZones');
         renderCanvassFeatures(_canvassData.tracts.features, false, 'homeScore');
+        // Dwelling targeting overlays
+        _canvassData.tracts.features.forEach(f => {
+            const p = f.properties;
+            if (p.mob_pct >= 10) {
+                const op = Math.min(0.6, 0.15 + (p.mob_pct / 100));
+                L.geoJSON(f, { interactive: false, style: { fillColor: '#ff9800', fillOpacity: op, color: '#ff9800', weight: 1.5, opacity: 0.7 } }).addTo(fg.mobileHomes);
+            }
+            if (p.apt_pct >= 15) {
+                const op = Math.min(0.6, 0.1 + (p.apt_pct / 150));
+                L.geoJSON(f, { interactive: false, style: { fillColor: '#9c27b0', fillOpacity: op, color: '#9c27b0', weight: 1, opacity: 0.6 } }).addTo(fg.apartments);
+            }
+            if (p.th_pct >= 10) {
+                const op = Math.min(0.6, 0.1 + (p.th_pct / 100));
+                L.geoJSON(f, { interactive: false, style: { fillColor: '#00bcd4', fillOpacity: op, color: '#00bcd4', weight: 1, opacity: 0.6 } }).addTo(fg.townhomes);
+            }
+            if (p.eh_pct >= 40) {
+                const op = Math.min(0.6, 0.15 + ((p.eh_pct - 40) / 100));
+                L.geoJSON(f, { interactive: false, style: { fillColor: '#f44336', fillOpacity: op, color: '#f44336', weight: 1.5, opacity: 0.7 } }).addTo(fg.elecHeat);
+            }
+        });
     }
 
     // Saturation layer — ZIP-level from targeting data

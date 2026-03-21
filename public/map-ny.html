@@ -307,6 +307,14 @@
             </div>
 
             <div class="toggle-section">
+                <div class="toggle-section-title">Dwelling Targeting</div>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('mobileHomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9800;"></div><span class="toggle-label">Mobile Homes</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('apartments',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">Apartments (5+)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('townhomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00bcd4;"></div><span class="toggle-label">Townhomes</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('elecHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#f44336;"></div><span class="toggle-label">Electric Heat 40%+</span></label>
+            </div>
+
+            <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Pins (90K+)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label"> Priority Targets</span></label>
@@ -476,7 +484,11 @@
             canvassZones: L.featureGroup(),
             homeScore: L.featureGroup(),
             saturationMap: L.featureGroup(),
-            canvassTurfs: L.featureGroup()
+            canvassTurfs: L.featureGroup(),
+            mobileHomes: L.featureGroup(),
+            apartments: L.featureGroup(),
+            townhomes: L.featureGroup(),
+            elecHeat: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -508,7 +520,8 @@
             kwhHeat: fg.kwhHeat,
             nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
             oru: fg.oruArea, rge: fg.rgeArea,
-            canvassZones: fg.canvassZones, homeScore: fg.homeScore, saturationMap: fg.saturationMap, canvassTurfs: fg.canvassTurfs
+            canvassZones: fg.canvassZones, homeScore: fg.homeScore, saturationMap: fg.saturationMap, canvassTurfs: fg.canvassTurfs,
+            mobileHomes: fg.mobileHomes, apartments: fg.apartments, townhomes: fg.townhomes, elecHeat: fg.elecHeat
         };
 
         function toggleLayer(name, on) {
@@ -1628,6 +1641,26 @@
             if (_canvassData.tracts) {
                 renderCanvassFeatures(_canvassData.tracts.features, false, 'canvassZones');
                 renderCanvassFeatures(_canvassData.tracts.features, false, 'homeScore');
+                // Dwelling targeting overlays
+                _canvassData.tracts.features.forEach(f => {
+                    const p = f.properties;
+                    if (p.mob_pct >= 10) {
+                        const op = Math.min(0.6, 0.15 + (p.mob_pct / 100));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#ff9800', fillOpacity: op, color: '#ff9800', weight: 1.5, opacity: 0.7 } }).addTo(fg.mobileHomes);
+                    }
+                    if (p.apt_pct >= 15) {
+                        const op = Math.min(0.6, 0.1 + (p.apt_pct / 150));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#9c27b0', fillOpacity: op, color: '#9c27b0', weight: 1, opacity: 0.6 } }).addTo(fg.apartments);
+                    }
+                    if (p.th_pct >= 10) {
+                        const op = Math.min(0.6, 0.1 + (p.th_pct / 100));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#00bcd4', fillOpacity: op, color: '#00bcd4', weight: 1, opacity: 0.6 } }).addTo(fg.townhomes);
+                    }
+                    if (p.eh_pct >= 40) {
+                        const op = Math.min(0.6, 0.15 + ((p.eh_pct - 40) / 100));
+                        L.geoJSON(f, { interactive: false, style: { fillColor: '#f44336', fillOpacity: op, color: '#f44336', weight: 1.5, opacity: 0.7 } }).addTo(fg.elecHeat);
+                    }
+                });
             }
             if (_canvassData.targeting && Object.keys(_canvassData.targeting).length > 0) {
                 Object.entries(_canvassData.targeting).forEach(([zip, td]) => {
