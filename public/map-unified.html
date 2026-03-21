@@ -694,19 +694,19 @@ async function loadSalesData() {
         const PAGE = 5000;
         let offset = 0, allPoints = [], fetching = true;
         while (fetching) {
-            const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state&limit=' + PAGE + '&offset=' + offset + stateFilter);
+            const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&limit=' + PAGE + '&offset=' + offset + stateFilter);
             allPoints = allPoints.concat(batch);
             updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 50 + Math.min(20, (allPoints.length / 150000) * 20));
             if (batch.length < PAGE) fetching = false;
             else offset += PAGE;
         }
-        salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state]);
+        salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
         allPoints = null;
         updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins...`, 72);
 
         salesData.forEach((d, i) => {
-            const [lat, lon, city, zip, status, state] = d;
-            const sc = statusColors[status] || '#3b82f6';
+            const [lat, lon, city, zip, status, state, campaign] = d;
+            const sc = (campaign === 'Dominion') ? '#ffd600' : (statusColors[status] || '#3b82f6');
             const marker = L.circleMarker([lat, lon], pinStyle(status, sc));
             marker.bindTooltip(`${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
             marker.on('click', async function () {

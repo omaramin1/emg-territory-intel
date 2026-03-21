@@ -1192,7 +1192,7 @@
                 const PAGE = 5000;
                 let offset = 0, allPoints = [], fetching = true;
                 while (fetching) {
-                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state&state=eq.NY&limit=' + PAGE + '&offset=' + offset);
+                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&state=eq.NY&limit=' + PAGE + '&offset=' + offset);
                     allPoints = allPoints.concat(batch);
                     updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 40 + Math.min(20, (allPoints.length/130000)*20));
                     if (batch.length < PAGE) fetching = false;
@@ -1200,16 +1200,16 @@
                 }
                 console.log('Supabase NY sale points loaded:', allPoints.length);
 
-                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state]);
+                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
                 allPoints = null;
 
                 updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 60);
                 const markers = [];
                 for (let i = 0; i < salesData.length; i++) {
-                    const [lat, lon, city, zip, status, state] = salesData[i];
+                    const [lat, lon, city, zip, status, state, campaign] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                    const sc = statusColors[status] || '#3b82f6';
+                    const sc = (campaign === 'Dominion') ? '#ffd600' : (statusColors[status] || '#3b82f6');
                     const m = L.circleMarker([lat, lon], pinStyle(status, sc));
                     m.bindTooltip((city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
                     m.on('click', function() {

@@ -910,7 +910,7 @@
                 let allPoints = [];
                 let fetching = true;
                 while (fetching) {
-                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state&limit=' + PAGE + '&offset=' + offset);
+                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&limit=' + PAGE + '&offset=' + offset);
                     allPoints = allPoints.concat(batch);
                     updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 40 + Math.min(20, (allPoints.length/150000)*20));
                     if (batch.length < PAGE) fetching = false;
@@ -918,17 +918,17 @@
                 }
                 console.log('Supabase sale points loaded:', allPoints.length);
 
-                // Convert to salesData array [lat, lon, city, zip, status, state]
-                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state]);
+                // Convert to salesData array [lat, lon, city, zip, status, state, campaign]
+                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
                 allPoints = null; // free memory
 
                 updateLoading(`Building ${salesData.length.toLocaleString()} markers...`, 60);
                 const markers = [];
                 for (let i = 0; i < salesData.length; i++) {
-                    const [lat, lon, city, zip, status, state] = salesData[i];
+                    const [lat, lon, city, zip, status, state, campaign] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                    const sc = statusColors[status] || '#3b82f6';
+                    const sc = (campaign === 'Dominion') ? '#ffd600' : (statusColors[status] || '#3b82f6');
 
                     const m = L.circleMarker([lat, lon], pinStyle(status, sc));
                     // Light tooltip — full detail loads on popup open via Supabase
