@@ -205,6 +205,7 @@ const STATE_CONFIG = {
             { id: 'apartments', label: 'Apartments (5+)', default: false },
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
+            { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             '_divider',
             { id: 'util_Central Hudson', label: 'Central Hudson', default: false },
             { id: 'util_NYSEG', label: 'NYSEG', default: false },
@@ -250,6 +251,7 @@ const STATE_CONFIG = {
             { id: 'apartments', label: 'Apartments (5+)', default: false },
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
+            { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             '_divider',
             { id: 'util_Pepco', label: 'Pepco', default: false },
             { id: 'util_Potomac Edison', label: 'Potomac Edison', default: false }
@@ -342,6 +344,7 @@ const STATE_CONFIG = {
             { id: 'apartments', label: 'Apartments (5+)', default: false },
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
+            { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             '_divider',
             { id: 'util_Dominion Virginia', label: 'Dominion Virginia', default: false }
         ],
@@ -1110,6 +1113,15 @@ async function loadCanvassTargeting() {
             if (p.eh_pct >= 40) {
                 const op = Math.min(0.6, 0.15 + ((p.eh_pct - 40) / 100));
                 L.geoJSON(f, { interactive: false, style: { fillColor: '#f44336', fillOpacity: op, color: '#f44336', weight: 1.5, opacity: 0.7 } }).addTo(fg.elecHeat);
+            }
+            // Lookalike opportunity overlay
+            const laScore = p.lookalike_score || 0;
+            const laGrade = p.lookalike_grade || 'D';
+            if (laGrade === 'S' || laGrade === 'A') {
+                const laColor = laGrade === 'S' ? '#ffd700' : '#ff8c00';
+                const laOp = laGrade === 'S' ? 0.45 : 0.28;
+                const laWeight = laGrade === 'S' ? 2.5 : 1.5;
+                L.geoJSON(f, { interactive: false, style: { fillColor: laColor, fillOpacity: laOp, color: laColor, weight: laWeight, opacity: 0.8 } }).addTo(fg.lookalike);
             }
         });
     }

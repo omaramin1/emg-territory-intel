@@ -312,6 +312,7 @@
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('apartments',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">Apartments (5+)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('townhomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00bcd4;"></div><span class="toggle-label">Townhomes</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('elecHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#f44336;"></div><span class="toggle-label">Electric Heat 40%+</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lookalike',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(135deg,#ffd700,#ff6b00);"></div><span class="toggle-label">Lookalike Opportunity</span></label>
             </div>
 
             <div class="toggle-section">
@@ -488,7 +489,8 @@
             mobileHomes: L.featureGroup(),
             apartments: L.featureGroup(),
             townhomes: L.featureGroup(),
-            elecHeat: L.featureGroup()
+            elecHeat: L.featureGroup(),
+            lookalike: L.featureGroup()
         };
 
         const salesCluster = L.markerClusterGroup({
@@ -521,7 +523,7 @@
             nyseg: fg.nysegArea, ngrid: fg.ngridArea, chudson: fg.chudsonArea,
             oru: fg.oruArea, rge: fg.rgeArea,
             canvassZones: fg.canvassZones, homeScore: fg.homeScore, saturationMap: fg.saturationMap, canvassTurfs: fg.canvassTurfs,
-            mobileHomes: fg.mobileHomes, apartments: fg.apartments, townhomes: fg.townhomes, elecHeat: fg.elecHeat
+            mobileHomes: fg.mobileHomes, apartments: fg.apartments, townhomes: fg.townhomes, elecHeat: fg.elecHeat, lookalike: fg.lookalike
         };
 
         function toggleLayer(name, on) {
@@ -1659,6 +1661,15 @@
                     if (p.eh_pct >= 40) {
                         const op = Math.min(0.6, 0.15 + ((p.eh_pct - 40) / 100));
                         L.geoJSON(f, { interactive: false, style: { fillColor: '#f44336', fillOpacity: op, color: '#f44336', weight: 1.5, opacity: 0.7 } }).addTo(fg.elecHeat);
+                    }
+                    // Lookalike opportunity overlay
+                    const laScore = p.lookalike_score || 0;
+                    const laGrade = p.lookalike_grade || 'D';
+                    if (laGrade === 'S' || laGrade === 'A') {
+                        const laColor = laGrade === 'S' ? '#ffd700' : '#ff8c00';
+                        const laOp = laGrade === 'S' ? 0.45 : 0.28;
+                        const laWeight = laGrade === 'S' ? 2.5 : 1.5;
+                        L.geoJSON(f, { interactive: false, style: { fillColor: laColor, fillOpacity: laOp, color: laColor, weight: laWeight, opacity: 0.8 } }).addTo(fg.lookalike);
                     }
                 });
             }
