@@ -206,6 +206,7 @@ const STATE_CONFIG = {
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
+            { id: 'trailerParks', label: 'Trailer Parks', default: false },
             '_divider',
             { id: 'util_Central Hudson', label: 'Central Hudson', default: false },
             { id: 'util_NYSEG', label: 'NYSEG', default: false },
@@ -252,6 +253,7 @@ const STATE_CONFIG = {
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
+            { id: 'trailerParks', label: 'Trailer Parks', default: false },
             '_divider',
             { id: 'util_Pepco', label: 'Pepco', default: false },
             { id: 'util_Potomac Edison', label: 'Potomac Edison', default: false }
@@ -345,6 +347,7 @@ const STATE_CONFIG = {
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
+            { id: 'trailerParks', label: 'Trailer Parks', default: false },
             '_divider',
             { id: 'util_Dominion Virginia', label: 'Dominion Virginia', default: false }
         ],
@@ -470,12 +473,52 @@ function buildTogglePanel() {
     panel.innerHTML = html;
 }
 
+// ── TRAILER PARK PIN LAYER ──
+const trailerParkGroup = L.featureGroup();
+let trailerParksLoaded = false;
+
+// Override toggleLayer to handle trailerParks specially
+const _origToggleLayer = toggleLayer;
+// We need a new function since toggleLayer is already defined
+async function loadTrailerParks() {
+    if (trailerParksLoaded) return;
+    try {
+        const prefix = STATE_CONFIG[currentState]?.dataPrefix || 'va';
+        const resp = await fetch(prefix + '_trailer_parks.json');
+        const parks = await resp.json();
+        trailerParkGroup.clearLayers();
+        parks.forEach(p => {
+            const isHot = p.eh >= 40 && p.las >= 60;
+            const isBig = p.units >= 100;
+            const sz = isBig ? 32 : 24;
+            const border = isHot ? '#ffd700' : '#ff9800';
+            const icon = L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:6px;background:#1a1a2e;border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${isBig?14:11}px;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🏚</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+            let h=`<div style="min-width:240px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:15px;font-weight:800;color:#ff9800;">🏚 Mobile Home Zone</div><div style="color:#888;">Tract: ${p.id}</div>`;
+            if(isHot) h+=`<div style="color:#ffd700;font-weight:700;">★ HIGH VALUE — EH ${p.eh}% + Lookalike ${p.la}</div>`;
+            h+=`</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
+            h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob}%</b></div><div>Units: <b>${p.units}</b></div>`;
+            h+=`<div>HH: <b>${(p.hh||0).toLocaleString()}</b></div><div><span style="color:#f44336;">●</span> EH: <b>${p.eh}%</b></div>`;
+            h+=`<div>Lookalike: <b>${p.la}(${p.las})</b></div></div></div>`;
+            L.marker([p.lat,p.lon],{icon,zIndexOffset:500}).bindPopup(h,{maxWidth:300}).addTo(trailerParkGroup);
+        });
+        trailerParksLoaded = true;
+        updateStatus('Loaded ' + parks.length + ' mobile home zones');
+    } catch(e) { console.warn('Trailer parks error:', e); }
+}
+
 // ── SMART TARGETING PIN SYSTEM ──
 const targetingLayers = new Set(['mobileHomes','apartments','townhomes','elecHeat','lookalike']);
 const activeTargets = new Set();
 const targetPinGroup = L.featureGroup();
 
 function toggleLayer(id, visible) {
+    if (id === 'trailerParks') {
+        if (visible) { loadTrailerParks().then(() => { if (!map.hasLayer(trailerParkGroup)) map.addLayer(trailerParkGroup); }); }
+        else { if (map.hasLayer(trailerParkGroup)) map.removeLayer(trailerParkGroup); }
+        // Still run targeting pin update
+        if (targetingLayers.has(id)) { if (visible) activeTargets.add(id); else activeTargets.delete(id); updateTargetPins(); }
+        return;
+    }
     const group = layerMap[id];
     if (!group) return;
     if (visible) map.addLayer(group);

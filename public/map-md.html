@@ -312,6 +312,7 @@
             <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Data</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleTrailerParks(this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff9800;"></div><span class="toggle-label">Trailer Parks (53)</span></label>
             </div>
 
             <div class="toggle-section">
@@ -551,6 +552,52 @@
             elecHeat: fg.elecHeat,
             lookalike: fg.lookalike
         };
+
+        // ── TRAILER PARK PIN LAYER ──
+        const trailerParkGroup = L.featureGroup();
+        let trailerParksLoaded = false;
+        async function toggleTrailerParks(on) {
+            if (on) {
+                if (!trailerParksLoaded) {
+                    try {
+                        const resp = await fetch('md_trailer_parks.json' + CB);
+                        const parks = await resp.json();
+                        parks.forEach((p, i) => {
+                            const isHot = p.eh >= 40 && p.las >= 60;
+                            const isBig = p.units >= 100;
+                            const sz = isBig ? 32 : 24;
+                            const border = isHot ? '#ffd700' : '#ff9800';
+                            const icon = L.divIcon({
+                                className: '',
+                                html: `<div style="width:${sz}px;height:${sz}px;border-radius:6px;background:#1a1a2e;border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${isBig?14:11}px;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🏚</div>`,
+                                iconSize: [sz, sz], iconAnchor: [sz/2, sz/2]
+                            });
+                            const m = L.marker([p.lat, p.lon], { icon, zIndexOffset: 500 });
+                            let h = `<div style="min-width:240px;font-family:system-ui;font-size:12px;">`;
+                            h += `<div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;">`;
+                            h += `<div style="font-size:15px;font-weight:800;color:#ff9800;">🏚 Mobile Home Zone</div>`;
+                            h += `<div style="color:#888;font-size:11px;">Tract: ${p.id}</div>`;
+                            if (isHot) h += `<div style="color:#ffd700;font-weight:700;font-size:11px;">★ HIGH VALUE — EH ${p.eh}% + Lookalike ${p.la}</div>`;
+                            h += `</div>`;
+                            h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
+                            h += `<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob}%</b></div>`;
+                            h += `<div>Est. Units: <b>${p.units}</b></div>`;
+                            h += `<div>Total HH: <b>${(p.hh||0).toLocaleString()}</b></div>`;
+                            h += `<div><span style="color:#f44336;">●</span> Elec Heat: <b>${p.eh}%</b></div>`;
+                            h += `<div>Lookalike: <b>${p.la} (${p.las})</b></div>`;
+                            h += `</div></div>`;
+                            m.bindPopup(h, { maxWidth: 300 });
+                            m.addTo(trailerParkGroup);
+                        });
+                        trailerParksLoaded = true;
+                        updateStatus('Loaded ' + parks.length + ' mobile home zones');
+                    } catch(e) { console.warn('Trailer parks load error:', e); }
+                }
+                if (!map.hasLayer(trailerParkGroup)) map.addLayer(trailerParkGroup);
+            } else {
+                if (map.hasLayer(trailerParkGroup)) map.removeLayer(trailerParkGroup);
+            }
+        }
 
         // ── SMART TARGETING PIN SYSTEM ──
         // When 2+ dwelling/targeting overlays are active, drop ranked pins at intersections
