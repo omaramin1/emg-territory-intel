@@ -338,7 +338,7 @@
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Data</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Data</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleHousingTargets(this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:linear-gradient(135deg,#ff9800,#f44336);"></div><span class="toggle-label">Housing Targets (1,242)</span></label>
             </div>
 
@@ -507,7 +507,7 @@
             try {
                 const [shiftResp, recoData] = await Promise.all([
                     fetch('md_daily_shifts.json' + CB),
-                    sbFetch('/v_recommended_areas?select=zip_code,city,state,utility,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc,old_deals.desc&limit=50')
+                    sbFetch('/v_recommended_areas?select=zip_code,city,state,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,last_7d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc,old_deals.desc&limit=25')
                 ]);
                 dailyShifts = shiftResp.ok ? await shiftResp.json() : [];
                 zipRecos = recoData || [];
@@ -1302,6 +1302,8 @@
 
                 updateLoading('Clustering ' + markers.length.toLocaleString() + ' markers...', 75);
                 salesCluster.addLayers(markers);
+                // Sales pins ON by default
+                if (!map.hasLayer(salesCluster)) map.addLayer(salesCluster);
 
                 document.getElementById('statTotal').textContent = salesData.length.toLocaleString();
                 document.getElementById('statCities').textContent = Object.keys(cityStats).length;
