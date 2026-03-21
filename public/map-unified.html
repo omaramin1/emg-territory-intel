@@ -939,9 +939,21 @@ async function loadSalesData() {
 
         salesData.forEach((d, i) => {
             const [lat, lon, city, zip, status, state, campaign] = d;
-            const sc = (campaign === 'Dominion') ? '#ffd600' : (statusColors[status] || '#3b82f6');
-            const marker = L.circleMarker([lat, lon], pinStyle(status, sc));
-            marker.bindTooltip(`${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
+            // 🟢 Arcadia = TAKEN | 🟡 Dominion = RE-ENROLLABLE | ⚫ Old = REFERENCE
+            let sc, pinSz;
+            if (campaign === 'Arcadia') {
+                sc = '#00c853';
+                pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 };
+            } else if (campaign === 'Dominion') {
+                sc = '#ffd600';
+                pinSz = { radius: 4, fillColor: '#ffd600', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 };
+            } else {
+                sc = '#666';
+                pinSz = { radius: 2, fillColor: '#555', color: '#333', weight: 0.3, opacity: 0.3, fillOpacity: 0.2 };
+            }
+            const srcLabel = campaign === 'Arcadia' ? '🟢 Taken' : campaign === 'Dominion' ? '🟡 Re-enrollable' : '⚫ Old';
+            const marker = L.circleMarker([lat, lon], pinSz);
+            marker.bindTooltip(`${srcLabel} · ${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
             marker.on('click', async function () {
                 marker.bindPopup('<div style="text-align:center;padding:8px;color:#aaa;">Loading…</div>').openPopup();
                 try {

@@ -434,11 +434,11 @@
                 <div class="legend-item"><div class="legend-circle" style="background:#00ddff;"></div> Mobile Home</div>
             </div>
             <div class="legend-section">
-                <div class="legend-section-title">Sales Pin Styles (zoom in)</div>
-                <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#00c853;border:1.2px solid #fff;display:inline-block;"></div> <b>Completed</b> — solid, large</div>
-                <div class="legend-item"><div style="width:8px;height:8px;border-radius:50%;background:transparent;border:2.5px solid #3b82f6;display:inline-block;"></div> <b>Pipeline</b> — hollow ring</div>
-                <div class="legend-item"><div style="width:5px;height:5px;border-radius:50%;background:#ff1744;opacity:0.5;display:inline-block;"></div> <b>Dead</b> — small, dim</div>
-                <div class="legend-item" style="margin-top:4px;font-size:9px;color:#666;">Colors: <span style="color:#00c853;">●</span> Payable <span style="color:#3b82f6;">●</span> Sent <span style="color:#ff1744;">●</span> Cancelled <span style="color:#aa00ff;">●</span> Void <span style="color:#ffd600;">●</span> Pending</div>
+                <div class="legend-section-title">Sales Pins by Source</div>
+                <div class="legend-item"><div style="width:8px;height:8px;border-radius:50%;background:#00c853;border:1px solid #fff;display:inline-block;"></div> <b style="color:#00c853;">Arcadia (Ours)</b> — TAKEN, can't re-knock</div>
+                <div class="legend-item"><div style="width:8px;height:8px;border-radius:50%;background:#ffd600;border:1px solid #000;display:inline-block;"></div> <b style="color:#ffd600;">Dominion (Old)</b> — RE-ENROLLABLE, proven demand</div>
+                <div class="legend-item"><div style="width:4px;height:4px;border-radius:50%;background:#555;opacity:0.5;display:inline-block;"></div> <b style="color:#666;">Old Market Data</b> — reference, skip these doors</div>
+                <div class="legend-item" style="margin-top:4px;font-size:9px;color:#888;">All pins = doors NOT to knock. Canvass the gaps between pins.</div>
             </div>
             <div class="legend-section">
                 <div class="legend-section-title">Dwelling Targeting</div>
@@ -1249,11 +1249,28 @@
                     const [lat, lon, city, zip, status, state, campaign] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                    const sc = (campaign === 'Dominion') ? '#ffd600' : (statusColors[status] || '#3b82f6');
+                    // 3-tier pin coloring:
+                    // 🟢 Arcadia = TAKEN (can't re-enroll anyone in Arcadia system, any status)
+                    // 🟡 Dominion = PROVEN DEMAND (old program, these people CAN be re-enrolled in Arcadia)
+                    // ⚫ Old market data = HISTORICAL (reference only)
+                    let sc, pinSz;
+                    if (campaign === 'Arcadia') {
+                        // TAKEN — these doors are off-limits regardless of status
+                        sc = '#00c853'; // green = claimed
+                        pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 };
+                    } else if (campaign === 'Dominion') {
+                        // PROVEN DEMAND — old Dominion customers, CAN re-enroll in Arcadia = OPPORTUNITY
+                        sc = '#ffd600';
+                        pinSz = { radius: 4, fillColor: '#ffd600', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 };
+                    } else {
+                        // OLD MARKET DATA — reference, dim
+                        sc = '#666';
+                        pinSz = { radius: 2, fillColor: '#555', color: '#333', weight: 0.3, opacity: 0.3, fillOpacity: 0.2 };
+                    }
 
-                    const m = L.circleMarker([lat, lon], pinStyle(status, sc));
-                    // Light tooltip — full detail loads on popup open via Supabase
-                    m.bindTooltip((city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
+                    const m = L.circleMarker([lat, lon], pinSz);
+                    const srcLabel = campaign === 'Arcadia' ? '🟢 Taken (Arcadia)' : campaign === 'Dominion' ? '🟡 Re-enrollable (Dominion)' : '⚫ Old Data';
+                    m.bindTooltip(srcLabel + ' · ' + (city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
                     m.on('click', function() {
                         if (m._popup) { m.openPopup(); return; }
                         m.bindPopup('<div style="text-align:center;padding:8px;">Loading…</div>').openPopup();
