@@ -560,17 +560,33 @@
             }
         }
 
-        // ── SMART TARGETING PIN SYSTEM ──
-        const targetingLayers = new Set(['mobileHomes','apartments','townhomes','elecHeat','lookalike']);
+        // ── UNIVERSAL SMART TARGETING PIN SYSTEM ──
+        const allTrackableToggles = new Set(['mobileHomes','apartments','townhomes','elecHeat','lookalike','canvassZones','homeScore','saturationMap','ehZones','incomeOverlay']);
         const activeTargets = new Set();
         const targetPinGroup = L.featureGroup();
         map.addLayer(targetPinGroup);
+        const allCriteria = {
+            mobileHomes:p=>(p.mob_pct||0)>=10, apartments:p=>(p.apt_pct||0)>=15, townhomes:p=>(p.th_pct||0)>=10,
+            elecHeat:p=>(p.eh_pct||0)>=40, ehZones:p=>(p.eh_pct||0)>=25,
+            lookalike:p=>(p.lookalike_grade==='S'||p.lookalike_grade==='A'),
+            canvassZones:p=>(p.cg||p.canvass_grade||'D')<='B', homeScore:p=>(p.hs||p.home_score||0)>=60,
+            incomeOverlay:p=>{const i=p.la_income||0;return i>=30000&&i<=65000;}, saturationMap:p=>true
+        };
+        const scoreWeights = {
+            mobileHomes:p=>Math.min(25,p.mob_pct||0), apartments:p=>Math.min(15,(p.apt_pct||0)/3), townhomes:p=>Math.min(15,p.th_pct||0),
+            elecHeat:p=>Math.min(25,Math.max(0,(p.eh_pct||0)-30)/2), ehZones:p=>Math.min(20,(p.eh_pct||0)/4),
+            lookalike:p=>(p.lookalike_score||0)/3, canvassZones:p=>{const g=p.cg||p.canvass_grade||'D';return g==='A'?25:g==='B'?15:5;},
+            homeScore:p=>Math.min(20,(p.hs||p.home_score||0)/5),
+            incomeOverlay:p=>{const i=p.la_income||0;return(i>=35000&&i<=55000)?20:(i>=25000&&i<=65000)?10:0;},
+            saturationMap:p=>5
+        };
+        const toggleNames = {mobileHomes:'Mobile',apartments:'Apt',townhomes:'TH',elecHeat:'EH 40%+',ehZones:'EH',lookalike:'Lookalike',canvassZones:'Canvass',homeScore:'Home Score',incomeOverlay:'Income',saturationMap:'Saturation'};
 
         function toggleLayer(name, on) {
             const layer = layerMap[name]; if (!layer) return;
             if (on) { if (!map.hasLayer(layer)) map.addLayer(layer); }
             else { if (map.hasLayer(layer)) map.removeLayer(layer); }
-            if (targetingLayers.has(name)) {
+            if (allTrackableToggles.has(name)) {
                 if (on) activeTargets.add(name); else activeTargets.delete(name);
                 updateTargetPins();
             }
@@ -578,37 +594,22 @@
 
         function updateTargetPins() {
             targetPinGroup.clearLayers();
-            if (activeTargets.size < 1 || !_canvassData || !_canvassData.tracts) return;
-            const criteria = {
-                mobileHomes: f=>(f.properties.mob_pct||0)>=10,
-                apartments: f=>(f.properties.apt_pct||0)>=15,
-                townhomes: f=>(f.properties.th_pct||0)>=10,
-                elecHeat: f=>(f.properties.eh_pct||0)>=40,
-                lookalike: f=>(f.properties.lookalike_grade==='S'||f.properties.lookalike_grade==='A')
-            };
-            const matches = [];
-            _canvassData.tracts.features.forEach(f => {
-                const p = f.properties;
-                let mc = 0;
-                for (const ln of activeTargets) { if (criteria[ln] && criteria[ln](f)) mc++; }
-                if (mc < activeTargets.size) return;
-                let q = 0;
-                if (p.mob_pct>=10) q+=Math.min(20,p.mob_pct);
-                if (p.apt_pct>=15) q+=Math.min(15,p.apt_pct/3);
-                if (p.th_pct>=10) q+=Math.min(15,p.th_pct);
-                if (p.eh_pct>=40) q+=Math.min(25,(p.eh_pct-30)/2);
-                if (p.lookalike_score) q+=p.lookalike_score/4;
-                q+=Math.min(10,(p.hh||0)/200);
-                q=Math.round(q);
-                try { const b=L.geoJSON(f).getBounds().getCenter(); matches.push({lat:b.lat,lng:b.lng,q,p}); } catch(e) {}
+            if (activeTargets.size<1||!_canvassData||!_canvassData.tracts) return;
+            const matches=[];
+            _canvassData.tracts.features.forEach(f=>{
+                const p=f.properties; let pass=true;
+                for(const t of activeTargets){if(allCriteria[t]&&!allCriteria[t](p)){pass=false;break;}}
+                if(!pass)return;
+                let q=0;for(const t of activeTargets){if(scoreWeights[t])q+=scoreWeights[t](p);}
+                q+=Math.min(10,(p.hh||p.hu||0)/200);q=Math.round(q);
+                try{const b=L.geoJSON(f).getBounds().getCenter();matches.push({lat:b.lat,lng:b.lng,q,p});}catch(e){}
             });
             matches.sort((a,b)=>b.q-a.q);
-            const names=[...activeTargets].map(n=>({mobileHomes:'Mobile',apartments:'Apt',townhomes:'TH',elecHeat:'EH',lookalike:'Lookalike'}[n]||n)).join(' + ');
-            updateStatus(`${names}: ${matches.length} match · Top ${Math.min(50,matches.length)} pinned`);
-            matches.slice(0,50).forEach((m,i) => {
-                const r=i+1,pc=r<=10?'#ffd700':r<=25?'#ff8c00':'#ff6347',sz=r<=10?28:r<=25?22:18;
+            const names=[...activeTargets].map(n=>toggleNames[n]||n).join(' + ');
+            updateStatus(`${names}: ${matches.length} match → Top ${Math.min(50,matches.length)} pinned`);
+            matches.slice(0,50).forEach((m,i)=>{
+                const r=i+1,p=m.p,pc=r<=10?'#ffd700':r<=25?'#ff8c00':'#ff6347',sz=r<=10?28:r<=25?22:18;
                 const icon=L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${pc};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:${r<=10?12:10}px;font-weight:800;color:#000;">${r}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
-                const p=m.p;
                 let h=`<div style="min-width:260px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:18px;font-weight:800;color:${pc};">#${r} TARGET</div><div style="color:#888;">${names}</div><div style="color:#fff;font-weight:600;">Score: ${m.q}</div></div>`;
                 h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
                 if(p.mob_pct>0)h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob_pct}%</b></div>`;
@@ -616,6 +617,7 @@
                 if(p.th_pct>0)h+=`<div><span style="color:#00bcd4;">●</span> TH: <b>${p.th_pct}%</b></div>`;
                 if(p.eh_pct>0)h+=`<div><span style="color:#f44336;">●</span> EH: <b>${p.eh_pct}%</b></div>`;
                 h+=`<div>HH: <b>${(p.hh||p.hu||0).toLocaleString()}</b></div>`;
+                const g=p.cg||p.canvass_grade||'—';if(g!=='—')h+=`<div>Canvass: <b>${g}</b></div>`;
                 if(p.lookalike_score)h+=`<div>Lookalike: <b>${p.lookalike_grade}(${p.lookalike_score})</b></div>`;
                 h+=`</div></div>`;
                 L.marker([m.lat,m.lng],{icon,zIndexOffset:1000-r}).bindPopup(h,{maxWidth:320}).addTo(targetPinGroup);

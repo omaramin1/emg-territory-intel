@@ -599,20 +599,59 @@
             }
         }
 
-        // ── SMART TARGETING PIN SYSTEM ──
-        // When 2+ dwelling/targeting overlays are active, drop ranked pins at intersections
-        const targetingLayers = new Set(['mobileHomes','apartments','townhomes','elecHeat','lookalike']);
+        // ── UNIVERSAL SMART TARGETING PIN SYSTEM ──
+        // ANY toggle you turn on adds a filter. Pins show the best tracts matching ALL active filters.
+        // More toggles = more precision. Pins re-rank every time you flip a toggle.
+        const allTrackableToggles = new Set([
+            'mobileHomes','apartments','townhomes','elecHeat','lookalike',
+            'canvassZones','homeScore','saturationMap','ehZones','incomeOverlay'
+        ]);
         const activeTargets = new Set();
         const targetPinGroup = L.featureGroup();
         map.addLayer(targetPinGroup);
+
+        // Criteria: what does each toggle mean for a tract?
+        const allCriteria = {
+            mobileHomes:  p => (p.mob_pct||0) >= 10,
+            apartments:   p => (p.apt_pct||0) >= 15,
+            townhomes:    p => (p.th_pct||0) >= 10,
+            elecHeat:     p => (p.eh_pct||0) >= 40,
+            ehZones:      p => (p.eh_pct||0) >= 25,
+            lookalike:    p => (p.lookalike_grade==='S' || p.lookalike_grade==='A'),
+            canvassZones: p => (p.cg||p.canvass_grade||'D') <= 'B',  // Grade A or B
+            homeScore:    p => (p.hs||p.home_score||p.daytime_home||0) >= 60,
+            incomeOverlay:p => { const inc = p.la_income||0; return inc >= 30000 && inc <= 65000; },
+            saturationMap:p => true  // Always passes — saturation is a ZIP-level overlay
+        };
+
+        // Scoring weights: how important is each factor when active
+        const scoreWeights = {
+            mobileHomes:  p => Math.min(25, (p.mob_pct||0)),
+            apartments:   p => Math.min(15, (p.apt_pct||0) / 3),
+            townhomes:    p => Math.min(15, (p.th_pct||0)),
+            elecHeat:     p => Math.min(25, Math.max(0, (p.eh_pct||0) - 30) / 2),
+            ehZones:      p => Math.min(20, (p.eh_pct||0) / 4),
+            lookalike:    p => (p.lookalike_score||0) / 3,
+            canvassZones: p => { const g = p.cg||p.canvass_grade||'D'; return g==='A'?25:g==='B'?15:g==='C'?5:0; },
+            homeScore:    p => Math.min(20, (p.hs||p.home_score||0) / 5),
+            incomeOverlay:p => { const inc=p.la_income||0; return (inc>=35000&&inc<=55000)?20:(inc>=25000&&inc<=65000)?10:0; },
+            saturationMap:p => 5 // Flat bonus — saturation filtering is at ZIP level
+        };
+
+        // Friendly names for status bar
+        const toggleNames = {
+            mobileHomes:'Mobile Homes', apartments:'Apartments', townhomes:'Townhomes',
+            elecHeat:'EH 40%+', ehZones:'Elec Heat', lookalike:'Lookalike',
+            canvassZones:'Canvass Grade', homeScore:'Home Score', incomeOverlay:'Income',
+            saturationMap:'Saturation'
+        };
 
         function toggleLayer(name, on) {
             const layer = layerMap[name];
             if (!layer) return;
             if (on) { if (!map.hasLayer(layer)) map.addLayer(layer); }
             else { if (map.hasLayer(layer)) map.removeLayer(layer); }
-            // Track targeting layer state
-            if (targetingLayers.has(name)) {
+            if (allTrackableToggles.has(name)) {
                 if (on) activeTargets.add(name); else activeTargets.delete(name);
                 updateTargetPins();
             }
@@ -622,102 +661,67 @@
             targetPinGroup.clearLayers();
             if (activeTargets.size < 1 || !_canvassData || !_canvassData.tracts) return;
 
-            const criteria = {
-                mobileHomes: f => (f.properties.mob_pct || 0) >= 10,
-                apartments: f => (f.properties.apt_pct || 0) >= 15,
-                townhomes: f => (f.properties.th_pct || 0) >= 10,
-                elecHeat: f => (f.properties.eh_pct || 0) >= 40,
-                lookalike: f => (f.properties.lookalike_grade === 'S' || f.properties.lookalike_grade === 'A')
-            };
-
-            // Score each tract by how many active criteria it matches + its composite quality
             const matches = [];
             _canvassData.tracts.features.forEach(f => {
                 const p = f.properties;
-                let matchCount = 0;
-                let matchedNames = [];
-                for (const layerName of activeTargets) {
-                    if (criteria[layerName] && criteria[layerName](f)) {
-                        matchCount++;
-                        matchedNames.push(layerName);
-                    }
+                // Check ALL active criteria
+                let passAll = true;
+                for (const t of activeTargets) {
+                    if (allCriteria[t] && !allCriteria[t](p)) { passAll = false; break; }
                 }
-                if (matchCount < activeTargets.size) return; // Must match ALL active criteria
+                if (!passAll) return;
 
-                // Composite score from the matching properties
+                // Score = sum of weights for active toggles + door density bonus
                 let quality = 0;
-                if (p.mob_pct >= 10) quality += Math.min(20, p.mob_pct);
-                if (p.apt_pct >= 15) quality += Math.min(15, p.apt_pct / 3);
-                if (p.th_pct >= 10) quality += Math.min(15, p.th_pct);
-                if (p.eh_pct >= 40) quality += Math.min(25, (p.eh_pct - 30) / 2);
-                if (p.lookalike_score) quality += p.lookalike_score / 4;
-                quality += Math.min(10, (p.hh || 0) / 200); // door density bonus
+                for (const t of activeTargets) {
+                    if (scoreWeights[t]) quality += scoreWeights[t](p);
+                }
+                quality += Math.min(10, (p.hh||p.hu||0) / 200);
                 quality = Math.round(quality);
 
-                // Get centroid
                 try {
-                    const bounds = L.geoJSON(f).getBounds();
-                    const center = bounds.getCenter();
-                    matches.push({ lat: center.lat, lng: center.lng, quality, p, matchedNames, f });
+                    const b = L.geoJSON(f).getBounds().getCenter();
+                    matches.push({ lat: b.lat, lng: b.lng, quality, p });
                 } catch(e) {}
             });
 
-            // Sort by quality descending, take top 50
             matches.sort((a, b) => b.quality - a.quality);
             const top = matches.slice(0, 50);
 
-            // Status update
-            const activeNames = [...activeTargets].map(n => ({
-                mobileHomes:'Mobile', apartments:'Apt', townhomes:'TH', elecHeat:'EH', lookalike:'Lookalike'
-            }[n] || n)).join(' + ');
-            updateStatus(`${activeNames}: ${matches.length} tracts match all criteria · Top ${Math.min(50, matches.length)} pinned`);
+            const names = [...activeTargets].map(n => toggleNames[n]||n).join(' + ');
+            updateStatus(`${names}: ${matches.length} match → Top ${Math.min(50, matches.length)} pinned`);
 
-            // Drop pins
             top.forEach((m, i) => {
-                const rank = i + 1;
-                const p = m.p;
+                const rank = i + 1, p = m.p;
                 const pinColor = rank <= 10 ? '#ffd700' : rank <= 25 ? '#ff8c00' : '#ff6347';
-                const pinSize = rank <= 10 ? 28 : rank <= 25 ? 22 : 18;
-
-                const icon = L.divIcon({
-                    className: '',
-                    html: `<div style="width:${pinSize}px;height:${pinSize}px;border-radius:50%;background:${pinColor};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:${rank<=10?12:10}px;font-weight:800;color:#000;font-family:system-ui;">${rank}</div>`,
-                    iconSize: [pinSize, pinSize],
-                    iconAnchor: [pinSize/2, pinSize/2]
-                });
-
+                const sz = rank <= 10 ? 28 : rank <= 25 ? 22 : 18;
+                const icon = L.divIcon({ className:'', html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${pinColor};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:${rank<=10?12:10}px;font-weight:800;color:#000;font-family:system-ui;">${rank}</div>`, iconSize:[sz,sz], iconAnchor:[sz/2,sz/2] });
                 const marker = L.marker([m.lat, m.lng], { icon, zIndexOffset: 1000 - rank });
 
-                // Rich popup
-                let html = `<div style="min-width:280px;font-family:system-ui;font-size:12px;">`;
-                html += `<div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;">`;
-                html += `<div style="font-size:18px;font-weight:800;color:${pinColor};">#${rank} TARGET</div>`;
-                html += `<div style="color:#888;font-size:11px;">Matches: ${activeNames}</div>`;
-                html += `<div style="color:#fff;font-size:13px;font-weight:600;">Score: ${m.quality} pts</div>`;
-                html += `</div>`;
-
-                // Key metrics grid
-                html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
-                if (p.mob_pct > 0) html += `<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob_pct}%</b></div>`;
-                if (p.apt_pct > 0) html += `<div><span style="color:#9c27b0;">●</span> Apt: <b>${p.apt_pct}%</b></div>`;
-                if (p.th_pct > 0) html += `<div><span style="color:#00bcd4;">●</span> TH: <b>${p.th_pct}%</b></div>`;
-                if (p.sfh_pct > 0) html += `<div><span style="color:#4caf50;">●</span> SFH: <b>${p.sfh_pct}%</b></div>`;
-                if (p.eh_pct > 0) html += `<div><span style="color:#f44336;">●</span> Elec Heat: <b>${p.eh_pct}%</b></div>`;
-                html += `<div>Households: <b>${(p.hh||p.hu||0).toLocaleString()}</b></div>`;
-                if (p.lookalike_score) html += `<div>Lookalike: <b>${p.lookalike_grade} (${p.lookalike_score})</b></div>`;
-                if (p.la_income) html += `<div>Income: <b>$${p.la_income.toLocaleString()}</b></div>`;
-                html += `</div>`;
-
-                // Housing bar
-                html += `<div style="margin-top:6px;"><div style="display:flex;height:10px;border-radius:3px;overflow:hidden;">`;
-                html += `<div style="width:${p.sfh_pct||0}%;background:#4caf50;" title="SFH"></div>`;
-                html += `<div style="width:${p.th_pct||0}%;background:#00bcd4;" title="TH"></div>`;
-                html += `<div style="width:${p.apt_pct||0}%;background:#9c27b0;" title="Apt"></div>`;
-                html += `<div style="width:${p.mob_pct||0}%;background:#ff9800;" title="Mobile"></div>`;
-                html += `</div></div>`;
-                html += `</div>`;
-
-                marker.bindPopup(html, { maxWidth: 320 });
+                let h = `<div style="min-width:280px;font-family:system-ui;font-size:12px;">`;
+                h += `<div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;">`;
+                h += `<div style="font-size:18px;font-weight:800;color:${pinColor};">#${rank} TARGET</div>`;
+                h += `<div style="color:#888;font-size:11px;">${names}</div>`;
+                h += `<div style="color:#fff;font-size:13px;font-weight:600;">Score: ${m.quality} pts</div></div>`;
+                h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
+                if (p.mob_pct > 0) h += `<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob_pct}%</b></div>`;
+                if (p.apt_pct > 0) h += `<div><span style="color:#9c27b0;">●</span> Apt: <b>${p.apt_pct}%</b></div>`;
+                if (p.th_pct > 0) h += `<div><span style="color:#00bcd4;">●</span> TH: <b>${p.th_pct}%</b></div>`;
+                if (p.eh_pct > 0) h += `<div><span style="color:#f44336;">●</span> EH: <b>${p.eh_pct}%</b></div>`;
+                h += `<div>HH: <b>${(p.hh||p.hu||0).toLocaleString()}</b></div>`;
+                const grade = p.cg||p.canvass_grade||'—';
+                if (grade !== '—') h += `<div>Canvass: <b>${grade}</b></div>`;
+                if (p.lookalike_score) h += `<div>Lookalike: <b>${p.lookalike_grade}(${p.lookalike_score})</b></div>`;
+                const hs = p.hs||p.home_score||0;
+                if (hs > 0) h += `<div>Home Score: <b>${hs}</b></div>`;
+                h += `</div>`;
+                h += `<div style="margin-top:6px;display:flex;height:10px;border-radius:3px;overflow:hidden;">`;
+                h += `<div style="width:${p.sfh_pct||0}%;background:#4caf50;"></div>`;
+                h += `<div style="width:${p.th_pct||0}%;background:#00bcd4;"></div>`;
+                h += `<div style="width:${p.apt_pct||0}%;background:#9c27b0;"></div>`;
+                h += `<div style="width:${p.mob_pct||0}%;background:#ff9800;"></div>`;
+                h += `</div></div>`;
+                marker.bindPopup(h, { maxWidth: 320 });
                 marker.addTo(targetPinGroup);
             });
         }
