@@ -789,10 +789,10 @@
                 lmiThresholds = lmiResp.ok ? await lmiResp.json() : {};
                 // Load ZIP sales from Supabase (live) with static fallback
                 try {
-                    const sbZips = await sbFetch('/v_zip_sales?select=zip_code,city,total_sales,payable,cancelled,reps_deployed,close_rate,first_sale,last_sale,last_30d,last_7d&state=eq.NY&limit=5000');
+                    const sbZips = await sbFetch('/v_zip_sales?select=zip_code,city,total_sales,payable,cancelled,reps_deployed,close_rate,first_sale,last_sale,last_30d,last_7d,old_deals,old_payable,new_deals,new_payable,recent_reps,last_new_canvass,deals_per_day&state=eq.NY&limit=5000');
                     zipSalesData = {};
                     sbZips.forEach(z => {
-                        zipSalesData[z.zip_code] = { n: z.total_sales, c: z.city||'', completed: z.payable, sent: 0, cancelled: z.cancelled, reps: z.reps_deployed, closeRate: z.close_rate, first: z.first_sale, last: z.last_sale, last30d: z.last_30d, last7d: z.last_7d };
+                        zipSalesData[z.zip_code] = { n: z.total_sales, c: z.city||'', completed: z.payable, sent: 0, cancelled: z.cancelled, reps: z.reps_deployed, closeRate: z.close_rate, first: z.first_sale, last: z.last_sale, last30d: z.last_30d, last7d: z.last_7d, oldDeals: z.old_deals, oldPayable: z.old_payable, newDeals: z.new_deals, newPayable: z.new_payable, recentReps: z.recent_reps, lastNewCanvass: z.last_new_canvass, dealsPerDay: z.deals_per_day };
                     });
                     console.log('ZIP sales from Supabase:', Object.keys(zipSalesData).length, 'ZIPs');
                 } catch(sbErr) {

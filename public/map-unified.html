@@ -768,10 +768,10 @@ async function loadZipBoundaries() {
     // Load ZIP sales from Supabase (live) with static fallback
     try {
         const stateParam = currentState ? `&state=eq.${currentState}` : '';
-        const sbZips = await sbFetch('/v_zip_sales?select=zip_code,city,total_sales,payable,cancelled,reps_deployed,close_rate,first_sale,last_sale,last_30d,last_7d' + stateParam + '&limit=5000');
+        const sbZips = await sbFetch('/v_zip_sales?select=zip_code,city,total_sales,payable,cancelled,reps_deployed,close_rate,first_sale,last_sale,last_30d,last_7d,old_deals,old_payable,new_deals,new_payable,recent_reps,last_new_canvass,deals_per_day' + stateParam + '&limit=5000');
         zipSalesData = {};
         sbZips.forEach(z => {
-            zipSalesData[z.zip_code] = { n: z.total_sales, c: z.city||'', completed: z.payable, sent: 0, cancelled: z.cancelled, reps: z.reps_deployed, closeRate: z.close_rate, first: z.first_sale, last: z.last_sale, last30d: z.last_30d, last7d: z.last_7d };
+            zipSalesData[z.zip_code] = { n: z.total_sales, c: z.city||'', completed: z.payable, sent: 0, cancelled: z.cancelled, reps: z.reps_deployed, closeRate: z.close_rate, first: z.first_sale, last: z.last_sale, last30d: z.last_30d, last7d: z.last_7d, oldDeals: z.old_deals, oldPayable: z.old_payable, newDeals: z.new_deals, newPayable: z.new_payable, recentReps: z.recent_reps, lastNewCanvass: z.last_new_canvass, dealsPerDay: z.deals_per_day };
         });
         console.log('ZIP sales from Supabase:', Object.keys(zipSalesData).length, 'ZIPs');
     } catch(sbErr) {
@@ -1835,8 +1835,23 @@ function setupUniversalClick() {
             h += `<div style="margin-top:3px;font-size:11px;"><span style="color:#27ae60;">Payable: ${sales.completed||0}</span> · <span style="color:#e74c3c;">Cancelled: ${sales.cancelled||0}</span>`;
             if (sales.closeRate) h += ` · <span style="color:#10b981;">Close: ${sales.closeRate}%</span>`;
             h += `</div>`;
-            if (sales.last30d || sales.last7d) h += `<div style="font-size:11px;color:#60a5fa;">Last 30d: ${sales.last30d||0} · Last 7d: ${sales.last7d||0} · Reps: ${sales.reps||0}</div>`;
-            if (sales.first || sales.last) h += `<div style="font-size:11px;color:#888;">First: ${sales.first||'—'} · Last: ${sales.last||'—'}</div>`;
+            if (sales.oldDeals > 0 || sales.newDeals > 0) {
+                const totalBar = Math.max(1, (sales.oldDeals||0) + (sales.newDeals||0));
+                const oldPct = Math.round((sales.oldDeals||0) / totalBar * 100);
+                h += `<div style="margin-top:4px;font-size:10px;">`;
+                h += `<div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span style="color:#ffd600;">Old (Dominion): ${sales.oldDeals||0} (${sales.oldPayable||0} pay)</span>`;
+                h += `<span style="color:#3b82f6;">New (Arcadia): ${sales.newDeals||0} (${sales.newPayable||0} pay)</span></div>`;
+                h += `<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;">`;
+                h += `<div style="width:${oldPct}%;background:#ffd600;"></div><div style="width:${100-oldPct}%;background:#3b82f6;"></div></div></div>`;
+            }
+            if (sales.last30d || sales.last7d) {
+                h += `<div style="font-size:11px;margin-top:3px;">`;
+                h += `<span style="color:#60a5fa;">30d: ${sales.last30d||0}</span> · <span style="color:#60a5fa;">7d: ${sales.last7d||0}</span> · Reps: ${sales.reps||0}`;
+                if (sales.recentReps > 0) h += ` · <span style="color:#ff9800;">Active: ${sales.recentReps} rep${sales.recentReps>1?'s':''}</span>`;
+                if (sales.lastNewCanvass) h += `<br><span style="color:#888;">Last canvass: ${sales.lastNewCanvass}</span>`;
+                if (sales.dealsPerDay > 0) h += ` · ~${sales.dealsPerDay}/day`;
+                h += `</div>`;
+            }
         }
         if (targeting) {
             const sat = targeting.sat || 0;
