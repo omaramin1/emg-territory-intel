@@ -470,11 +470,67 @@ function buildTogglePanel() {
     panel.innerHTML = html;
 }
 
+// ── SMART TARGETING PIN SYSTEM ──
+const targetingLayers = new Set(['mobileHomes','apartments','townhomes','elecHeat','lookalike']);
+const activeTargets = new Set();
+const targetPinGroup = L.featureGroup();
+
 function toggleLayer(id, visible) {
     const group = layerMap[id];
     if (!group) return;
     if (visible) map.addLayer(group);
     else map.removeLayer(group);
+    if (targetingLayers.has(id)) {
+        if (visible) activeTargets.add(id); else activeTargets.delete(id);
+        updateTargetPins();
+    }
+}
+
+function updateTargetPins() {
+    targetPinGroup.clearLayers();
+    if (!map.hasLayer(targetPinGroup)) map.addLayer(targetPinGroup);
+    if (activeTargets.size < 1 || !_canvassData || !_canvassData.tracts) return;
+    const criteria = {
+        mobileHomes: f => (f.properties.mob_pct||0) >= 10,
+        apartments: f => (f.properties.apt_pct||0) >= 15,
+        townhomes: f => (f.properties.th_pct||0) >= 10,
+        elecHeat: f => (f.properties.eh_pct||0) >= 40,
+        lookalike: f => (f.properties.lookalike_grade==='S'||f.properties.lookalike_grade==='A')
+    };
+    const matches = [];
+    _canvassData.tracts.features.forEach(f => {
+        const p = f.properties;
+        let mc = 0;
+        for (const ln of activeTargets) { if (criteria[ln] && criteria[ln](f)) mc++; }
+        if (mc < activeTargets.size) return;
+        let q = 0;
+        if (p.mob_pct>=10) q += Math.min(20, p.mob_pct);
+        if (p.apt_pct>=15) q += Math.min(15, p.apt_pct/3);
+        if (p.th_pct>=10) q += Math.min(15, p.th_pct);
+        if (p.eh_pct>=40) q += Math.min(25, (p.eh_pct-30)/2);
+        if (p.lookalike_score) q += p.lookalike_score/4;
+        q += Math.min(10, (p.hh||0)/200);
+        q = Math.round(q);
+        try { const b = L.geoJSON(f).getBounds().getCenter(); matches.push({lat:b.lat,lng:b.lng,q,p}); } catch(e) {}
+    });
+    matches.sort((a,b) => b.q - a.q);
+    const names = [...activeTargets].map(n=>({mobileHomes:'Mobile',apartments:'Apt',townhomes:'TH',elecHeat:'EH',lookalike:'Lookalike'}[n]||n)).join(' + ');
+    updateStatus(`${names}: ${matches.length} match · Top ${Math.min(50,matches.length)} pinned`);
+    matches.slice(0,50).forEach((m,i) => {
+        const r=i+1, pc=r<=10?'#ffd700':r<=25?'#ff8c00':'#ff6347', sz=r<=10?28:r<=25?22:18;
+        const icon = L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${pc};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:${r<=10?12:10}px;font-weight:800;color:#000;">${r}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+        const p=m.p;
+        let h=`<div style="min-width:260px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:18px;font-weight:800;color:${pc};">#${r} TARGET</div><div style="color:#888;">${names}</div><div style="color:#fff;font-weight:600;">Score: ${m.q}</div></div>`;
+        h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
+        if(p.mob_pct>0)h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob_pct}%</b></div>`;
+        if(p.apt_pct>0)h+=`<div><span style="color:#9c27b0;">●</span> Apt: <b>${p.apt_pct}%</b></div>`;
+        if(p.th_pct>0)h+=`<div><span style="color:#00bcd4;">●</span> TH: <b>${p.th_pct}%</b></div>`;
+        if(p.eh_pct>0)h+=`<div><span style="color:#f44336;">●</span> EH: <b>${p.eh_pct}%</b></div>`;
+        h+=`<div>HH: <b>${(p.hh||p.hu||0).toLocaleString()}</b></div>`;
+        if(p.lookalike_score)h+=`<div>Lookalike: <b>${p.lookalike_grade}(${p.lookalike_score})</b></div>`;
+        h+=`</div></div>`;
+        L.marker([m.lat,m.lng],{icon,zIndexOffset:1000-r}).bindPopup(h,{maxWidth:320}).addTo(targetPinGroup);
+    });
 }
 
 // ═══════════════════════════════════════════════════
