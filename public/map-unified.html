@@ -1600,6 +1600,7 @@ function loadTargetZones() {
                 if (feature) {
                     L.geoJSON(feature, {
                         style: { fillColor: '#10b981', fillOpacity: 0.25, color: '#10b981', weight: 3, opacity: 0.8 }
+                    }).addTo(fg.targetZones || (fg.targetZones = L.featureGroup()));
                 }
             }
         });
