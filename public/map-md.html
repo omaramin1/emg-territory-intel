@@ -264,8 +264,6 @@
             <span class="utility-badge badge-bge">BGE</span>
             <span class="utility-badge badge-potomac">POTOMAC EDISON</span>
             <span class="utility-badge badge-delmarva">DELMARVA</span>
-            <span class="utility-badge badge-smeco">SMECO</span>
-            <span class="utility-badge badge-hld">HLD</span>
             Territory Intelligence Engine
         </div>
     </div>
@@ -322,8 +320,6 @@
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('bge',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#44cc44;"></div><span class="toggle-label">BGE</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('potomac',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#3b82f6;"></div><span class="toggle-label">Potomac Edison</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('delmarva',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff5555;"></div><span class="toggle-label">Delmarva Power</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('smeco',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ffcc00;"></div><span class="toggle-label">SMECO</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('hld',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#e040fb;"></div><span class="toggle-label">Hagerstown Light</span></label>
             </div>
 
             <div class="toggle-section" style="border-bottom:none;">
@@ -417,6 +413,28 @@
                 <div class="legend-item" style="margin-top:4px;font-size:9px;color:#666;">Colors: <span style="color:#00c853;">●</span> Payable <span style="color:#3b82f6;">●</span> Sent <span style="color:#ff1744;">●</span> Cancelled <span style="color:#aa00ff;">●</span> Void <span style="color:#ffd600;">●</span> Pending</div>
             </div>
             <div class="legend-section">
+                <div class="legend-section-title">Dwelling Targeting</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff9800;"></div> Mobile Homes (10%+ of tract)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#9c27b0;"></div> Apartments 5+ units (15%+)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#00bcd4;"></div> Townhomes (10%+)</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#f44336;"></div> Electric Heat 40%+</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#ffd700,#ff6b00);"></div> Lookalike Opportunity (S/A grade)</div>
+                <div class="legend-item" style="font-size:9px;color:#888;margin-top:3px;">Stack toggles → numbered pins at intersections</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Target Pins (auto-generated)</div>
+                <div class="legend-item"><div style="width:14px;height:14px;border-radius:50%;background:#ffd700;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:#000;">1</div> Gold #1-10 — Top targets</div>
+                <div class="legend-item"><div style="width:12px;height:12px;border-radius:50%;background:#ff8c00;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:#000;">15</div> Orange #11-25 — Strong</div>
+                <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#ff6347;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:6px;font-weight:800;color:#000;">30</div> Red #26-50 — Worth a look</div>
+            </div>
+            <div class="legend-section">
+                <div class="legend-section-title">Canvass Intelligence</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#00cc66;"></div> Grade A — Prime canvass zone</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#3b82f6;"></div> Grade B — Good opportunity</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#ff9900;"></div> Grade C — Moderate</div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#666;"></div> Grade D — Low priority</div>
+            </div>
+            <div class="legend-section">
                 <div class="legend-section-title">County Boundaries</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ffffff;border-width:1px;"></div> County lines + labels</div>
             </div>
@@ -426,8 +444,6 @@
                 <div class="legend-item"><div class="legend-line" style="border-color:#44cc44;border-style:dashed;"></div> BGE (Exelon)</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#3b82f6;border-style:dashed;"></div> Potomac Edison (FirstEnergy)</div>
                 <div class="legend-item"><div class="legend-line" style="border-color:#ff5555;border-style:dashed;"></div> Delmarva Power (Exelon)</div>
-                <div class="legend-item"><div class="legend-line" style="border-color:#ffcc00;border-style:dashed;"></div> SMECO (Co-op)</div>
-                <div class="legend-item"><div class="legend-line" style="border-color:#e040fb;border-style:dashed;"></div> Hagerstown Light Dept (Municipal)</div>
             </div>
         </div>
     </div>
