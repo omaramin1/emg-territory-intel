@@ -319,7 +319,7 @@
                 <div class="toggle-section-title">Pins & Markers</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Pins (90K+)</span></label>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label"> Priority Targets</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleTrailerParks(this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#ff9800;"></div><span class="toggle-label">Trailer Parks (399)</span></label>
+                <label class="toggle-row"><input type="checkbox" onchange="toggleHousingTargets(this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:linear-gradient(135deg,#ff9800,#f44336);"></div><span class="toggle-label">Housing Targets (3,364)</span></label>
             </div>
 
             <div class="toggle-section">
@@ -527,36 +527,52 @@
             mobileHomes: fg.mobileHomes, apartments: fg.apartments, townhomes: fg.townhomes, elecHeat: fg.elecHeat, lookalike: fg.lookalike
         };
 
-        // ── TRAILER PARK PIN LAYER ──
-        const trailerParkGroup = L.featureGroup();
-        let trailerParksLoaded = false;
-        async function toggleTrailerParks(on) {
+        // ── HOUSING TARGET PIN LAYER ──
+        const housingTargetGroup = L.featureGroup();
+        let housingTargetsLoaded = false;
+        const pinConfig = {
+            eh_mobile:{emoji:'⚡',color:'#ffd700',label:'EH + Mobile Home',border:'#ffd700'},
+            eh_critical:{emoji:'🔥',color:'#ff1744',label:'Electric Heat 60%+',border:'#ff1744'},
+            eh_townhome:{emoji:'⚡',color:'#ff6d00',label:'EH + Townhome',border:'#ff6d00'},
+            eh_apartment:{emoji:'⚡',color:'#ff3d00',label:'EH + Apartment',border:'#ff3d00'},
+            eh_high:{emoji:'🔥',color:'#f44336',label:'Electric Heat 40%+',border:'#f44336'},
+            trailer_park:{emoji:'🏚',color:'#ff9800',label:'Trailer Park 15%+',border:'#ff9800'},
+            mobile_zone:{emoji:'🏚',color:'#ffb74d',label:'Mobile Zone 8%+',border:'#ffb74d'},
+            apt_heavy:{emoji:'🏢',color:'#9c27b0',label:'Apartment 40%+',border:'#9c27b0'},
+            apt_zone:{emoji:'🏢',color:'#ba68c8',label:'Apartment 20%+',border:'#ba68c8'},
+            th_heavy:{emoji:'🏘',color:'#00bcd4',label:'Townhome 20%+',border:'#00bcd4'},
+            th_zone:{emoji:'🏘',color:'#4dd0e1',label:'Townhome 10%+',border:'#4dd0e1'},
+        };
+        async function toggleHousingTargets(on) {
             if (on) {
-                if (!trailerParksLoaded) {
+                if (!housingTargetsLoaded) {
                     try {
-                        const resp = await fetch('ny_trailer_parks.json'+CB);
-                        const parks = await resp.json();
-                        parks.forEach(p => {
-                            const isHot = p.eh >= 40 && p.las >= 60;
-                            const isBig = p.units >= 100;
-                            const sz = isBig ? 32 : 24;
-                            const border = isHot ? '#ffd700' : '#ff9800';
-                            const icon = L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:6px;background:#1a1a2e;border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${isBig?14:11}px;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🏚</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
-                            let h=`<div style="min-width:240px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:15px;font-weight:800;color:#ff9800;">🏚 Mobile Home Zone</div><div style="color:#888;">Tract: ${p.id}</div>`;
-                            if(isHot) h+=`<div style="color:#ffd700;font-weight:700;">★ HIGH VALUE — EH ${p.eh}% + Lookalike ${p.la}</div>`;
-                            h+=`</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
-                            h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob}%</b></div><div>Units: <b>${p.units}</b></div>`;
-                            h+=`<div>HH: <b>${(p.hh||0).toLocaleString()}</b></div><div><span style="color:#f44336;">●</span> EH: <b>${p.eh}%</b></div>`;
-                            h+=`<div>Lookalike: <b>${p.la}(${p.las})</b></div></div></div>`;
-                            L.marker([p.lat,p.lon],{icon,zIndexOffset:500}).bindPopup(h,{maxWidth:300}).addTo(trailerParkGroup);
+                        const resp = await fetch('ny_housing_targets.json'+CB);
+                        const targets = await resp.json();
+                        targets.forEach(p => {
+                            const cfg = pinConfig[p.type]||pinConfig.eh_high;
+                            const isCombo = p.type.startsWith('eh_')&&p.type!=='eh_high'&&p.type!=='eh_critical';
+                            const sz = isCombo?30:(p.val>=60?26:20);
+                            const icon = L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:${p.type.includes('apt')?'4px':'50%'};background:#0f172a;border:2px solid ${cfg.border};display:flex;align-items:center;justify-content:center;font-size:${sz>=26?13:10}px;box-shadow:0 2px 6px rgba(0,0,0,0.5);">${cfg.emoji.charAt(0)}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+                            let h=`<div style="min-width:260px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:14px;font-weight:800;color:${cfg.color};">${cfg.emoji} ${cfg.label}</div><div style="color:#888;font-size:10px;">Tract: ${p.id} · Score: ${p.val}</div>`;
+                            if(isCombo)h+=`<div style="color:#ffd700;font-weight:700;">★ COMBO</div>`;
+                            h+=`</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11px;">`;
+                            if(p.mob>0)h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob}%</b> (${p.mu})</div>`;
+                            if(p.apt>0)h+=`<div><span style="color:#9c27b0;">●</span> Apt: <b>${p.apt}%</b> (${p.au})</div>`;
+                            if(p.th>0)h+=`<div><span style="color:#00bcd4;">●</span> TH: <b>${p.th}%</b> (${p.tu})</div>`;
+                            h+=`<div><span style="color:#f44336;">●</span> EH: <b>${p.eh}%</b></div>`;
+                            h+=`<div>HH: <b>${p.hh.toLocaleString()}</b></div>`;
+                            h+=`<div>Lookalike: <b>${p.la}(${p.las})</b></div>`;
+                            h+=`</div></div>`;
+                            L.marker([p.lat,p.lon],{icon,zIndexOffset:p.val+200}).bindPopup(h,{maxWidth:320}).addTo(housingTargetGroup);
                         });
-                        trailerParksLoaded = true;
-                        updateStatus('Loaded ' + parks.length + ' mobile home zones');
-                    } catch(e) { console.warn('Trailer parks error:', e); }
+                        housingTargetsLoaded = true;
+                        updateStatus(targets.length+' housing targets loaded');
+                    } catch(e){console.warn('Housing targets error:',e);}
                 }
-                if (!map.hasLayer(trailerParkGroup)) map.addLayer(trailerParkGroup);
+                if(!map.hasLayer(housingTargetGroup))map.addLayer(housingTargetGroup);
             } else {
-                if (map.hasLayer(trailerParkGroup)) map.removeLayer(trailerParkGroup);
+                if(map.hasLayer(housingTargetGroup))map.removeLayer(housingTargetGroup);
             }
         }
 

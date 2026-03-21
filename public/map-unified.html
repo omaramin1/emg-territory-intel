@@ -206,7 +206,7 @@ const STATE_CONFIG = {
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
-            { id: 'trailerParks', label: 'Trailer Parks', default: false },
+            { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
             { id: 'util_Central Hudson', label: 'Central Hudson', default: false },
             { id: 'util_NYSEG', label: 'NYSEG', default: false },
@@ -253,7 +253,7 @@ const STATE_CONFIG = {
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
-            { id: 'trailerParks', label: 'Trailer Parks', default: false },
+            { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
             { id: 'util_Pepco', label: 'Pepco', default: false },
             { id: 'util_Potomac Edison', label: 'Potomac Edison', default: false }
@@ -347,7 +347,7 @@ const STATE_CONFIG = {
             { id: 'townhomes', label: 'Townhomes', default: false },
             { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
-            { id: 'trailerParks', label: 'Trailer Parks', default: false },
+            { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
             { id: 'util_Dominion Virginia', label: 'Dominion Virginia', default: false }
         ],
@@ -473,37 +473,43 @@ function buildTogglePanel() {
     panel.innerHTML = html;
 }
 
-// ── TRAILER PARK PIN LAYER ──
-const trailerParkGroup = L.featureGroup();
-let trailerParksLoaded = false;
-
-// Override toggleLayer to handle trailerParks specially
-const _origToggleLayer = toggleLayer;
-// We need a new function since toggleLayer is already defined
-async function loadTrailerParks() {
-    if (trailerParksLoaded) return;
+// ── HOUSING TARGET PIN LAYER ──
+const housingTargetGroup = L.featureGroup();
+let housingTargetsLoaded = false;
+const pinConfig = {
+    eh_mobile:{emoji:'⚡',color:'#ffd700',label:'EH + Mobile'},eh_critical:{emoji:'🔥',color:'#ff1744',label:'EH 60%+'},
+    eh_townhome:{emoji:'⚡',color:'#ff6d00',label:'EH + TH'},eh_apartment:{emoji:'⚡',color:'#ff3d00',label:'EH + Apt'},
+    eh_high:{emoji:'🔥',color:'#f44336',label:'EH 40%+'},trailer_park:{emoji:'🏚',color:'#ff9800',label:'Trailer 15%+'},
+    mobile_zone:{emoji:'🏚',color:'#ffb74d',label:'Mobile 8%+'},apt_heavy:{emoji:'🏢',color:'#9c27b0',label:'Apt 40%+'},
+    apt_zone:{emoji:'🏢',color:'#ba68c8',label:'Apt 20%+'},th_heavy:{emoji:'🏘',color:'#00bcd4',label:'TH 20%+'},
+    th_zone:{emoji:'🏘',color:'#4dd0e1',label:'TH 10%+'}
+};
+async function loadHousingTargets() {
+    if (housingTargetsLoaded) return;
     try {
         const prefix = STATE_CONFIG[currentState]?.dataPrefix || 'va';
-        const resp = await fetch(prefix + '_trailer_parks.json');
-        const parks = await resp.json();
-        trailerParkGroup.clearLayers();
-        parks.forEach(p => {
-            const isHot = p.eh >= 40 && p.las >= 60;
-            const isBig = p.units >= 100;
-            const sz = isBig ? 32 : 24;
-            const border = isHot ? '#ffd700' : '#ff9800';
-            const icon = L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:6px;background:#1a1a2e;border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${isBig?14:11}px;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🏚</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
-            let h=`<div style="min-width:240px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:15px;font-weight:800;color:#ff9800;">🏚 Mobile Home Zone</div><div style="color:#888;">Tract: ${p.id}</div>`;
-            if(isHot) h+=`<div style="color:#ffd700;font-weight:700;">★ HIGH VALUE — EH ${p.eh}% + Lookalike ${p.la}</div>`;
-            h+=`</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">`;
-            h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob}%</b></div><div>Units: <b>${p.units}</b></div>`;
-            h+=`<div>HH: <b>${(p.hh||0).toLocaleString()}</b></div><div><span style="color:#f44336;">●</span> EH: <b>${p.eh}%</b></div>`;
+        const resp = await fetch(prefix + '_housing_targets.json');
+        const targets = await resp.json();
+        housingTargetGroup.clearLayers();
+        targets.forEach(p => {
+            const cfg=pinConfig[p.type]||pinConfig.eh_high;
+            const isCombo=p.type.startsWith('eh_')&&p.type!=='eh_high'&&p.type!=='eh_critical';
+            const sz=isCombo?30:(p.val>=60?26:20);
+            const icon=L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:${p.type.includes('apt')?'4px':'50%'};background:#0f172a;border:2px solid ${cfg.border};display:flex;align-items:center;justify-content:center;font-size:${sz>=26?13:10}px;box-shadow:0 2px 6px rgba(0,0,0,0.5);">${cfg.emoji.charAt(0)}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+            let h=`<div style="min-width:260px;font-family:system-ui;font-size:12px;"><div style="background:#1a1a2e;margin:-10px -10px 8px;padding:10px 12px;border-radius:4px 4px 0 0;"><div style="font-size:14px;font-weight:800;color:${cfg.color};">${cfg.emoji} ${cfg.label}</div><div style="color:#888;font-size:10px;">Tract: ${p.id} · Score: ${p.val}</div>`;
+            if(isCombo)h+=`<div style="color:#ffd700;font-weight:700;">★ COMBO</div>`;
+            h+=`</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11px;">`;
+            if(p.mob>0)h+=`<div><span style="color:#ff9800;">●</span> Mobile: <b>${p.mob}%</b> (${p.mu})</div>`;
+            if(p.apt>0)h+=`<div><span style="color:#9c27b0;">●</span> Apt: <b>${p.apt}%</b> (${p.au})</div>`;
+            if(p.th>0)h+=`<div><span style="color:#00bcd4;">●</span> TH: <b>${p.th}%</b> (${p.tu})</div>`;
+            h+=`<div><span style="color:#f44336;">●</span> EH: <b>${p.eh}%</b></div>`;
+            h+=`<div>HH: <b>${p.hh.toLocaleString()}</b></div>`;
             h+=`<div>Lookalike: <b>${p.la}(${p.las})</b></div></div></div>`;
-            L.marker([p.lat,p.lon],{icon,zIndexOffset:500}).bindPopup(h,{maxWidth:300}).addTo(trailerParkGroup);
+            L.marker([p.lat,p.lon],{icon,zIndexOffset:p.val+200}).bindPopup(h,{maxWidth:320}).addTo(housingTargetGroup);
         });
-        trailerParksLoaded = true;
-        updateStatus('Loaded ' + parks.length + ' mobile home zones');
-    } catch(e) { console.warn('Trailer parks error:', e); }
+        housingTargetsLoaded = true;
+        updateStatus(targets.length+' housing targets loaded');
+    } catch(e){console.warn('Housing targets error:',e);}
 }
 
 // ── UNIVERSAL SMART TARGETING PIN SYSTEM ──
@@ -528,9 +534,9 @@ const scoreWeights = {
 const toggleNames = {mobileHomes:'Mobile',apartments:'Apt',townhomes:'TH',elecHeat:'EH 40%+',ehZones:'EH',lookalike:'Lookalike',canvassZones:'Canvass',homeScore:'Home Score',incomeOverlay:'Income',saturationMap:'Saturation'};
 
 function toggleLayer(id, visible) {
-    if (id === 'trailerParks') {
-        if (visible) { loadTrailerParks().then(() => { if (!map.hasLayer(trailerParkGroup)) map.addLayer(trailerParkGroup); }); }
-        else { if (map.hasLayer(trailerParkGroup)) map.removeLayer(trailerParkGroup); }
+    if (id === 'housingTargets') {
+        if (visible) { loadHousingTargets().then(() => { if (!map.hasLayer(housingTargetGroup)) map.addLayer(housingTargetGroup); }); }
+        else { if (map.hasLayer(housingTargetGroup)) map.removeLayer(housingTargetGroup); }
         // Still run targeting pin update
         if (allTrackableToggles.has(id)) { if (visible) activeTargets.add(id); else activeTargets.delete(id); updateTargetPins(); }
         return;
