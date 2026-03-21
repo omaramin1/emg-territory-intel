@@ -501,11 +501,12 @@ async function switchState(stateCode) {
     boundaryFeatures = null;
     priorityData = {};
 
-    // Initialize feature groups
-    if (cfg.hasExtras) { groupIds.push('ordersLayer','lmiOutlines','housingPins','allElectricPins'); }
-    if (cfg.lmiData) groupIds.push('lmiOutlines');
-    if (cfg.housingPins) groupIds.push('housingPins');
-    Object.keys(cfg.utilities).forEach(u => groupIds.push('util_' + u));
+    // Initialize feature groups from toggles config
+    const groupIds = cfg.toggles.filter(t => t !== '_divider' && t.id).map(t => t.id);
+    if (cfg.hasExtras) { ['ordersLayer','lmiOutlines','housingPins','allElectricPins'].forEach(id => { if (!groupIds.includes(id)) groupIds.push(id); }); }
+    if (cfg.lmiData && !groupIds.includes('lmiOutlines')) groupIds.push('lmiOutlines');
+    if (cfg.housingPins && !groupIds.includes('housingPins')) groupIds.push('housingPins');
+    Object.keys(cfg.utilities).forEach(u => { const id = 'util_' + u; if (!groupIds.includes(id)) groupIds.push(id); });
 
     groupIds.forEach(id => {
         if (id === 'salesCluster') {
@@ -838,7 +839,7 @@ async function loadVAExtras() {
                 const lmiOpacity = pctLmi >= 70 ? 0.25 : 0.15;
                 L.geoJSON(f, {
                     style: { fillColor: lmiColor, fillOpacity: lmiOpacity, color: lmiColor, weight: 1.5, opacity: 0.6 }
-                }).addTo(fg.lmiOutlines);
+                }).addTo(fg.lmiOutlines || (fg.lmiOutlines = L.featureGroup()));
             });
         } catch(e) { console.warn('LMI zones load error:', e); }
     }
@@ -1193,7 +1194,7 @@ function loadLMIOutlines() {
                 weight: 3, opacity: 0.8,
                 dashArray: isCritical ? null : '8, 4'
             }
-        }).addTo(fg.lmiOutlines);
+        }).addTo(fg.lmiOutlines || (fg.lmiOutlines = L.featureGroup()));
     });
 }
 

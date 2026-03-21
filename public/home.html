@@ -105,7 +105,7 @@ svg{width:100%;height:100%;}
         <div class="state-dot">NY</div>
         <div class="state-info">
           <div class="state-name">New York</div>
-          <div class="state-meta">140K+ sales · 5 utilities · Census demographics</div>
+          <div class="state-meta" id="meta-ny">Loading...</div>
         </div>
         <div class="arrow">→</div>
       </a>
@@ -114,16 +114,16 @@ svg{width:100%;height:100%;}
         <div class="state-dot">MD</div>
         <div class="state-info">
           <div class="state-name">Maryland / DC</div>
-          <div class="state-meta">ZIP boundaries · LMI zones · Priority scoring</div>
+          <div class="state-meta" id="meta-md">Loading...</div>
         </div>
         <div class="arrow">→</div>
       </a>
 
-      <a href="map.html" class="state-card card-va" data-state="va" onmouseenter="highlight('va')" onmouseleave="unhighlight('va')">
+      <a href="map-unified.html" class="state-card card-va" data-state="va" onmouseenter="highlight('va')" onmouseleave="unhighlight('va')">
         <div class="state-dot">VA</div>
         <div class="state-info">
           <div class="state-name">Virginia</div>
-          <div class="state-meta">Dominion Energy · Arcadia LMI · 6.3K orders</div>
+          <div class="state-meta" id="meta-va">Dominion Energy · Arcadia · Loading...</div>
         </div>
         <div class="arrow">→</div>
       </a>
@@ -153,7 +153,7 @@ svg{width:100%;height:100%;}
         <text class="state-label" id="label-md" x="580.4" y="657.4">MARYLAND</text>
 
         <!-- VA -->
-        <a href="map.html">
+        <a href="map-unified.html">
         <polygon class="state-shape va" id="shape-va"
           points="38.9,899.8 80.0,900.8 121.2,900.8 166.3,905.8 193.5,900.8 219.1,902.8 258.7,903.8 300.7,905.8 326.3,905.8 362.1,905.8 420.4,905.8 455.3,905.8 498.8,905.8 544.7,904.8 589.0,904.8 633.3,904.8 644.9,904.8 651.9,938.2 668.2,973.5 637.1,924.0 631.7,918.0 603.7,901.8 588.2,862.4 613.8,846.3 603.7,836.2 616.9,826.1 592.9,797.8 608.4,789.7 611.5,774.6 587.4,743.3 593.6,705.9 578.9,701.9 564.1,668.5 553.2,673.6 550.9,686.7 536.9,703.9 532.2,720.0 539.2,724.1 553.2,719.0 550.1,689.7 554.0,678.6 557.9,672.6 554.0,656.4 547.8,629.1 531.5,625.1 521.4,634.2 512.8,627.1 501.2,625.1 491.8,596.8 446.0,594.8 394.7,610.0 364.4,636.2 364.4,584.7 283.6,584.7 283.6,491.8 310.0,505.9 321.7,560.5 332.6,580.7 350.4,617.0 366.7,627.1 375.3,619.0 386.2,626.1 392.4,691.8 360.5,710.9 351.2,723.1 329.4,740.2 313.1,773.6 292.9,787.7 286.7,817.0 257.2,825.1 256.4,839.2 229.2,835.2 219.1,825.1 202.8,838.2 193.5,839.2 176.4,823.0 174.0,807.9 145.3,830.1 125.9,839.2 111.9,847.3 101.0,870.5 85.5,874.5 80.0,885.6 49.7,893.7 38.9,899.8" />
         </a>
@@ -191,6 +191,39 @@ function unhighlight(state) {
 const style = document.createElement('style');
 style.textContent = `.state-card.hover{transform:translateX(4px);border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);} .state-card.hover .arrow{opacity:1;transform:translateX(0);}`;
 document.head.appendChild(style);
+
+// Live KPIs from Supabase
+const SB='https://gfbbhvsfznxhimwvokob.supabase.co/rest/v1';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmYmJodnNmem54aGltd3Zva29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzQ4MTYsImV4cCI6MjA4NDcxMDgxNn0.IJaI6vQJPA5Yb0tWtMHznjk-qY83RSWdYPjzorQUMyw';
+async function loadKPIs(){
+  try{
+    const r=await fetch(SB+'/v_dashboard_kpis',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
+    const d=await r.json();
+    if(d&&d[0]){
+      const k=d[0];
+      const fmt=n=>(n||0).toLocaleString();
+      // Parse per-state from the KPI view
+      const rNY=await fetch(SB+'/rpc/count_by_state',{method:'POST',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:'{}'}).catch(()=>null);
+    }
+  }catch(e){console.warn('KPI load:',e);}
+  // Fallback: direct count queries
+  try{
+    for(const[st,el]of[['NY','meta-ny'],['MD','meta-md'],['VA','meta-va']]){
+      const r=await fetch(SB+'/sales_records?select=id&state=eq.'+st,{headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Prefer':'count=exact'}});
+      const cnt=r.headers.get('content-range')?.split('/')?.pop()||'0';
+      const r2=await fetch(SB+'/sales_records?select=id&state=eq.'+st+'&order_status=eq.Payable',{headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Prefer':'count=exact'}});
+      const pay=r2.headers.get('content-range')?.split('/')?.pop()||'0';
+      const total=parseInt(cnt);const payable=parseInt(pay);
+      const labels={NY:'5 utilities · Census ACS · Block groups',MD:'6 utilities · LMI zones · Priority scoring',VA:'Dominion + Arcadia · Census ACS'};
+      document.getElementById(el).textContent=`${total.toLocaleString()} sales · ${payable.toLocaleString()} payable · ${labels[st]}`;
+    }
+  }catch(e){
+    document.getElementById('meta-ny').textContent='5 utilities · Census demographics';
+    document.getElementById('meta-md').textContent='6 utilities · LMI zones · Priority scoring';
+    document.getElementById('meta-va').textContent='Dominion Energy · Arcadia LMI';
+  }
+}
+loadKPIs();
 </script>
 </body>
 </html>

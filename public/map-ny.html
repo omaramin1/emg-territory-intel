@@ -439,6 +439,7 @@
             return r.json();
         }
         function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        const CB = '?v=' + Date.now();
 
         // ── NY center: roughly Albany area, zoom to see whole state ──
         const map = L.map('map', { zoomControl: true }).setView([42.85, -75.80], 7);
