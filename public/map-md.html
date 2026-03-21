@@ -30,7 +30,7 @@
 
         .zone-label { background: none !important; border: none !important; box-shadow: none !important; color: #fff; font-size: 11px; font-weight: 700; text-shadow: 0 0 4px #000, 0 0 8px #000, 1px 1px 2px #000; white-space: nowrap; }
 
-        .header { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 12px 16px; border-radius: 8px; border: 1px solid #3b82f6; backdrop-filter: blur(10px); }
+        .header { position: absolute; top: 10px; left: 360px; z-index: 1000; background: rgba(10, 10, 18, 0.95); padding: 12px 16px; border-radius: 8px; border: 1px solid #3b82f6; backdrop-filter: blur(10px); }
         .header h1 { font-size: 16px; color: #3b82f6; font-weight: 600; }
         .header .sub { font-size: 11px; color: #aaa; margin-top: 3px; }
         .utility-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 10px; font-weight: 600; margin: 1px; }
@@ -252,10 +252,37 @@
         /* Status banner subtle animation */
         .status-banner { transition: opacity 0.3s, background 0.3s; }
 
+        /* ── RECOMMENDATIONS PANEL ── */
+        .reco-panel { position: absolute; top: 10px; left: 10px; z-index: 1100; background: rgba(10,10,18,0.97); border: 1px solid #3b82f6; border-radius: 8px; backdrop-filter: blur(10px); width: 340px; max-height: calc(100vh - 30px); overflow-y: auto; transition: width 0.2s; }
+        .reco-panel.collapsed { width: 44px; overflow: hidden; }
+        .reco-panel.collapsed .reco-body { display: none; }
+        .reco-header { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(59,130,246,0.3); }
+        .reco-header h3 { color: #3b82f6; font-size: 13px; font-weight: 600; margin: 0; }
+        .reco-body { padding: 8px; }
+        .reco-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; }
+        .reco-card:hover { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.05); transform: translateX(2px); }
+        .reco-card .reco-rank { font-size: 20px; font-weight: 900; margin-right: 10px; }
+        .reco-card .reco-zip { font-size: 14px; font-weight: 700; color: #fff; }
+        .reco-card .reco-city { font-size: 11px; color: #aaa; }
+        .reco-card .reco-stats { font-size: 10px; color: #888; margin-top: 4px; }
+        .reco-card .reco-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; margin-right: 4px; }
+        .reco-share { background: none; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer; float: right; transition: all 0.2s; }
+        .reco-share:hover { background: #3b82f6; color: #fff; }
+
     </style>
 </head>
 <body>
     <div id="map"></div>
+
+    <div class="reco-panel" id="recoPanel">
+        <div class="reco-header" onclick="document.getElementById('recoPanel').classList.toggle('collapsed')">
+            <h3>🎯 Today's Targets</h3>
+            <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+        </div>
+        <div class="reco-body" id="recoBody">
+            <div style="padding:8px;color:#888;font-size:11px;text-align:center;" id="recoLoading">Analyzing 154K+ sales records...</div>
+        </div>
+    </div>
 
     <div class="header">
         <h1>Amin Marketing — MD / DC</h1>
@@ -470,6 +497,50 @@
             if (!r.ok) throw new Error('Supabase: ' + r.status);
             return r.json();
         }
+
+        // ── AI RECOMMENDATIONS PANEL ──
+        async function loadRecommendations() {
+            try {
+                const recs = await sbFetch('/v_recommended_areas?select=zip_code,city,state,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,last_7d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.MD&order=recommend_score.desc&limit=15');
+
+                const body = document.getElementById('recoBody');
+                if (!recs.length) { body.innerHTML = '<div style="padding:12px;color:#888;text-align:center;">No recommendations — check back after uploading new data</div>'; return; }
+
+                document.getElementById('recoCount').textContent = recs.length + ' areas';
+
+                let html = '';
+                recs.forEach((r, i) => {
+                    const rank = i + 1;
+                    const tagColor = r.recommendation.includes('REVISIT') ? '#ffd700' : r.recommendation.includes('REOPEN') ? '#ff9800' : r.recommendation.includes('UNTOUCHED') ? '#00c853' : r.recommendation.includes('ACTIVE') ? '#ff1744' : '#3b82f6';
+                    const tagBg = tagColor + '22';
+                    const tagText = r.recommendation.split('—')[0].trim();
+
+                    // Shareable link: zoom to this ZIP
+                    const shareUrl = window.location.href.split('?')[0] + '?zip=' + r.zip_code;
+
+                    html += '<div class="reco-card" onclick="if(zipCentroids[\'' + r.zip_code + '\']){map.setView(zipCentroids[\'' + r.zip_code + '\'],14);}">';
+                    html += '<div style="display:flex;align-items:center;">';
+                    html += '<div class="reco-rank" style="color:' + (rank<=3?'#ffd700':rank<=7?'#ff8c00':'#888') + ';">' + rank + '</div>';
+                    html += '<div style="flex:1;">';
+                    html += '<div><span class="reco-zip">' + r.zip_code + '</span> <span class="reco-city">' + (r.city||'') + ', ' + r.state + '</span></div>';
+                    html += '<div style="margin-top:2px;"><span class="reco-tag" style="background:' + tagBg + ';color:' + tagColor + ';border:1px solid ' + tagColor + '44;">' + tagText + '</span></div>';
+                    html += '<div class="reco-stats">';
+                    html += 'Old: ' + r.old_deals + ' · New: ' + r.new_deals + ' · Payable: ' + r.payable + ' · Close: ' + r.close_rate + '%';
+                    if (r.last_canvassed) html += '<br>Last hit: ' + r.last_canvassed + ' · Reps: ' + r.reps_deployed;
+                    if (r.recent_reps > 0) html += ' · <span style="color:#ff9800;">Active: ' + r.recent_reps + ' reps</span>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\'' + shareUrl + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Share\',1500);">Share</button>';
+                    html += '</div></div>';
+                });
+
+                body.innerHTML = html;
+            } catch(e) {
+                console.warn('Recommendations load error:', e);
+                document.getElementById('recoBody').innerHTML = '<div style="padding:12px;color:#888;text-align:center;">Could not load recommendations</div>';
+            }
+        }
+
         const map = L.map('map', { zoomControl: true }).setView([39.15, -76.85], 8);
 
         // Base maps
@@ -1514,6 +1585,10 @@
             }
         }
         loadAllData();
+
+        // Load recommendations after map initializes
+        setTimeout(loadRecommendations, 2000);
+
         document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
 
         // ── UNIVERSAL CLICK — ALL DATA POPUP ──
