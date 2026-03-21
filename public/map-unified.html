@@ -117,6 +117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <option value="NY">New York</option>
         <option value="MD">Maryland</option>
         <option value="VA">Virginia</option>
+        <option value="DE">Delaware</option>
     </select>
     <span class="badge" id="stats-badge">Loading...</span>
     <div id="search-box">
@@ -380,6 +381,43 @@ const STATE_CONFIG = {
         lmiData: null,
         housingPins: null,
         hasExtras: true  // VA has extra layers: orders, LMI zones, communities, all-electric
+    },
+    DE: {
+        name: 'Delaware',
+        center: [39.00, -75.50],
+        zoom: 9,
+        dataPrefix: 'de',
+        densityThresholds: [100, 50, 20, 5, 1],
+        densityColors: ['#ff2200','#ff6600','#ff9900','#ffcc44','#ffe888'],
+        densityOpacities: [0.45, 0.35, 0.28, 0.20, 0.12],
+        densityLabels: ['HOT ZONE','HIGH','MODERATE','LOW','MINIMAL'],
+        ehThreshold: 40,
+        ehCritical: 60,
+        utilities: {
+            'Delmarva Power DE': { coords: [[39.85,-75.80],[39.85,-75.40],[39.50,-75.40],[38.45,-75.05],[38.45,-75.60],[39.20,-75.80],[39.85,-75.80]], color: '#ff5555', label: [39.10,-75.50], desc: 'Entire state — Delmarva Power (Exelon)', parent: 'Exelon' }
+        },
+        toggles: [
+            { id: 'zipZones', label: 'ZIP Sales Density', default: false },
+            { id: 'salesCluster', label: 'Sales Pins', default: false },
+            { id: 'incomeOverlay', label: 'Income Overlay', default: false },
+            { id: 'raceOverlay', label: 'Race / Ethnicity', default: false },
+            { id: 'ehZones', label: 'Electric Heat Zones', default: false },
+            { id: 'dacZones', label: 'DAC Zones', default: false },
+            '_divider',
+            { id: 'canvassZones', label: 'Canvass Targeting', default: false },
+            { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
+            { id: 'saturationMap', label: 'Saturation', default: false },
+            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
+            { id: 'apartments', label: 'Apartments (5+)', default: false },
+            { id: 'townhomes', label: 'Townhomes', default: false },
+            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
+            { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
+            { id: 'housingTargets', label: 'Housing Targets', default: false },
+            '_divider',
+            { id: 'util_Delmarva Power DE', label: 'Delmarva Power', default: false }
+        ],
+        lmiData: null,
+        housingPins: null
     }
 };
 
