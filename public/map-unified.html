@@ -1643,6 +1643,7 @@ function renderPriorityPanel() {
     const cfg = STATE_CONFIG[currentState];
     const tabs = document.getElementById('priority-tabs');
     const body = document.getElementById('priority-body');
+    if (!tabs || !body) return; // Elements may not exist yet
 
     // Build tabs for each utility
     let tabsHtml = '';
