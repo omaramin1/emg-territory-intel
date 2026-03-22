@@ -774,7 +774,8 @@ async function loadRecommendations() {
             if (r.recent_reps > 0) html += ' · <span style="color:#ff9800;">Active: ' + r.recent_reps + ' reps</span>';
             html += '</div>';
             html += '</div>';
-            html += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\'' + shareUrl + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Share\',1500);">Share</button>';
+            const zipMsg = encodeURIComponent('📍 ZIP '+r.zip_code+' — '+(r.city||'')+', '+r.state+'\n'+tagText+'\nOld: '+r.old_deals+' · New: '+r.new_deals+' · Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
+            html += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text to lead">💬</button>';
             html += '</div></div>';
         });
 
