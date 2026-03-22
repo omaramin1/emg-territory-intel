@@ -1919,13 +1919,18 @@
                     var la=detail.lookalike_score||0,laG=detail.lookalike_grade||'D';
                     var ehV=detail.eh_pct||detail.eh||0,mobV=detail.mob_pct||0;
                     var verdict='',vColor='#666',vReason='';
+                    var cG=detail.cg||detail.canvass_grade||'D';
                     if(laG==='S'&&ehV>=40){verdict='PRIME TARGET';vColor='#ffd700';vReason='S-grade + high EH';}
                     else if(laG==='S'||(laG==='A'&&ehV>=30)){verdict='STRONG GO';vColor='#00c853';vReason=laG+'-grade'+(ehV>=30?' + good EH':'');}
+                    else if(cG==='A'&&ehV>=40){verdict='STRONG GO';vColor='#00c853';vReason='Grade A + '+ehV+'% EH';}
+                    else if(cG==='A'){verdict='WORTH IT';vColor='#4caf50';vReason='Grade A canvass zone';}
                     else if(laG==='A'){verdict='WORTH IT';vColor='#4caf50';vReason='A-grade demographics';}
                     else if(laG==='B'&&(mobV>=10||ehV>=50)){verdict='NICHE PLAY';vColor='#ff9800';vReason=mobV>=10?'Mobile home zone':'High EH';}
+                    else if(cG==='B'){verdict='MODERATE';vColor='#ffd600';vReason='Grade B zone';}
                     else if(laG==='B'){verdict='MODERATE';vColor='#ffd600';vReason='Average demo fit';}
                     else if(sales.n>=50&&sales.closeRate>=60){verdict='PROVEN AREA';vColor='#2196f3';vReason=sales.closeRate+'% close on '+sales.n+' deals';}
-                    else if(laG==='C'||laG==='D'){verdict='LOW PRIORITY';vColor='#ff5252';vReason='Weak demographic fit';}
+                    else if(cG<='B'){verdict='MODERATE';vColor='#ffd600';vReason='Grade '+cG+' zone';}
+                    else{verdict='LOW PRIORITY';vColor='#ff5252';vReason='Low canvass + demo fit';}
                     if(verdict){
                         h+='<div style="background:'+vColor+'15;border:1px solid '+vColor+'44;border-radius:6px;padding:6px 10px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">';
                         h+='<div style="font-size:16px;font-weight:900;color:'+vColor+';">'+verdict+'</div>';

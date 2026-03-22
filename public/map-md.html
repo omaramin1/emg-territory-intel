@@ -1713,13 +1713,19 @@
                     const hh = detail.hh || detail.hu || 0;
                     const recentActivity = (sales.last7d || 0);
 
+                    const cGrade = detail.cg || detail.canvass_grade || 'D';
+                    // Combined verdict using BOTH lookalike and canvass grade
                     if (laG === 'S' && eh >= 40) { verdict = 'PRIME TARGET'; verdictColor = '#ffd700'; verdictReason = 'S-grade lookalike + high EH'; }
                     else if (laG === 'S' || (laG === 'A' && eh >= 30)) { verdict = 'STRONG GO'; verdictColor = '#00c853'; verdictReason = laG + '-grade lookalike' + (eh>=30?' + good EH':''); }
+                    else if (cGrade === 'A' && eh >= 40) { verdict = 'STRONG GO'; verdictColor = '#00c853'; verdictReason = 'Grade A canvass + ' + eh + '% EH'; }
+                    else if (cGrade === 'A') { verdict = 'WORTH IT'; verdictColor = '#4caf50'; verdictReason = 'Grade A canvass zone'; }
                     else if (laG === 'A') { verdict = 'WORTH IT'; verdictColor = '#4caf50'; verdictReason = 'A-grade demographics'; }
                     else if (laG === 'B' && (mob >= 10 || eh >= 50)) { verdict = 'NICHE PLAY'; verdictColor = '#ff9800'; verdictReason = (mob>=10?'Mobile home zone':'High EH area'); }
+                    else if (cGrade === 'B') { verdict = 'MODERATE'; verdictColor = '#ffd600'; verdictReason = 'Grade B canvass zone'; }
                     else if (laG === 'B') { verdict = 'MODERATE'; verdictColor = '#ffd600'; verdictReason = 'Average demo fit'; }
                     else if (sales.n >= 50 && sales.closeRate >= 60) { verdict = 'PROVEN AREA'; verdictColor = '#2196f3'; verdictReason = sales.closeRate + '% close rate on ' + sales.n + ' deals'; }
-                    else if (laG === 'C' || laG === 'D') { verdict = 'LOW PRIORITY'; verdictColor = '#ff5252'; verdictReason = 'Weak demographic fit'; }
+                    else if (cGrade <= 'B') { verdict = 'MODERATE'; verdictColor = '#ffd600'; verdictReason = 'Grade ' + cGrade + ' zone'; }
+                    else { verdict = 'LOW PRIORITY'; verdictColor = '#ff5252'; verdictReason = 'Low canvass + demographic fit'; }
                     if (recentActivity >= 10) { verdictReason += ' · Active (' + recentActivity + ' this week)'; }
                 }
                 if (verdict !== 'UNKNOWN') {

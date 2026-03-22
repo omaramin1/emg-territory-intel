@@ -924,15 +924,29 @@ async function loadSalesData() {
 
     try {
         const stateFilter = currentState ? `&state=eq.${currentState}` : '';
-        const PAGE = 5000;
-        let offset = 0, allPoints = [], fetching = true;
-        while (fetching) {
-            const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&limit=' + PAGE + '&offset=' + offset + stateFilter);
-            allPoints = allPoints.concat(batch);
-            updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 50 + Math.min(20, (allPoints.length / 150000) * 20));
-            if (batch.length < PAGE) fetching = false;
-            else offset += PAGE;
+        // Load Arcadia (our deals) first, then Dominion, then cap old data
+        const MAX_PINS = 10000;
+        let allPoints = [];
+
+        // Priority 1: Our Arcadia deals (most important to see)
+        updateLoading('Loading our Arcadia deals...', 50);
+        const arcadia = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&campaign=eq.Arcadia' + stateFilter + '&limit=5000');
+        allPoints = allPoints.concat(arcadia);
+
+        // Priority 2: Dominion re-enrollable deals
+        updateLoading(`Loading Dominion history... (${allPoints.length} loaded)`, 58);
+        const dominion = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&campaign=eq.Dominion' + stateFilter + '&limit=5000');
+        allPoints = allPoints.concat(dominion);
+
+        // Priority 3: Old data (capped to fill remaining space)
+        const remaining = MAX_PINS - allPoints.length;
+        if (remaining > 0) {
+            updateLoading(`Loading old data... (${allPoints.length} loaded)`, 65);
+            const old = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&campaign=is.null' + stateFilter + '&limit=' + remaining);
+            allPoints = allPoints.concat(old);
         }
+
+        updateLoading(`Processing ${allPoints.length.toLocaleString()} pins...`, 70);
         salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
         allPoints = null;
         updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins...`, 72);
@@ -1860,13 +1874,18 @@ function setupUniversalClick() {
             const la = detail.lookalike_score||0, laG = detail.lookalike_grade||'D';
             const ehV = detail.eh_pct||detail.eh||0, mobV = detail.mob_pct||0;
             let verdict='', vColor='#666', vReason='';
-            if (laG==='S'&&ehV>=40){verdict='PRIME TARGET';vColor='#ffd700';vReason='S-grade + high EH';}
+            const cG=detail.cg||detail.canvass_grade||'D';
+            if(laG==='S'&&ehV>=40){verdict='PRIME TARGET';vColor='#ffd700';vReason='S-grade + high EH';}
             else if(laG==='S'||(laG==='A'&&ehV>=30)){verdict='STRONG GO';vColor='#00c853';vReason=laG+'-grade'+(ehV>=30?' + good EH':'');}
+            else if(cG==='A'&&ehV>=40){verdict='STRONG GO';vColor='#00c853';vReason='Grade A + '+ehV+'% EH';}
+            else if(cG==='A'){verdict='WORTH IT';vColor='#4caf50';vReason='Grade A canvass zone';}
             else if(laG==='A'){verdict='WORTH IT';vColor='#4caf50';vReason='A-grade demographics';}
             else if(laG==='B'&&(mobV>=10||ehV>=50)){verdict='NICHE PLAY';vColor='#ff9800';vReason=mobV>=10?'Mobile home zone':'High EH';}
+            else if(cG==='B'){verdict='MODERATE';vColor='#ffd600';vReason='Grade B zone';}
             else if(laG==='B'){verdict='MODERATE';vColor='#ffd600';vReason='Average demo fit';}
             else if(sales.n>=50&&sales.closeRate>=60){verdict='PROVEN AREA';vColor='#2196f3';vReason=sales.closeRate+'% close on '+sales.n+' deals';}
-            else if(laG==='C'||laG==='D'){verdict='LOW PRIORITY';vColor='#ff5252';vReason='Weak demographic fit';}
+            else if(cG<='B'){verdict='MODERATE';vColor='#ffd600';vReason='Grade '+cG+' zone';}
+            else{verdict='LOW PRIORITY';vColor='#ff5252';vReason='Low canvass + demo fit';}
             if(verdict){
                 h+=`<div style="background:${vColor}15;border:1px solid ${vColor}44;border-radius:6px;padding:6px 10px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">`;
                 h+=`<div style="font-size:16px;font-weight:900;color:${vColor};">${verdict}</div>`;
