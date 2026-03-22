@@ -1246,7 +1246,7 @@
                             let sc, pinSz;
                             if (campaign === 'Arcadia') { sc = '#00c853'; pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 }; }
                             else if (campaign === 'Dominion') { sc = '#ffd600'; pinSz = { radius: 4, fillColor: '#ffd600', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 }; }
-                            else { sc = '#666'; pinSz = { radius: 2, fillColor: '#555', color: '#333', weight: 0.3, opacity: 0.3, fillOpacity: 0.2 }; }
+                            else { sc = '#8899aa'; pinSz = { radius: 3, fillColor: '#7788aa', color: '#556', weight: 0.5, opacity: 0.5, fillOpacity: 0.4 }; }
                             const m = L.circleMarker([lat, lon], pinSz);
                             const srcLabel = campaign === 'Arcadia' ? '🟢 Taken' : campaign === 'Dominion' ? '🟡 Re-enrollable' : '⚫ Old';
                             m.bindTooltip(srcLabel + ' · ' + (city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
