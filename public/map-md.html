@@ -1227,98 +1227,51 @@
                     return { radius: 4, fillColor: sc, color: '#111', weight: 0.5, opacity: 0.8, fillOpacity: 0.75 };
                 }
 
-                // VIEWPORT-BASED LAZY LOADING — only fetch pins visible on screen
-                // Loads on-demand as user pans/zooms, max 1000 per viewport query
-                let _loadedBounds = null;
-                let _pinLoadTimer = null;
-
-                async function loadViewportPins() {
-                    if (map.getZoom() < 10) { updateStatus('Zoom in to see individual sales pins'); return; }
-                    const b = map.getBounds();
-                    const query = `/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&latitude=gte.${b.getSouth().toFixed(4)}&latitude=lte.${b.getNorth().toFixed(4)}&longitude=gte.${b.getWest().toFixed(4)}&longitude=lte.${b.getEast().toFixed(4)}&limit=1000&order=campaign.desc.nullslast`;
-                    try {
-                        const points = await sbFetch(query);
-                        salesCluster.clearLayers();
-                        const markers = [];
-                        points.forEach(p => {
-                            const [lat, lon, city, zip, status, campaign] = [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.campaign];
-                            if (city) cityStats[city] = (cityStats[city] || 0) + 1;
-                            if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                            // PIN COLORS: Green=Payable | Orange=Failed | Blue=Pipeline | Gray=Old | Black=Clawback
-                            const failedSet = new Set(['Denied','Cannot Process','Duplicate','Test','Bad Info','Disqualified','Rejected']);
-                            const pipelineSet = new Set(['Sent','Pending','Processed','Awaiting Client Update','TPV Not Complete','Draft','In Queue']);
-                            const clawbackSet = new Set(['Chargeback','Void','Clawback']);
-                            let sc, pinSz, srcLabel;
-                            if (clawbackSet.has(status)) {
-                                sc = '#000'; pinSz = { radius: 5, fillColor: '#111', color: '#ff0000', weight: 2, opacity: 1, fillOpacity: 0.9 };
-                                srcLabel = '⬛ Clawback';
-                            } else if (status === 'Payable' || (campaign === 'Dominion' && !failedSet.has(status))) {
-                                sc = '#00c853'; pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 };
-                                srcLabel = '🟢 Payable' + (campaign === 'Dominion' ? ' (Dominion)' : '');
-                            } else if (failedSet.has(status)) {
-                                sc = '#ff6d00'; pinSz = { radius: 3.5, fillColor: '#ff6d00', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 };
-                                srcLabel = '🟠 Failed — ' + (status||'');
-                            } else if (pipelineSet.has(status)) {
-                                sc = '#2196f3'; pinSz = { radius: 3.5, fillColor: '#2196f3', color: '#fff', weight: 0.8, opacity: 0.8, fillOpacity: 0.7 };
-                                srcLabel = '🔵 Pipeline — ' + (status||'');
-                            } else {
-                                sc = '#8899aa'; pinSz = { radius: 2.5, fillColor: '#7788aa', color: '#556', weight: 0.4, opacity: 0.4, fillOpacity: 0.3 };
-                                srcLabel = '⚫ Old Data';
-                            }
-                            const m = L.circleMarker([lat, lon], pinSz);
-                            m.bindTooltip(srcLabel + ' · ' + (city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
-                            m.on('click', function() {
-                                m.unbindPopup();
-                                m.bindPopup('<div style="text-align:center;padding:8px;">Loading…</div>').openPopup();
-                                sbFetch('/v_sale_points?select=latitude,longitude,zip_code,city,sale_date,order_status,dwelling_type,rep_name,campaign,utility_name,customer_name,state,address&latitude=eq.' + lat + '&longitude=eq.' + lon + '&limit=1')
-                                    .then(rows => { const p = rows[0] || {}; m.setPopupContent('<b>' + esc(p.city||'') + ' ' + esc(p.zip_code||'') + '</b><br>' + (p.customer_name ? '<b>Customer:</b> ' + esc(p.customer_name) + '<br>' : '') + (p.address ? '<b>Address:</b> ' + esc(p.address) + '<br>' : '') + '<b>Status:</b> ' + esc(p.order_status||'') + '<br>' + (p.campaign ? '<b>Source:</b> ' + esc(p.campaign) + '<br>' : '') + (p.rep_name ? '<b>Rep:</b> ' + esc(p.rep_name) + '<br>' : '') + (p.sale_date ? '<b>Date:</b> ' + p.sale_date + '<br>' : '') + (p.dwelling_type ? '<b>Dwelling:</b> ' + esc(p.dwelling_type) + '<br>' : '') + (p.utility_name ? '<b>Utility:</b> ' + esc(p.utility_name) : '')); })
-                                    .catch(() => { m.setPopupContent('Could not load details'); });
-                            });
-                            markers.push(m);
-                        });
-                        salesCluster.addLayers(markers);
-                        updateStatus(points.length + ' pins in view' + (points.length >= 1000 ? ' (zoom in for more)' : ''));
-                    } catch(e) { console.warn('Viewport pin load error:', e); }
+                // PAGINATED LOADING — fetch all pins with proper 1000-row pagination
+                const PAGE = 1000;
+                let offset = 0;
+                let allPoints = [];
+                let fetching = true;
+                while (fetching) {
+                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&order=campaign.desc.nullslast&limit=' + PAGE + '&offset=' + offset);
+                    allPoints = allPoints.concat(batch);
+                    updateLoading('Loading sales... ' + allPoints.length.toLocaleString(), 40 + Math.min(20, (allPoints.length/30000)*20));
+                    if (batch.length < PAGE) fetching = false;
+                    else offset += PAGE;
                 }
+                console.log('Sale points loaded:', allPoints.length);
+                salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
+                allPoints = null;
 
-                // Debounced reload on pan/zoom
-                map.on('moveend', function() {
-                    if (_pinLoadTimer) clearTimeout(_pinLoadTimer);
-                    _pinLoadTimer = setTimeout(loadViewportPins, 300);
-                });
-
-                // Initial load
-                updateLoading('Map ready — pins load on zoom/pan...', 60);
-                salesData = []; // keep empty, viewport loading handles it
+                updateLoading('Building ' + salesData.length.toLocaleString() + ' markers...', 60);
+                const failedSet = new Set(['Denied','Cannot Process','Duplicate','Test','Bad Info','Disqualified','Rejected']);
+                const pipelineSet = new Set(['Sent','Pending','Processed','Awaiting Client Update','TPV Not Complete','Draft','In Queue']);
+                const clawbackSet = new Set(['Chargeback','Void','Clawback']);
                 const markers = [];
-                // Trigger first viewport load after map shows
-                setTimeout(loadViewportPins, 500);
-                // Dummy loop to maintain compatibility with rest of code
                 for (let i = 0; i < salesData.length; i++) {
                     const [lat, lon, city, zip, status, state, campaign] = salesData[i];
                     if (city) cityStats[city] = (cityStats[city] || 0) + 1;
                     if (zip) zipStats[zip] = (zipStats[zip] || 0) + 1;
-                    // 3-tier pin coloring:
-                    // 🟢 Arcadia = TAKEN (can't re-enroll anyone in Arcadia system, any status)
-                    // 🟡 Dominion = PROVEN DEMAND (old program, these people CAN be re-enrolled in Arcadia)
-                    // ⚫ Old market data = HISTORICAL (reference only)
-                    let sc, pinSz;
-                    if (campaign === 'Arcadia') {
-                        // TAKEN — these doors are off-limits regardless of status
-                        sc = '#00c853'; // green = claimed
-                        pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 };
-                    } else if (campaign === 'Dominion') {
-                        // PROVEN DEMAND — old Dominion customers, CAN re-enroll in Arcadia = OPPORTUNITY
-                        sc = '#ffd600';
-                        pinSz = { radius: 4, fillColor: '#ffd600', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 };
+                    // PIN COLORS: Green=Payable | Orange=Failed | Blue=Pipeline | Gray=Old | Black=Clawback
+                    let sc, pinSz, srcLabel;
+                    if (clawbackSet.has(status)) {
+                        sc = '#000'; pinSz = { radius: 5, fillColor: '#111', color: '#ff0000', weight: 2, opacity: 1, fillOpacity: 0.9 };
+                        srcLabel = '⬛ Clawback';
+                    } else if (status === 'Payable' || (campaign === 'Dominion' && !failedSet.has(status))) {
+                        sc = '#00c853'; pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 };
+                        srcLabel = '🟢 Payable' + (campaign === 'Dominion' ? ' (Dominion)' : '');
+                    } else if (failedSet.has(status)) {
+                        sc = '#ff6d00'; pinSz = { radius: 3.5, fillColor: '#ff6d00', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 };
+                        srcLabel = '🟠 Failed — ' + (status||'');
+                    } else if (pipelineSet.has(status)) {
+                        sc = '#2196f3'; pinSz = { radius: 3.5, fillColor: '#2196f3', color: '#fff', weight: 0.8, opacity: 0.8, fillOpacity: 0.7 };
+                        srcLabel = '🔵 Pipeline — ' + (status||'');
                     } else {
-                        // OLD MARKET DATA — reference, dim
-                        sc = '#666';
-                        pinSz = { radius: 2, fillColor: '#555', color: '#333', weight: 0.3, opacity: 0.3, fillOpacity: 0.2 };
+                        sc = '#8899aa'; pinSz = { radius: 2.5, fillColor: '#7788aa', color: '#556', weight: 0.4, opacity: 0.4, fillOpacity: 0.3 };
+                        srcLabel = '⚫ Old Data';
                     }
 
                     const m = L.circleMarker([lat, lon], pinSz);
-                    const srcLabel = campaign === 'Arcadia' ? '🟢 Taken (Arcadia)' : campaign === 'Dominion' ? '🟡 Re-enrollable (Dominion)' : '⚫ Old Data';
                     m.bindTooltip(srcLabel + ' · ' + (city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
                     m.on('click', function() {
                         if (m._popup) { m.openPopup(); return; }
