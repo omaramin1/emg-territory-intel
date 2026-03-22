@@ -1265,6 +1265,7 @@
                                 sc = '#8899aa'; pinSz = { radius: 2.5, fillColor: '#7788aa', color: '#556', weight: 0.4, opacity: 0.4, fillOpacity: 0.3 };
                                 srcLabel = '⚫ Old Data';
                             }
+                            const m = L.circleMarker([lat, lon], pinSz);
                             m.bindTooltip(srcLabel + ' · ' + (city||'') + (zip ? ' ' + zip : '') + (status ? ' · ' + status : ''), { direction:'top', opacity:0.9 });
                             m.on('click', function() {
                                 m.unbindPopup();
