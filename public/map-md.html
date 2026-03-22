@@ -1216,16 +1216,7 @@
                     'Rejected':'#ff1744','Void':'#aa00ff','Draft':'#bdbdbd',
                     'Test':'#9e9e9e','Pending':'#ffd600'
                 };
-                // Pin style by status category — distinct shapes via radius/weight/opacity
-                const completedSet = new Set(['Payable','Completed']);
-                const pipelineSet = new Set(['Sent','Pending','Draft']);
-                const deadSet = new Set(['Cancelled','Invalid','Rejected','Void','Duplicate','Test']);
-                function pinStyle(status, sc) {
-                    if (completedSet.has(status)) return { radius: 5, fillColor: sc, color: '#fff', weight: 1.2, opacity: 1, fillOpacity: 0.9 };
-                    if (pipelineSet.has(status)) return { radius: 4, fillColor: 'transparent', color: sc, weight: 2.5, opacity: 0.9, fillOpacity: 0.15 };
-                    if (deadSet.has(status)) return { radius: 2.5, fillColor: sc, color: '#000', weight: 0.5, opacity: 0.5, fillOpacity: 0.4 };
-                    return { radius: 4, fillColor: sc, color: '#111', weight: 0.5, opacity: 0.8, fillOpacity: 0.75 };
-                }
+                // Pin style handled inline by status-based coloring below
 
                 // PAGINATED LOADING — fetch all pins with proper 1000-row pagination
                 const PAGE = 1000;
