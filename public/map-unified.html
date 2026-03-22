@@ -925,16 +925,19 @@ async function loadSalesData() {
 
     try {
         const stateFilter = currentState ? `&state=eq.${currentState}` : '';
-        // PAGINATED LOADING with state filter + 5-color pins
+        // PRIORITY LOADING: Arcadia + Dominion first, old capped at 5K
         const PAGE = 1000;
-        let offset = 0, allPoints = [], fetching = true;
-        while (fetching) {
-            const batch = await sbFetch(`/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign${stateFilter}&order=campaign.desc.nullslast&limit=${PAGE}&offset=${offset}`);
-            allPoints = allPoints.concat(batch);
-            updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 50 + Math.min(20, (allPoints.length/30000)*20));
-            if (batch.length < PAGE) fetching = false;
-            else offset += PAGE;
-        }
+        let allPoints = [];
+        // 1. Arcadia
+        updateLoading('Loading Arcadia deals...', 50);
+        let o1=0,f1=true; while(f1){const b=await sbFetch(`/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign${stateFilter}&campaign=eq.Arcadia&limit=${PAGE}&offset=${o1}`);allPoints=allPoints.concat(b);if(b.length<PAGE)f1=false;else o1+=PAGE;}
+        // 2. Dominion
+        updateLoading(`Loading Dominion... (${allPoints.length} loaded)`, 58);
+        let o2=0,f2=true; while(f2){const b=await sbFetch(`/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign${stateFilter}&campaign=eq.Dominion&limit=${PAGE}&offset=${o2}`);allPoints=allPoints.concat(b);if(b.length<PAGE)f2=false;else o2+=PAGE;}
+        // 3. Old (capped)
+        updateLoading(`Loading old data... (${allPoints.length} loaded)`, 65);
+        const oldB=await sbFetch(`/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign${stateFilter}&campaign=is.null&limit=5000`);
+        allPoints=allPoints.concat(oldB);
         console.log('Sale points loaded:', allPoints.length);
         salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
         allPoints = null;

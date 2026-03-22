@@ -1339,17 +1339,20 @@
                     return { radius: 4, fillColor: sc, color: '#111', weight: 0.5, opacity: 0.8, fillOpacity: 0.75 };
                 }
 
-                // Paginated fetch — NY records only, lightweight cols
+                // PRIORITY LOADING: Arcadia + Dominion first (actionable), old data capped
                 const PAGE = 1000;
-                let offset = 0, allPoints = [], fetching = true;
-                while (fetching) {
-                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&state=eq.NY&limit=' + PAGE + '&offset=' + offset);
-                    allPoints = allPoints.concat(batch);
-                    updateLoading(`Loading sales... ${allPoints.length.toLocaleString()}`, 40 + Math.min(20, (allPoints.length/130000)*20));
-                    if (batch.length < PAGE) fetching = false;
-                    else offset += PAGE;
-                }
-                console.log('Supabase NY sale points loaded:', allPoints.length);
+                let allPoints = [];
+                // 1. Arcadia (our deals — must see)
+                updateLoading('Loading Arcadia deals...', 42);
+                let o1=0,f1=true; while(f1){const b=await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&state=eq.NY&campaign=eq.Arcadia&limit='+PAGE+'&offset='+o1);allPoints=allPoints.concat(b);if(b.length<PAGE)f1=false;else o1+=PAGE;}
+                // 2. Dominion (re-enrollable)
+                updateLoading('Loading Dominion... ('+allPoints.length+' loaded)', 52);
+                let o2=0,f2=true; while(f2){const b=await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&state=eq.NY&campaign=eq.Dominion&limit='+PAGE+'&offset='+o2);allPoints=allPoints.concat(b);if(b.length<PAGE)f2=false;else o2+=PAGE;}
+                // 3. Old data (capped at 5K — enough for context without saturating)
+                updateLoading('Loading old data... ('+allPoints.length+' loaded)', 60);
+                const oldBatch=await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&state=eq.NY&campaign=is.null&limit=5000');
+                allPoints=allPoints.concat(oldBatch);
+                console.log('NY pins loaded:', allPoints.length, '(Arcadia+Dominion first, old capped at 5K)');
 
                 salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
                 allPoints = null;
