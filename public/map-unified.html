@@ -924,75 +924,40 @@ async function loadSalesData() {
 
     try {
         const stateFilter = currentState ? `&state=eq.${currentState}` : '';
-        // Load Arcadia (our deals) first, then Dominion, then cap old data
-        const MAX_PINS = 10000;
-        let allPoints = [];
-
-        // Priority 1: Our Arcadia deals (most important to see)
-        updateLoading('Loading our Arcadia deals...', 50);
-        const arcadia = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&campaign=eq.Arcadia' + stateFilter + '&limit=5000');
-        allPoints = allPoints.concat(arcadia);
-
-        // Priority 2: Dominion re-enrollable deals
-        updateLoading(`Loading Dominion history... (${allPoints.length} loaded)`, 58);
-        const dominion = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&campaign=eq.Dominion' + stateFilter + '&limit=5000');
-        allPoints = allPoints.concat(dominion);
-
-        // Priority 3: Old data (capped to fill remaining space)
-        const remaining = MAX_PINS - allPoints.length;
-        if (remaining > 0) {
-            updateLoading(`Loading old data... (${allPoints.length} loaded)`, 65);
-            const old = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&campaign=is.null' + stateFilter + '&limit=' + remaining);
-            allPoints = allPoints.concat(old);
+        // VIEWPORT-BASED LAZY LOADING — only fetch pins in current view
+        let _pinTimer = null;
+        async function loadViewportPins() {
+            if (map.getZoom() < 10) { updateStatus('Zoom in to see sales pins'); return; }
+            const b = map.getBounds();
+            const bboxFilter = `&latitude=gte.${b.getSouth().toFixed(4)}&latitude=lte.${b.getNorth().toFixed(4)}&longitude=gte.${b.getWest().toFixed(4)}&longitude=lte.${b.getEast().toFixed(4)}`;
+            const query = `/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign${stateFilter}${bboxFilter}&limit=1000&order=campaign.desc.nullslast`;
+            try {
+                const points = await sbFetch(query);
+                fg.salesCluster.clearLayers();
+                points.forEach(p => {
+                    let sc, pinSz;
+                    if (p.campaign === 'Arcadia') { sc='#00c853'; pinSz={radius:4,fillColor:'#00c853',color:'#fff',weight:1,opacity:0.9,fillOpacity:0.8}; }
+                    else if (p.campaign === 'Dominion') { sc='#ffd600'; pinSz={radius:4,fillColor:'#ffd600',color:'#000',weight:0.5,opacity:0.8,fillOpacity:0.7}; }
+                    else { sc='#666'; pinSz={radius:2,fillColor:'#555',color:'#333',weight:0.3,opacity:0.3,fillOpacity:0.2}; }
+                    const srcLabel = p.campaign === 'Arcadia' ? '🟢 Taken' : p.campaign === 'Dominion' ? '🟡 Re-enrollable' : '⚫ Old';
+                    const m = L.circleMarker([p.latitude, p.longitude], pinSz);
+                    m.bindTooltip(`${srcLabel} · ${p.city||''} ${p.zip_code||''} — ${p.order_status||''}`, {direction:'top',offset:[0,-6]});
+                    m.on('click', async function() {
+                        m.bindPopup('<div style="text-align:center;padding:8px;">Loading…</div>').openPopup();
+                        try {
+                            const rows = await sbFetch(`/v_sale_points?latitude=eq.${p.latitude}&longitude=eq.${p.longitude}&limit=1`);
+                            if (rows.length) { const s=rows[0]; m.setPopupContent(`<div style="min-width:220px;"><b>${esc(s.city||'')} ${esc(s.zip_code||'')}</b><br>${s.sale_date||''}<br>Status: <b>${esc(s.order_status||'')}</b><br>${s.rep_name?'Rep: '+esc(s.rep_name)+'<br>':''}${s.campaign?'Source: '+esc(s.campaign)+'<br>':''}${s.dwelling_type?'Dwelling: '+esc(s.dwelling_type)+'<br>':''}${s.address?'<span style="color:#888;">'+esc(s.address)+'</span>':''}</div>`); }
+                        } catch(e) { m.setPopupContent('Details unavailable'); }
+                    });
+                    m.addTo(fg.salesCluster);
+                });
+                updateStatus(points.length + ' pins in view' + (points.length >= 1000 ? ' — zoom in for more' : ''));
+            } catch(e) { console.warn('Viewport pins error:', e); }
         }
-
-        updateLoading(`Processing ${allPoints.length.toLocaleString()} pins...`, 70);
-        salesData = allPoints.map(p => [p.latitude, p.longitude, p.city, p.zip_code, p.order_status, p.state, p.campaign]);
-        allPoints = null;
-        updateLoading(`Clustering ${salesData.length.toLocaleString()} sales pins...`, 72);
-
-        salesData.forEach((d, i) => {
-            const [lat, lon, city, zip, status, state, campaign] = d;
-            // 🟢 Arcadia = TAKEN | 🟡 Dominion = RE-ENROLLABLE | ⚫ Old = REFERENCE
-            let sc, pinSz;
-            if (campaign === 'Arcadia') {
-                sc = '#00c853';
-                pinSz = { radius: 4, fillColor: '#00c853', color: '#fff', weight: 1, opacity: 0.9, fillOpacity: 0.8 };
-            } else if (campaign === 'Dominion') {
-                sc = '#ffd600';
-                pinSz = { radius: 4, fillColor: '#ffd600', color: '#000', weight: 0.5, opacity: 0.8, fillOpacity: 0.7 };
-            } else {
-                sc = '#666';
-                pinSz = { radius: 2, fillColor: '#555', color: '#333', weight: 0.3, opacity: 0.3, fillOpacity: 0.2 };
-            }
-            const srcLabel = campaign === 'Arcadia' ? '🟢 Taken' : campaign === 'Dominion' ? '🟡 Re-enrollable' : '⚫ Old';
-            const marker = L.circleMarker([lat, lon], pinSz);
-            marker.bindTooltip(`${srcLabel} · ${city || ''} ${zip || ''} — ${status || ''}`, { direction: 'top', offset: [0, -6] });
-            marker.on('click', async function () {
-                marker.bindPopup('<div style="text-align:center;padding:8px;color:#aaa;">Loading…</div>').openPopup();
-                try {
-                    const rows = await sbFetch(`/v_sale_points?latitude=eq.${lat}&longitude=eq.${lon}&limit=1`);
-                    if (rows.length) {
-                        const s = rows[0];
-                        marker.setPopupContent(
-                            `<div style="min-width:220px;"><b>${esc(s.city||'')} ${esc(s.zip_code||'')}</b><br>` +
-                            ` ${s.sale_date||'N/A'}<br>` +
-                            `Status: <span style="color:${sc};font-weight:700">${esc(s.order_status||'N/A')}</span><br>` +
-                            `Rep: ${esc(s.rep_name||'N/A')}<br>` +
-                            `${s.customer_name ? 'Customer: '+esc(s.customer_name)+'<br>' : ''}` +
-                            `${s.dwelling_type ? 'Dwelling: '+esc(s.dwelling_type)+'<br>' : ''}` +
-                            `${s.utility_name ? 'Utility: '+esc(s.utility_name)+'<br>' : ''}` +
-                            `${s.campaign ? 'Campaign: '+esc(s.campaign)+'<br>' : ''}` +
-                            `${s.address ? '<span style="color:#888;font-size:11px;">'+esc(s.address)+'</span>' : ''}` +
-                            `</div>`
-                        );
-                    }
-                } catch (e) {
-                    marker.setPopupContent(`<b>${esc(city||'')} ${esc(zip||'')}</b><br>Status: ${esc(status||'N/A')}`);
-                }
-            });
-            marker.addTo(fg.salesCluster);
-        });
+        map.on('moveend', function() { if (_pinTimer) clearTimeout(_pinTimer); _pinTimer = setTimeout(loadViewportPins, 300); });
+        updateLoading('Sales pins load on zoom/pan...', 70);
+        setTimeout(loadViewportPins, 500);
+        salesData = [];
     } catch (sbErr) {
         console.warn('Supabase sales fallback:', sbErr);
         try {
