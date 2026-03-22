@@ -539,8 +539,9 @@
                 h += '<div style="flex:1;"><div><b style="color:#fff;">Turf #'+s.id+'</b> <span style="color:#aaa;font-size:10px;">'+s.county+'</span> <span style="color:'+gc+';font-weight:700;">'+s.grade+'</span></div>';
                 h += '<div style="font-size:11px;">🚪 <b>'+s.doors+'</b> doors · '+s.hh+' HH · '+s.area+' sq mi</div></div>';
                 h += '<div style="display:flex;flex-direction:column;gap:2px;">';
-                h += '<button class="reco-share" onclick="event.stopPropagation();window.open(\''+nav+'\',\'_blank\');">📍</button>';
-                h += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\'Turf '+s.id+' ('+s.county+') '+s.doors+' doors Grade '+s.grade+' '+nav+'\');this.textContent=\'✓\';setTimeout(()=>this.textContent=\'📤\',1500);">📤</button>';
+                const turfMsg = encodeURIComponent('📍 Turf #'+s.id+' — '+s.county+'\n🚪 '+s.doors+' doors · Grade '+s.grade+'\n📐 '+s.area+' sq mi · '+s.hh+' HH\n\nDrop: '+nav);
+                h += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+turfMsg+'\');" title="Text this to a lead">💬</button>';
+                h += '<button class="reco-share" onclick="event.stopPropagation();window.open(\''+nav+'\',\'_blank\');" title="Open in Google Maps">📍</button>';
                 h += '</div></div></div>';
             });
 
@@ -555,8 +556,8 @@
                 if(r.utility)h+=' <span style="color:#10b981;font-size:9px;">'+r.utility+'</span>';
                 h += '</div><div style="margin-top:1px;"><span style="padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;">'+tag+'</span></div>';
                 h += '<div style="font-size:10px;color:#888;">Old:'+r.old_deals+' New:'+r.new_deals+' Pay:'+r.payable+'</div></div>';
-                const shareUrl = window.location.href.split('?')[0] + '?zip=' + r.zip_code;
-                h += '<button class="reco-share" onclick="event.stopPropagation();navigator.clipboard.writeText(\''+shareUrl+'\');this.textContent=\'✓\';setTimeout(()=>this.textContent=\'📤\',1500);">📤</button>';
+                const zipMsg = encodeURIComponent('📍 ZIP '+r.zip_code+' — '+(r.city||'')+', '+r.state+'\n'+tag+'\nOld: '+r.old_deals+' · New: '+r.new_deals+' · Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
+                h += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text this to a lead">💬</button>';
                 h += '</div></div>';
             });
 
@@ -706,6 +707,13 @@
                             h += `<div style="width:${p.th}%;background:#00bcd4;"></div>`;
                             h += `<div style="width:${p.apt}%;background:#9c27b0;"></div>`;
                             h += `<div style="width:${p.mob}%;background:#ff9800;"></div>`;
+                            h += `</div>`;
+                            // One-click text button
+                            const pinNav = 'https://www.google.com/maps?q='+p.lat+','+p.lon+'&z=16';
+                            const pinMsg = encodeURIComponent(cfg.emoji+' '+cfg.label+' — Tract '+p.id+'\nMobile: '+p.mob+'% | Apt: '+p.apt+'% | EH: '+p.eh+'%\n'+p.hh+' HH\n\nDrop pin: '+pinNav);
+                            h += `<div style="margin-top:6px;display:flex;gap:6px;">`;
+                            h += `<a href="sms:?&body=${pinMsg}" style="flex:1;text-align:center;padding:6px;background:#3b82f6;color:#fff;border-radius:4px;text-decoration:none;font-size:12px;font-weight:700;" onclick="event.stopPropagation();">💬 Text to Lead</a>`;
+                            h += `<a href="${pinNav}" target="_blank" style="padding:6px 12px;background:#333;color:#fff;border-radius:4px;text-decoration:none;font-size:12px;" onclick="event.stopPropagation();">📍 Maps</a>`;
                             h += `</div></div>`;
                             m.bindPopup(h, { maxWidth: 320 });
                             m.addTo(housingTargetGroup);
