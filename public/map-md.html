@@ -1233,7 +1233,7 @@
                 let allPoints = [];
                 let fetching = true;
                 while (fetching) {
-                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&order=campaign.desc.nullslast&limit=' + PAGE + '&offset=' + offset);
+                    const batch = await sbFetch('/v_sale_points?select=latitude,longitude,city,zip_code,order_status,state,campaign&state=in.(MD,DC)&order=campaign.desc.nullslast&limit=' + PAGE + '&offset=' + offset);
                     allPoints = allPoints.concat(batch);
                     updateLoading('Loading sales... ' + allPoints.length.toLocaleString(), 40 + Math.min(20, (allPoints.length/30000)*20));
                     if (batch.length < PAGE) fetching = false;
