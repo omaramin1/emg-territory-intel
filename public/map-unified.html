@@ -228,10 +228,6 @@ const STATE_CONFIG = {
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
             { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
-            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
-            { id: 'apartments', label: 'Apartments (5+)', default: false },
-            { id: 'townhomes', label: 'Townhomes', default: false },
-            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
@@ -275,10 +271,6 @@ const STATE_CONFIG = {
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
             { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
-            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
-            { id: 'apartments', label: 'Apartments (5+)', default: false },
-            { id: 'townhomes', label: 'Townhomes', default: false },
-            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
@@ -369,10 +361,6 @@ const STATE_CONFIG = {
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation (Enrolled)', default: false },
             { id: 'canvassTurfs', label: 'Canvass Turfs (8hr Shift)', default: false },
-            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
-            { id: 'apartments', label: 'Apartments (5+)', default: false },
-            { id: 'townhomes', label: 'Townhomes', default: false },
-            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
@@ -407,10 +395,6 @@ const STATE_CONFIG = {
             { id: 'canvassZones', label: 'Canvass Targeting', default: false },
             { id: 'homeScore', label: 'Home Score (Daytime)', default: false },
             { id: 'saturationMap', label: 'Saturation', default: false },
-            { id: 'mobileHomes', label: 'Mobile Homes', default: false },
-            { id: 'apartments', label: 'Apartments (5+)', default: false },
-            { id: 'townhomes', label: 'Townhomes', default: false },
-            { id: 'elecHeat', label: 'Electric Heat 40%+', default: false },
             { id: 'lookalike', label: 'Lookalike Opportunity', default: false },
             { id: 'housingTargets', label: 'Housing Targets', default: false },
             '_divider',
@@ -733,6 +717,8 @@ async function switchState(stateCode) {
     const zipCount = Object.keys(zipSalesData).length;
     document.getElementById('stats-badge').textContent = `${totalSales.toLocaleString()} sales · ${zipCount} ZIPs`;
 
+    // Auto-load housing target pins (trailer parks, apts, townhomes)
+    if (typeof loadHousingTargets === 'function') loadHousingTargets();
     updateLoading('Complete!', 100);
     setTimeout(() => {
         document.getElementById('loading-overlay').style.display = 'none';

@@ -334,19 +334,14 @@
             </div>
 
             <div class="toggle-section">
-                <div class="toggle-section-title">Dwelling Targeting</div>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('mobileHomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#ff9800;"></div><span class="toggle-label">Mobile Homes</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('apartments',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#9c27b0;"></div><span class="toggle-label">Apartments (5+)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('townhomes',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#00bcd4;"></div><span class="toggle-label">Townhomes</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('elecHeat',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:#f44336;"></div><span class="toggle-label">Electric Heat 40%+</span></label>
+                <div class="toggle-section-title">Targeting Overlays</div>
                 <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('lookalike',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot square" style="background:linear-gradient(135deg,#ffd700,#ff6b00);"></div><span class="toggle-label">Lookalike Opportunity</span></label>
             </div>
 
             <div class="toggle-section">
                 <div class="toggle-section-title">Pins & Markers</div>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Pins (90K+)</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleLayer('targets',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#22aa22;"></div><span class="toggle-label"> Priority Targets</span></label>
-                <label class="toggle-row"><input type="checkbox" onchange="toggleHousingTargets(this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:linear-gradient(135deg,#ff9800,#f44336);"></div><span class="toggle-label">Housing Targets (3,364)</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleLayer('sales',this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:#3b82f6;"></div><span class="toggle-label">Sales Pins</span></label>
+                <label class="toggle-row"><input type="checkbox" checked onchange="toggleHousingTargets(this.checked)"><span class="toggle-switch"></span><div class="toggle-dot" style="background:linear-gradient(135deg,#ff9800,#f44336);"></div><span class="toggle-label">🏚🏢🏘 Trailer Parks · Apts · Townhomes</span></label>
             </div>
 
             <div class="toggle-section">
@@ -1854,6 +1849,7 @@
                 loadTargetZones();
                 await loadCanvassTargeting();
                 setupUniversalClick();
+                toggleHousingTargets(true);
                 updateLoading('Complete', 100);
                 setTimeout(hideLoading, 500);
             } catch (e) { console.error('Load error:', e); hideLoading(); }
