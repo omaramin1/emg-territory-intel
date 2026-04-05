@@ -693,6 +693,11 @@ async function switchState(stateCode) {
         layerMap[id] = fg[id];
     });
 
+    // Ensure canvass overlay feature groups exist (even if not in toggles)
+    ['mobileHomes','apartments','townhomes','elecHeat','lookalike','canvassZones','homeScore','saturationMap','ehZones','canvassTurfs','housingTargets','targetZones'].forEach(id => {
+        if (!fg[id]) { fg[id] = L.featureGroup(); layerMap[id] = fg[id]; }
+    });
+
     // Build UI
     buildTogglePanel();
     buildLegend();
@@ -2273,4 +2278,5 @@ initMap();
 </script>
 </body>
 </html>
+
 
