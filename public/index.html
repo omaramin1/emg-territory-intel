@@ -792,6 +792,988 @@
         const info = stateInfo[state];
         const data = byState[state];
         const zipList = Array.from(data.zips).slice(0, 5).join(', ');
+        const mapFile = state === 'MD' ? 'map-md.html' : state === 'NY' ? 'map-ny.html' : `map-unified.html?state=${state}`;
+
+        html += `
+          <div class="territory-card">
+            <div class="territory-header">
+              <div class="territory-icon ${info.color}">${info.icon}</div>
+              <div class="territory-info">
+                <h3>${info.name}</h3>
+                <p>${data.reps.size} active reps</p>
+              </div>
+            </div>
+            <div class="territory-stats">
+              <div class="stat-item">
+                <div class="stat-label">Sales</div>
+                <div class="stat-value">${data.sales}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Reps</div>
+                <div class="stat-value">${data.reps.size}</div>
+              </div>
+            </div>
+            <div class="territory-zips">
+              <strong>Top ZIPs:</strong> ${zipList || 'N/A'}
+            </div>
+            <a href="${mapFile}" class="territory-action">Launch Map</a>
+          </div>
+        `;
+      });
+
+      document.getElementById('territoryGrid').innerHTML = html;
+    }
+
+    function renderTerritoryError() {
+      const html = `
+        <div class="territory-card" style="grid-column: 1 / -1;">
+          <div class="error-state">
+            Unable to load territory data. Please check your connection and try refreshing.
+          </div>
+        </div>
+      `;
+      document.getElementById('territoryGrid').innerHTML = html;
+    }
+
+    async function loadIntelligence() {
+      try {
+        const allRecords = await fetchFromSupabase('sales_records', { select: 'rep_name,order_status' });
+        if (allRecords) {
+          const repStats = {};
+          allRecords.forEach(record => {
+            if (record.rep_name) {
+              if (!repStats[record.rep_name]) {
+                repStats[record.rep_name] = { total: 0, payable: 0 };
+              }
+              repStats[record.rep_name].total += 1;
+              if (record.order_status === 'Payable') {
+                repStats[record.rep_name].payable += 1;
+              }
+            }
+          });
+
+          const topReps = Object.entries(repStats)
+            .map(([name, stats]) => ({
+              name,
+              payable: stats.payable,
+              total: stats.total
+            }))
+            .sort((a, b) => b.payable - a.payable)
+            .slice(0, 5);
+
+          renderTopReps(topReps);
+        }
+
+        const territories = await fetchFromSupabase('sales_records', { select: 'state,zip_code' });
+        if (territories) {
+          const zipSales = {};
+          territories.forEach(t => {
+            const key = `${t.state}-${t.zip_code}`;
+            zipSales[key] = (zipSales[key] || 0) + 1;
+          });
+
+          const untapped = Object.entries(zipSales)
+            .filter(([_, count]) => count < 5)
+            .map(([zip, count]) => {
+              const [state, zipCode] = zip.split('-');
+              return { state, zip: zipCode, sales: count };
+            })
+            .sort((a, b) => a.sales - b.sales)
+            .slice(0, 5);
+
+          renderUntappedMarkets(untapped);
+        }
+
+        renderChurnRisks();
+        renderTrends(allRecords);
+
+      } catch (error) {
+        console.error('Intelligence load error:', error);
+      }
+    }
+
+    function renderTopReps(reps) {
+      let html = '';
+      if (reps.length === 0) {
+        html = '<div class="empty-state"><p class="empty-state-text">No rep data available</p></div>';
+      } else {
+        reps.forEach(rep => {
+          html += `
+            <div class="insight-item">
+              <div class="insight-name">${rep.name}</div>
+              <div class="insight-detail">${rep.payable} payable of ${rep.total} total</div>
+              <div class="insight-badge success">${Math.round((rep.payable/rep.total)*100)}% completion</div>
+            </div>
+          `;
+        });
+      }
+      document.getElementById('topReps').innerHTML = html;
+    }
+
+    function renderUntappedMarkets(markets) {
+      let html = '';
+      if (markets.length === 0) {
+        html = '<div class="empty-state"><p class="empty-state-text">All markets active</p></div>';
+      } else {
+        markets.forEach(market => {
+          html += `
+            <div class="insight-item">
+              <div class="insight-name">${market.state} - ${market.zip}</div>
+              <div class="insight-detail">${market.sales} record${market.sales !== 1 ? 's' : ''}</div>
+              <div class="insight-badge warning">LOW ACTIVITY</div>
+            </div>
+          `;
+        });
+      }
+      document.getElementById('untappedMarkets').innerHTML = html;
+    }
+
+    function renderChurnRisks() {
+      const html = `
+        <div class="insight-item">
+          <div class="insight-name">Monitoring Status</div>
+          <div class="insight-detail">Active alerts system engaged</div>
+          <div class="insight-badge">ACTIVE</div>
+        </div>
+      `;
+      document.getElementById('churnRisks').innerHTML = html;
+    }
+
+    function renderTrends(records) {
+      if (!records || records.length === 0) {
+        const html = '<div class="insight-item"><div class="insight-name">No data</div></div>';
+        document.getElementById('trends').innerHTML = html;
+        return;
+      }
+
+      const statusCounts = {};
+      records.forEach(r => {
+        const status = r.order_status || 'Unknown';
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      let html = '';
+      Object.entries(statusCounts)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([status, count]) => {
+          html += `
+            <div class="insight-item">
+              <div class="insight-name">${status}</div>
+              <div class="insight-detail">${count} record${count !== 1 ? 's' : ''}</div>
+            </div>
+          `;
+        });
+
+      document.getElementById('trends').innerHTML = html;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadKPIs();
+      loadTerritories();
+      loadIntelligence();
+    });
+
+    setInterval(() => {
+      loadKPIs();
+      loadTerritories();
+    }, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Territory Intelligence Engine - Amin Marketing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    .header {
+      background-color: #1e293b;
+      border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      padding: 1.5rem 2rem;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 0.25rem;
+    }
+
+    .header-text p {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-left: auto;
+      font-weight: 500;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    .kpi-section {
+      margin-bottom: 3rem;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background-color: #3b82f6;
+      border-radius: 2px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .kpi-card {
+      background-color: #1e293b;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .kpi-card:hover {
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .kpi-card.loading {
+      opacity: 0.7;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #3b82f6;
+      margin-bottom: 0.5rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-change {
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .kpi-change.positive {
+      color: #10b981;
+    }
+
+    .kpi-change.warning {
+      color: #f59e0b;
+    }
+
+    .territory-section {
+      margin-bottom: 3rem;
+    }
+
+    .territory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .territory-card {
+      background-color: #1e293b;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 10px;
+      padding: 2rem;
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.7s ease-out;
+    }
+
+    .territory-card:hover {
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .territory-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .territory-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .territory-icon.md {
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    }
+
+    .territory-icon.ny {
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    }
+
+    .territory-icon.va {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .territory-info h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 0.25rem;
+    }
+
+    .territory-info p {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .territory-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #3b82f6;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .territory-zips {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .territory-zips strong {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .territory-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .territory-action:hover {
+      background-color: #2563eb;
+      transform: translateX(4px);
+    }
+
+    .intelligence-section {
+      margin-bottom: 2rem;
+    }
+
+    .intelligence-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .panel {
+      background-color: #1e293b;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 10px;
+      padding: 1.5rem;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .panel:hover {
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .panel-icon {
+      width: 6px;
+      height: 20px;
+      background-color: #3b82f6;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .panel-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .insight-item {
+      padding: 1rem;
+      background-color: rgba(59, 130, 246, 0.05);
+      border-left: 3px solid rgba(59, 130, 246, 0.3);
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .insight-item:hover {
+      border-left-color: #3b82f6;
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .insight-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 0.25rem;
+    }
+
+    .insight-detail {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .insight-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .insight-badge.success {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #86efac;
+    }
+
+    .insight-badge.warning {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+    }
+
+    .loading-skeleton {
+      background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+      border-radius: 6px;
+      height: 1em;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #94a3b8;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+    }
+
+    .error-state {
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .footer {
+      background-color: #1e293b;
+      border-top: 1px solid rgba(59, 130, 246, 0.2);
+      padding: 2rem;
+      margin-top: 3rem;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 12px;
+      animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-subtitle {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+
+      .kpi-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+      }
+
+      .kpi-card {
+        padding: 1rem;
+      }
+
+      .kpi-value {
+        font-size: 24px;
+      }
+
+      .intelligence-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .territory-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .refresh-time {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(59, 130, 246, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <div class="logo-icon">A</div>
+      <div class="header-text">
+        <h1>Amin Marketing</h1>
+        <p>Territory Intelligence Engine</p>
+      </div>
+      <div class="header-subtitle">Unified Operations Platform</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="kpi-section">
+      <div class="section-title">Executive KPIs</div>
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card loading">
+          <div class="kpi-label">Total Enrollments</div>
+          <div class="kpi-value" style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="kpi-card loading">
+          <div class="kpi-label">Payable</div>
+          <div class="kpi-value" style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="kpi-card loading">
+          <div class="kpi-label">Pipeline</div>
+          <div class="kpi-value" style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="kpi-card loading">
+          <div class="kpi-label">Completion Rate</div>
+          <div class="kpi-value" style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="kpi-card loading">
+          <div class="kpi-label">Active Reps</div>
+          <div class="kpi-value" style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="kpi-card loading">
+          <div class="kpi-label">Active Territories</div>
+          <div class="kpi-value" style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="territory-section">
+      <div class="section-title">Territory Overview</div>
+      <div class="territory-grid" id="territoryGrid">
+        <div class="territory-card loading">
+          <div style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="territory-card loading">
+          <div style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+        <div class="territory-card loading">
+          <div style="height: 40px; background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%); animation: shimmer 2s infinite; border-radius: 6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intelligence-section">
+      <div class="section-title">Intelligence Insights</div>
+      <div class="intelligence-grid">
+        <div class="panel">
+          <div class="panel-title">
+            <div class="panel-icon"></div>
+            Top Performing Reps
+          </div>
+          <div class="panel-content" id="topReps">
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 80%; height: 20px;"></div>
+            </div>
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 75%; height: 20px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            <div class="panel-icon"></div>
+            Untapped Markets
+          </div>
+          <div class="panel-content" id="untappedMarkets">
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 85%; height: 20px;"></div>
+            </div>
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 80%; height: 20px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            <div class="panel-icon"></div>
+            Churn Risk Alerts
+          </div>
+          <div class="panel-content" id="churnRisks">
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 80%; height: 20px;"></div>
+            </div>
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 75%; height: 20px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            <div class="panel-icon"></div>
+            Recent Activity
+          </div>
+          <div class="panel-content" id="trends">
+            <div class="insight-item">
+              <div class="loading-skeleton" style="width: 100%; height: 20px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Amin Marketing Intelligence Platform | Data refreshed in real-time from Supabase
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://gfbbhvsfznxhimwvokob.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmYmJodnNmem54aGltd3Zva29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzQ4MTYsImV4cCI6MjA4NDcxMDgxNn0.IJaI6vQJPA5Yb0tWtMHznjk-qY83RSWdYPjzorQUMyw';
+
+    async function fetchFromSupabase(endpoint, params = {}) {
+      try {
+        let url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+        const searchParams = new URLSearchParams(params);
+        if (searchParams.toString()) {
+          url += '?' + searchParams.toString();
+        }
+
+        const response = await fetch(url, {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'count=exact'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Fetch error:', error);
+        return null;
+      }
+    }
+
+    async function loadKPIs() {
+      try {
+        const salesRecords = await fetchFromSupabase('sales_records', { select: 'id,order_status' });
+
+        if (!salesRecords) {
+          renderKPIError();
+          return;
+        }
+
+        const total = salesRecords.length;
+        const payable = salesRecords.filter(r => r.order_status === 'Payable').length;
+        const pipeline = salesRecords.filter(r => ['Sent', 'Pending'].includes(r.order_status)).length;
+        const completionRate = total > 0 ? Math.round((payable / total) * 100) : 0;
+
+        const repsData = await fetchFromSupabase('sales_records', { select: 'rep_name' });
+        const activeReps = new Set(repsData?.map(r => r.rep_name)).size || 0;
+
+        const zipsData = await fetchFromSupabase('sales_records', { select: 'zip_code' });
+        const activeTerritories = new Set(zipsData?.map(r => r.zip_code)).size || 0;
+
+        renderKPIs({
+          total,
+          payable,
+          pipeline,
+          completionRate,
+          activeReps,
+          activeTerritories
+        });
+      } catch (error) {
+        console.error('KPI load error:', error);
+        renderKPIError();
+      }
+    }
+
+    function renderKPIs(data) {
+      const html = `
+        <div class="kpi-card">
+          <div class="kpi-label">Total Enrollments</div>
+          <div class="kpi-value">${data.total}</div>
+          <div class="refresh-time">All active records</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Payable</div>
+          <div class="kpi-value" style="color: #10b981;">${data.payable}</div>
+          <div class="kpi-change positive">Ready to process</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pipeline</div>
+          <div class="kpi-value" style="color: #f59e0b;">${data.pipeline}</div>
+          <div class="kpi-change warning">In workflow</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Completion Rate</div>
+          <div class="kpi-value">${data.completionRate}%</div>
+          <div class="kpi-change">Of total records</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Reps</div>
+          <div class="kpi-value">${data.activeReps}</div>
+          <div class="kpi-change">In field</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Territories</div>
+          <div class="kpi-value">${data.activeTerritories}</div>
+          <div class="kpi-change">Zip codes</div>
+        </div>
+      `;
+      document.getElementById('kpiGrid').innerHTML = html;
+    }
+
+    function renderKPIError() {
+      const html = `
+        <div class="kpi-card" style="grid-column: 1 / -1;">
+          <div class="error-state">
+            Unable to load KPI data. Please check your connection and try refreshing.
+          </div>
+        </div>
+      `;
+      document.getElementById('kpiGrid').innerHTML = html;
+    }
+
+    async function loadTerritories() {
+      try {
+        const salesRecords = await fetchFromSupabase('sales_records', { select: 'id,state,zip_code,rep_name,order_status' });
+
+        if (!salesRecords || salesRecords.length === 0) {
+          renderTerritoryError();
+          return;
+        }
+
+        const byState = {
+          MD: { sales: 0, reps: new Set(), zips: new Set() },
+          NY: { sales: 0, reps: new Set(), zips: new Set() },
+          VA: { sales: 0, reps: new Set(), zips: new Set() }
+        };
+
+        salesRecords.forEach(record => {
+          const state = record.state || 'UNKNOWN';
+          if (byState[state]) {
+            byState[state].sales += 1;
+            if (record.rep_name) byState[state].reps.add(record.rep_name);
+            if (record.zip_code) byState[state].zips.add(record.zip_code);
+          }
+        });
+
+        renderTerritories(byState);
+      } catch (error) {
+        console.error('Territory load error:', error);
+        renderTerritoryError();
+      }
+    }
+
+    function renderTerritories(byState) {
+      const stateInfo = {
+        MD: { name: 'Maryland', icon: 'MD', color: 'md' },
+        NY: { name: 'New York', icon: 'NY', color: 'ny' },
+        VA: { name: 'Virginia', icon: 'VA', color: 'va' }
+      };
+
+      let html = '';
+      Object.keys(stateInfo).forEach(state => {
+        const info = stateInfo[state];
+        const data = byState[state];
+        const zipList = Array.from(data.zips).slice(0, 5).join(', ');
         const mapFile = state === 'MD' ? 'map-md.html' : state === 'NY' ? 'map-ny.html' : 'map-unified.html';
 
         html += `
