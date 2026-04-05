@@ -269,7 +269,15 @@
         .reco-share { background: none; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer; float: right; transition: all 0.2s; }
         .reco-share:hover { background: #3b82f6; color: #fff; }
 
-    </style>
+    
+/* AREA SCORE BADGE */
+.area-score{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;font-size:18px;font-weight:900;border:3px solid}
+.area-score.s-tier{border-color:#ffd700;color:#ffd700;background:#ffd70015}
+.area-score.a-tier{border-color:#00c853;color:#00c853;background:#00c85315}
+.area-score.b-tier{border-color:#ff9800;color:#ff9800;background:#ff980015}
+.area-score.c-tier{border-color:#ff5252;color:#ff5252;background:#ff525215}
+.reco-reason{font-size:10px;color:#10b981;margin-top:3px;font-style:italic}
+</style>
 </head>
 <body>
     <div id="map"></div>
@@ -499,6 +507,9 @@
         let dailyShifts = [];
         let zipRecos = [];
         let selectedUtility = 'ALL';
+        let zipProfiles = {};
+        let benefitData = {};
+        let areaEffectiveness = {};
 
         async function loadRecommendations() {
             try {
@@ -551,7 +562,15 @@
                 h += '<div style="flex:1;"><div><b style="color:#fff;font-size:12px;">'+r.zip_code+'</b> <span style="color:#aaa;font-size:10px;">'+(r.city||'')+', '+r.state+'</span>';
                 if(r.utility)h+=' <span style="color:#10b981;font-size:9px;">'+r.utility+'</span>';
                 h += '</div><div style="margin-top:1px;"><span style="padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;">'+tag+'</span></div>';
-                h += '<div style="font-size:10px;color:#888;">Old:'+r.old_deals+' New:'+r.new_deals+' Pay:'+r.payable+'</div></div>';
+                h += '<div style="font-size:10px;color:#888;"><b style="color:#10b981;">'+r.payable+' payable</b> \u00b7 Close: <b style="color:#fff;">'+r.close_rate+'%</b> \u00b7 '+(r.old_deals+r.new_deals)+' total</div>';
+                const ae = areaEffectiveness[r.zip_code]; let why = [];
+                if (r.close_rate >= 70) why.push('high close rate');
+                if (r.payable >= 100) why.push('proven volume');
+                if (r.old_deals >= 200 && r.new_deals < 20) why.push('untapped re-enrollment');
+                if (ae && ae.effectiveness_score >= 70) why.push('high kWh effectiveness');
+                if (r.recent_reps === 0 && r.old_deals >= 50) why.push('no active reps');
+                if (why.length) h += '<div class="reco-reason">Why: '+why.join(', ')+'</div>';
+                h += '</div>';
                 const zipMsg = encodeURIComponent('📍 ZIP '+r.zip_code+' — '+(r.city||'')+', '+r.state+'\n'+tag+'\nOld: '+r.old_deals+' · New: '+r.new_deals+' · Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
                 h += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text this to a lead">💬</button>';
                 h += '</div></div>';
@@ -561,7 +580,24 @@
             document.getElementById('recoCount').textContent = dailyShifts.length+' shifts · '+filt.length+' ZIPs';
         }
 
-        setTimeout(loadRecommendations, 2000);
+        
+        async function loadEnrichmentData() {
+            try {
+                const zpResp = await fetch('zip_profiles.json').catch(() => null);
+                if (zpResp && zpResp.ok) { const a = await zpResp.json(); zipProfiles = {}; (Array.isArray(a)?a:[]).forEach(z => { if(z.zip) zipProfiles[String(z.zip)] = z; }); }
+            } catch(e) {}
+            try {
+                const beResp = await fetch('eligibility_by_zip.json').catch(() => null);
+                if (beResp && beResp.ok) { const a = await beResp.json(); benefitData = {}; (Array.isArray(a)?a:[]).forEach(b => { if(b.zip) benefitData[String(b.zip)] = b; }); }
+            } catch(e) {}
+            try {
+                const aeData = await sbFetch('/v_area_effectiveness?state=eq.MD&order=effectiveness_score.desc&limit=200');
+                areaEffectiveness = {}; aeData.forEach(a => { if(a.zip_code) areaEffectiveness[a.zip_code] = a; });
+            } catch(e) {}
+        }
+        loadEnrichmentData();
+
+setTimeout(loadRecommendations, 2000);
 
 
         const map = L.map('map', { zoomControl: true }).setView([39.15, -76.85], 8);
@@ -1690,40 +1726,34 @@
                 if (util) h += '<div style="color:#00aaff;font-size:11px;font-weight:600;margin-top:2px;">' + util + '</div>';
                 h += '</div>';
 
-                // ── GO/NO-GO VERDICT ──
-                // Compute a quick canvass recommendation from all available data
-                let verdict = 'UNKNOWN', verdictColor = '#666', verdictReason = '';
-                if (detail) {
-                    const la = detail.lookalike_score || 0;
-                    const laG = detail.lookalike_grade || 'D';
-                    const eh = detail.eh_pct || detail.eh || 0;
-                    const mob = detail.mob_pct || 0;
-                    const th = detail.th_pct || 0;
-                    const own = detail.op || detail.own_pct || 0;
-                    const hh = detail.hh || detail.hu || 0;
-                    const recentActivity = (sales.last7d || 0);
-
-                    const cGrade = detail.cg || detail.canvass_grade || 'D';
-                    // Combined verdict using BOTH lookalike and canvass grade
-                    if (laG === 'S' && eh >= 40) { verdict = 'PRIME TARGET'; verdictColor = '#ffd700'; verdictReason = 'S-grade lookalike + high EH'; }
-                    else if (laG === 'S' || (laG === 'A' && eh >= 30)) { verdict = 'STRONG GO'; verdictColor = '#00c853'; verdictReason = laG + '-grade lookalike' + (eh>=30?' + good EH':''); }
-                    else if (cGrade === 'A' && eh >= 40) { verdict = 'STRONG GO'; verdictColor = '#00c853'; verdictReason = 'Grade A canvass + ' + eh + '% EH'; }
-                    else if (cGrade === 'A') { verdict = 'WORTH IT'; verdictColor = '#4caf50'; verdictReason = 'Grade A canvass zone'; }
-                    else if (laG === 'A') { verdict = 'WORTH IT'; verdictColor = '#4caf50'; verdictReason = 'A-grade demographics'; }
-                    else if (laG === 'B' && (mob >= 10 || eh >= 50)) { verdict = 'NICHE PLAY'; verdictColor = '#ff9800'; verdictReason = (mob>=10?'Mobile home zone':'High EH area'); }
-                    else if (cGrade === 'B') { verdict = 'MODERATE'; verdictColor = '#ffd600'; verdictReason = 'Grade B canvass zone'; }
-                    else if (laG === 'B') { verdict = 'MODERATE'; verdictColor = '#ffd600'; verdictReason = 'Average demo fit'; }
-                    else if (sales.n >= 50 && sales.closeRate >= 60) { verdict = 'PROVEN AREA'; verdictColor = '#2196f3'; verdictReason = sales.closeRate + '% close rate on ' + sales.n + ' deals'; }
-                    else if (cGrade <= 'B') { verdict = 'MODERATE'; verdictColor = '#ffd600'; verdictReason = 'Grade ' + cGrade + ' zone'; }
-                    else { verdict = 'LOW PRIORITY'; verdictColor = '#ff5252'; verdictReason = 'Low canvass + demographic fit'; }
-                    if (recentActivity >= 10) { verdictReason += ' · Active (' + recentActivity + ' this week)'; }
-                }
-                if (verdict !== 'UNKNOWN') {
-                    h += '<div style="background:' + verdictColor + '15;border:1px solid ' + verdictColor + '44;border-radius:6px;padding:6px 10px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">';
-                    h += '<div style="font-size:16px;font-weight:900;color:' + verdictColor + ';">' + verdict + '</div>';
-                    h += '<div style="font-size:10px;color:#aaa;">' + verdictReason + '</div>';
-                    h += '</div>';
-                }
+                // ── AREA INTELLIGENCE SCORE ──
+                const zp = zipProfiles[zip] || {};
+                const ben = benefitData[zip] || {};
+                const ae = areaEffectiveness[zip] || {};
+                let areaScore = 0; let scoreFactors = [];
+                if (ae.close_rate) { areaScore += Math.min(25, Math.round(ae.close_rate / 4)); if (ae.close_rate >= 50) scoreFactors.push('\u2705 ' + ae.close_rate + '% close rate'); }
+                else if (sales.closeRate) { areaScore += Math.min(25, Math.round(sales.closeRate / 4)); if (sales.closeRate >= 50) scoreFactors.push('\u2705 ' + sales.closeRate + '% close rate'); }
+                if (detail) { const cG = detail.cg || detail.canvass_grade || 'D'; areaScore += ({A:20,B:14,C:8,D:2}[cG]||2); if (cG <= 'B') scoreFactors.push('\u{1F4CB} Grade ' + cG + ' canvass'); }
+                const ehVal = (detail && (detail.eh_pct || detail.eh)) || 0;
+                if (ehVal >= 30) { areaScore += Math.min(15, Math.round((ehVal - 20) / 3)); if (ehVal >= 40) scoreFactors.push('\u{1F525} ' + ehVal + '% EH'); }
+                const lmiPct = (lmi && lmi.lmi) || (ben && ben.lmi_pct) || 0;
+                if (lmiPct >= 50) { areaScore += 15; scoreFactors.push('\u{1F4B0} ' + Math.round(lmiPct) + '% LMI'); } else if (lmiPct >= 30) { areaScore += 8; }
+                if (dac) { areaScore += 5; scoreFactors.push('\u{1F3DB} DAC zone'); }
+                const mobPct = (detail && detail.mob_pct) || 0;
+                if (mobPct >= 10) { areaScore += 10; scoreFactors.push('\u{1F3DA} ' + mobPct + '% mobile homes'); }
+                if (ben.medicaid_pct >= 30) { areaScore += 5; }
+                if (ben.snap_pct >= 20) { areaScore += 5; }
+                if (ae.effectiveness_score) { areaScore += Math.min(10, Math.round(ae.effectiveness_score / 10)); }
+                areaScore = Math.min(100, areaScore);
+                const tier = areaScore >= 80 ? 's' : areaScore >= 60 ? 'a' : areaScore >= 40 ? 'b' : 'c';
+                const tierLabel = {s:'PRIME TARGET', a:'STRONG GO', b:'WORTH A LOOK', c:'LOW PRIORITY'}[tier];
+                const tierColor = {s:'#ffd700', a:'#00c853', b:'#ff9800', c:'#ff5252'}[tier];
+                h += `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:8px 10px;background:${tierColor}10;border:1px solid ${tierColor}33;border-radius:8px;">`;
+                h += `<div class="area-score ${tier}-tier">${areaScore}</div>`;
+                h += `<div><div style="font-size:14px;font-weight:900;color:${tierColor};">${tierLabel}</div>`;
+                h += `<div style="font-size:10px;color:#aaa;">Area Intelligence Score</div>`;
+                if (scoreFactors.length) h += `<div style="font-size:10px;color:#ccc;margin-top:3px;">${scoreFactors.slice(0,4).join(' \u00b7 ')}</div>`;
+                h += `</div></div>`
 
                 const sColor = getDensityColor(sales.n);
                 h += '<div style="margin-bottom:8px;">';
