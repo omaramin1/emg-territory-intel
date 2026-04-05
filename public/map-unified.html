@@ -424,7 +424,13 @@ let priorityData = {}; // utility → [{zip, city, score, ...}]
 // ═══════════════════════════════════════════════════
 // ██  UTILITY FUNCTIONS                            ██
 // ═══════════════════════════════════════════════════
-function getIncomeColor(inc) {
+function updateStatus(msg) {
+        const el = document.getElementById('loading-text');
+        if (el) el.textContent = msg;
+        console.log('[status]', msg);
+    }
+
+    function getIncomeColor(inc) {
     if (inc < 25000) return '#ff4444';
     if (inc < 35000) return '#ff8844';
     if (inc < 50000) return '#ffcc44';
@@ -2267,3 +2273,4 @@ initMap();
 </script>
 </body>
 </html>
+
