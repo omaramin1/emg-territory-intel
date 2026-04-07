@@ -447,6 +447,12 @@ let areaEffectiveness = {}; // From v_area_effectiveness
 // ██  UTILITY FUNCTIONS                            ██
 // ═══════════════════════════════════════════════════
 function updateStatus(msg) {
+    const el = document.getElementById('loading-text');
+    if (el) el.textContent = msg;
+    console.log('[status]', msg);
+}
+
+function updateStatus(msg) {
         const el = document.getElementById('loading-text');
         if (el) el.textContent = msg;
         console.log('[status]', msg);
@@ -773,6 +779,39 @@ async function switchState(stateCode) {
     // Load enrichment data (non-blocking)
     loadEnrichmentData();
 
+/* ── View Integration: Market Gaps + Canvass Log + Churn ── */
+function getViewEnrichment(zip) {
+    const mg = (window._marketGaps || {})[zip];
+    const cl = (window._canvassLog || {})[zip];
+    const ch = (window._churnData || {})[zip];
+    if (!mg && !cl && !ch) return '';
+    let html = '<div style="margin-top:6px;border-top:1px solid #333;padding-top:6px;">';
+    html += '<div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:3px;">FIELD INTEL</div>';
+    if (mg) {
+        html += '<div class="reco-metrics">';
+        html += '<span>Saturation</span><span class="reco-metric-val">' + (mg.saturation_pct || 0) + '%</span>';
+        html += '<span>Est. Doors</span><span class="reco-metric-val">' + (mg.est_doors || 0).toLocaleString() + '</span>';
+        html += '<span>Gap Priority</span><span class="reco-metric-val" style="color:' + (mg.gap_priority==='HIGH'?'#ef4444':mg.gap_priority==='MEDIUM'?'#f59e0b':'#22c55e') + '">' + (mg.gap_priority || '—') + '</span>';
+        html += '</div>';
+    }
+    if (cl) {
+        html += '<div class="reco-metrics" style="margin-top:3px;">';
+        html += '<span>Last Canvassed</span><span class="reco-metric-val">' + (cl.last_canvassed || '—') + '</span>';
+        html += '<span>Deals/Day</span><span class="reco-metric-val">' + (cl.deals_per_active_day || 0) + '</span>';
+        html += '<span>Close Rate</span><span class="reco-metric-val">' + (cl.close_rate || 0) + '%</span>';
+        html += '<span>Reps Active</span><span class="reco-metric-val">' + (cl.reps_deployed || 0) + '</span>';
+        html += '</div>';
+    }
+    if (ch) {
+        html += '<div class="reco-metrics" style="margin-top:3px;">';
+        html += '<span>Cancel Rate</span><span class="reco-metric-val" style="color:' + (parseFloat(ch.cancel_rate)>20?'#ef4444':'#22c55e') + '">' + (ch.cancel_rate || 0) + '%</span>';
+        html += '<span>Churn Risk</span><span class="reco-metric-val" style="color:' + (ch.churn_risk==='HIGH_RISK'?'#ef4444':ch.churn_risk==='MEDIUM_RISK'?'#f59e0b':'#22c55e') + '">' + (ch.churn_risk || '—').replace('_',' ') + '</span>';
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
     // Apply default toggles
     cfg.toggles.forEach(t => {
         if (t === '_divider') return;
@@ -796,32 +835,54 @@ async function switchState(stateCode) {
 }
 
 async function loadEnrichmentData() {
-    const prefix = STATE_CONFIG[currentState].dataPrefix;
+    const stateCode = currentState || 'VA';
     try {
-        const zpResp = await fetch('zip_profiles.json').catch(() => null);
-        if (zpResp && zpResp.ok) {
+        const zpResp = await fetch('https://gfbbhvsfznxhimwvokob.supabase.co/functions/v1/enrichment-data?type=zip_profiles&state=' + stateCode);
+        if (zpResp.ok) {
             const zpArr = await zpResp.json();
             zipProfiles = {};
-            (Array.isArray(zpArr) ? zpArr : []).forEach(z => { if(z.zip) zipProfiles[String(z.zip)] = z; });
+            zpArr.forEach(z => { if(z.zip) zipProfiles[String(z.zip)] = z; });
+            console.log('zip_profiles loaded:', Object.keys(zipProfiles).length, 'for', stateCode);
         }
     } catch(e) { console.log('zip_profiles not loaded:', e); }
 
     try {
-        const beResp = await fetch('eligibility_by_zip.json').catch(() => null);
-        if (beResp && beResp.ok) {
+        const beResp = await fetch('https://gfbbhvsfznxhimwvokob.supabase.co/functions/v1/enrichment-data?type=eligibility&state=' + stateCode);
+        if (beResp.ok) {
             const beArr = await beResp.json();
             benefitData = {};
-            (Array.isArray(beArr) ? beArr : []).forEach(b => { if(b.zip) benefitData[String(b.zip)] = b; });
+            beArr.forEach(b => { if(b.zip) benefitData[String(b.zip)] = b; });
+            console.log('eligibility loaded:', Object.keys(benefitData).length, 'for', stateCode);
         }
     } catch(e) { console.log('eligibility not loaded:', e); }
 
     try {
-        const aeData = await sbFetch('/v_area_effectiveness?state=eq.' + currentState + '&order=effectiveness_score.desc&limit=200');
+        const aeData = await sbFetch('/v_area_effectiveness?state=eq.' + stateCode + '&order=effectiveness_score.desc&limit=200');
         areaEffectiveness = {};
         aeData.forEach(a => { if(a.zip_code) areaEffectiveness[a.zip_code] = a; });
     } catch(e) { console.log('v_area_effectiveness not loaded:', e); }
-}
 
+    try {
+        const mgData = await sbFetch('/v_market_gaps?state=eq.' + stateCode + '&limit=1000');
+        window._marketGaps = {};
+        mgData.forEach(m => { if(m.zip_code) window._marketGaps[m.zip_code] = m; });
+        console.log('market_gaps loaded:', Object.keys(window._marketGaps).length);
+    } catch(e) { console.log('v_market_gaps not loaded:', e); }
+
+    try {
+        const clData = await sbFetch('/v_area_canvass_log?state=eq.' + stateCode + '&limit=2000');
+        window._canvassLog = {};
+        clData.forEach(c => { if(c.zip_code) window._canvassLog[c.zip_code] = c; });
+        console.log('canvass_log loaded:', Object.keys(window._canvassLog).length);
+    } catch(e) { console.log('v_area_canvass_log not loaded:', e); }
+
+    try {
+        const chData = await sbFetch('/v_churn_analysis?state=eq.' + stateCode + '&limit=2000');
+        window._churnData = {};
+        chData.forEach(c => { const k = c.zip_code + '_' + (c.dwelling_type||''); window._churnData[c.zip_code] = window._churnData[c.zip_code] || c; });
+        console.log('churn loaded:', Object.keys(window._churnData).length);
+    } catch(e) { console.log('v_churn_analysis not loaded:', e); }
+}
 async function loadRecommendations() {
     if (!currentState) return;
     try {
