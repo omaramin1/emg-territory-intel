@@ -1949,6 +1949,7 @@ function getViewEnrichment(zip) {
                     h += '</div>';
                 }
 
+                h += getViewEnrichment(zip);
                 h += '</div>';
                 L.popup({ maxWidth: 400 }).setLatLng(e.latlng).setContent(h).openOn(map);
             });
