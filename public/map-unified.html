@@ -2215,6 +2215,7 @@ function setupUniversalClick() {
             h += `</div>`;
         }
 
+        h += getViewEnrichment(zip);
         h += `</div>`;
 
         L.popup({ maxWidth: 400, className: 'universal-popup' })
