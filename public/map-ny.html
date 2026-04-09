@@ -222,6 +222,24 @@
         .reco-reason{font-size:10px;color:#10b981;margin-top:3px;font-style:italic}
         .reco-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:10px;color:#888;margin-top:4px}
         .reco-metric-val{color:#fff;font-weight:600}
+
+        /* PRIORITY TARGET MARKERS */
+        @keyframes target-pulse{0%{box-shadow:0 0 0 0 rgba(255,215,0,0.7)}70%{box-shadow:0 0 0 14px rgba(255,215,0,0)}100%{box-shadow:0 0 0 0 rgba(255,215,0,0)}}
+        .priority-marker{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#000;border:2px solid #fff;animation:target-pulse 2s infinite;cursor:pointer;text-shadow:0 0 2px rgba(255,255,255,0.5)}
+        .priority-marker.top3{background:#ffd700;box-shadow:0 0 12px rgba(255,215,0,0.6)}
+        .priority-marker.top7{background:#ff8c00;box-shadow:0 0 10px rgba(255,140,0,0.5)}
+        .priority-marker.rest{background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.5)}
+        .reco-card.active{border-color:#3b82f6!important;background:rgba(59,130,246,0.12)!important;box-shadow:0 0 12px rgba(59,130,246,0.3)}
+        .reco-panel.compact{width:280px}
+        .reco-panel.compact .reco-card{padding:6px 8px;margin-bottom:3px}
+        .reco-panel.compact .reco-rank{font-size:14px;margin-right:6px}
+        .reco-panel.compact .reco-stats,.reco-panel.compact .reco-reason{display:none}
+        .target-nav{display:flex;gap:3px;padding:4px 8px;border-bottom:1px solid rgba(59,130,246,0.2);flex-wrap:wrap;align-items:center}
+        .target-nav-btn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;cursor:pointer;border:2px solid #444;background:transparent;color:#888;transition:all 0.15s}
+        .target-nav-btn:hover{border-color:#3b82f6;color:#fff;background:rgba(59,130,246,0.15)}
+        .target-nav-btn.top3{border-color:#ffd70088;color:#ffd700}
+        .target-nav-btn.top7{border-color:#ff8c0088;color:#ff8c00}
+        .target-nav-btn.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
     </style>
 </head>
 <body>
@@ -230,7 +248,10 @@
     <div class="reco-panel" id="recoPanel">
         <div class="reco-header" onclick="document.getElementById('recoPanel').classList.toggle('collapsed')">
             <h3>🎯 Today's Targets</h3>
-            <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+                <span style="color:#555;font-size:14px;">◀</span>
+            </div>
         </div>
         <div class="reco-body" id="recoBody">
             <div style="padding:8px;color:#888;font-size:11px;text-align:center;" id="recoLoading">Analyzing 154K+ sales records...</div>
@@ -2088,6 +2109,42 @@ function getViewEnrichment(zip) {
             });
         }
     
+
+        // âââ FLY TO ZIP + OPEN POPUP (for target cards) âââ
+        function flyToZipPopup(zip) {
+            var centroid = zipCentroids[zip];
+            if (!centroid) return;
+            document.querySelectorAll('.reco-card').forEach(function(c){ c.classList.remove('active'); });
+            var card = document.querySelector('.reco-card[data-zip="' + zip + '"]');
+            if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+            document.querySelectorAll('.target-nav-btn').forEach(function(b){ b.classList.remove('active'); });
+            var navBtn = document.querySelector('.target-nav-btn[data-zip="' + zip + '"]');
+            if (navBtn) navBtn.classList.add('active');
+            map.flyTo(centroid, 14, { duration: 0.8 });
+            setTimeout(function() {
+                map.fire('click', { latlng: L.latLng(centroid[0], centroid[1]) });
+            }, 900);
+        }
+
+        var priorityMarkerLayer = null;
+        function addPriorityMarkers(recs) {
+            if (priorityMarkerLayer) map.removeLayer(priorityMarkerLayer);
+            priorityMarkerLayer = L.layerGroup();
+            recs.slice(0, 10).forEach(function(r, i) {
+                var centroid = zipCentroids[r.zip_code];
+                if (!centroid) return;
+                var rank = i + 1;
+                var cls = rank <= 3 ? 'top3' : rank <= 7 ? 'top7' : 'rest';
+                var marker = L.marker(centroid, {
+                    icon: L.divIcon({ className: '', html: '<div class="priority-marker ' + cls + '">' + rank + '</div>', iconSize: [28,28], iconAnchor: [14,14] }),
+                    zIndexOffset: 1000 - rank
+                });
+                marker.on('click', function() { flyToZipPopup(r.zip_code); });
+                priorityMarkerLayer.addLayer(marker);
+            });
+            priorityMarkerLayer.addTo(map);
+        }
+
         // ── CLAIM / DRAW TERRITORY ──
         const claimedAreas = L.featureGroup().addTo(map);
         const CLAIM_STORAGE_KEY = 'amin_claims_ny';
@@ -2216,14 +2273,27 @@ function getViewEnrichment(zip) {
 
                 document.getElementById('recoCount').textContent = recs.length + ' areas';
 
-                let html = '';
+                // Quick-nav strip
+                let html = '<div class="target-nav">';
+                html += '<span style="font-size:9px;color:#555;margin-right:2px;">GO:</span>';
+                recs.forEach((r, i) => {
+                    const rank = i + 1;
+                    const cls = rank <= 3 ? 'top3' : rank <= 7 ? 'top7' : '';
+                    html += '<div class="target-nav-btn ' + cls + '" data-zip="' + r.zip_code + '" onclick="flyToZipPopup(\'' + r.zip_code + '\')" title="' + r.zip_code + ' \u2014 ' + (r.city||'') + '">' + rank + '</div>';
+                });
+                html += '</div>';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-bottom:1px solid #333;">';
+                html += '<span style="font-size:9px;color:#555;">Click any card or number to fly there</span>';
+                html += '<button onclick="document.getElementById(\'recoPanel\').classList.toggle(\'compact\')" style="background:none;border:1px solid #444;color:#888;font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;">\u00b1</button>';
+                html += '</div>';
+
                 recs.forEach((r, i) => {
                     const rank = i + 1;
                     const tc = r.recommendation.includes('REVISIT')?'#ffd700':r.recommendation.includes('REOPEN')?'#ff9800':r.recommendation.includes('UNTOUCHED')?'#00c853':r.recommendation.includes('HIGH CLOSE')?'#2196f3':'#3b82f6';
-                    const tag = r.recommendation.split('—')[0].trim();
-                    const zipMsg = encodeURIComponent('📍 ZIP '+r.zip_code+' — '+(r.city||'')+', '+r.state+'\n'+tag+'\nOld: '+r.old_deals+' · New: '+r.new_deals+' · Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
+                    const tag = r.recommendation.split('\u2014')[0].trim();
+                    const zipMsg = encodeURIComponent('\ud83d\udccd ZIP '+r.zip_code+' \u2014 '+(r.city||'')+', '+r.state+'\n'+tag+'\nOld: '+r.old_deals+' \u00b7 New: '+r.new_deals+' \u00b7 Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
 
-                    html += '<div class="reco-card" onclick="if(zipCentroids[\''+r.zip_code+'\'])map.setView(zipCentroids[\''+r.zip_code+'\'],14);">';
+                    html += '<div class="reco-card" data-zip="'+r.zip_code+'" onclick="flyToZipPopup(\''+r.zip_code+'\')">';
                     html += '<div style="display:flex;align-items:center;"><div class="reco-rank" style="color:'+(rank<=3?'#ffd700':rank<=7?'#ff8c00':'#888')+';">'+rank+'</div>';
                     html += '<div style="flex:1;"><div><b style="color:#fff;font-size:12px;">'+r.zip_code+'</b> <span style="color:#aaa;font-size:10px;">'+(r.city||'')+', '+r.state+'</span></div>';
                     html += '<div style="margin-top:1px;"><span style="padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;">'+tag+'</span></div>';
@@ -2237,11 +2307,14 @@ function getViewEnrichment(zip) {
                     if (r.recent_reps === 0 && r.old_deals >= 50) why.push('no active reps');
                     if (why.length) html += '<div class="reco-reason">Why: ' + why.join(', ') + '</div>';
                     if (ae) { html += '<div class="reco-metrics"><div>Eff <span class="reco-metric-val">' + (ae.effectiveness_score||0).toFixed(0) + '</span></div><div>kWh <span class="reco-metric-val">' + ((ae.avg_kwh||0)/1000).toFixed(1) + 'k</span></div></div>'; }
-                    html += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text to lead">💬</button>';
+                    html += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text to lead">\ud83d\udcac</button>';
                     html += '</div></div>';
                 });
 
                 body.innerHTML = html;
+
+                // Add pulsing priority markers on the map
+                addPriorityMarkers(recs);
             } catch(e) {
                 console.warn('Recommendations load error:', e);
                 document.getElementById('recoBody').innerHTML = '<div style="padding:12px;color:#888;text-align:center;">Could not load recommendations</div>';
