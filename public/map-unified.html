@@ -90,7 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .zone-label{background:none!important;border:none!important}
 @keyframes pulse-ring{0%{opacity:0.8;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
 .eh-pulse{animation:pulse-ring 2s ease-out infinite}
-.reco-panel{position:absolute;top:10px;left:10px;z-index:1100;background:rgba(10,10,18,0.97);border:1px solid #3b82f6;border-radius:8px;backdrop-filter:blur(10px);width:340px;max-height:calc(100vh - 30px);overflow-y:auto;transition:width 0.2s}
+.reco-panel{position:fixed;top:56px;left:210px;z-index:1100;background:rgba(10,10,18,0.97);border:1px solid #3b82f6;border-radius:8px;backdrop-filter:blur(10px);width:320px;max-height:calc(100vh - 70px);overflow-y:auto;transition:all 0.25s}
 .reco-panel.collapsed{width:44px;overflow:hidden}
 .reco-panel.collapsed .reco-body{display:none}
 .reco-header{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(59,130,246,0.3)}
@@ -124,6 +124,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .reco-reason{font-size:10px;color:#10b981;margin-top:3px;font-style:italic}
 .reco-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:10px;color:#888;margin-top:4px}
 .reco-metric-val{color:#fff;font-weight:600}
+
+/* PRIORITY TARGET MARKERS */
+@keyframes target-pulse{0%{box-shadow:0 0 0 0 rgba(255,215,0,0.7)}70%{box-shadow:0 0 0 14px rgba(255,215,0,0)}100%{box-shadow:0 0 0 0 rgba(255,215,0,0)}}
+.priority-marker{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#000;border:2px solid #fff;animation:target-pulse 2s infinite;cursor:pointer;text-shadow:0 0 2px rgba(255,255,255,0.5)}
+.priority-marker.top3{background:#ffd700;box-shadow:0 0 12px rgba(255,215,0,0.6)}
+.priority-marker.top7{background:#ff8c00;box-shadow:0 0 10px rgba(255,140,0,0.5)}
+.priority-marker.rest{background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.5)}
+
+/* ACTIVE CARD */
+.reco-card.active{border-color:#3b82f6!important;background:rgba(59,130,246,0.12)!important;box-shadow:0 0 12px rgba(59,130,246,0.3)}
+
+/* COMPACT PANEL */
+.reco-panel.compact{width:280px}
+.reco-panel.compact .reco-card{padding:6px 8px;margin-bottom:3px}
+.reco-panel.compact .reco-rank{font-size:14px;margin-right:6px}
+.reco-panel.compact .reco-stats,.reco-panel.compact .reco-reason{display:none}
+
+/* NAV STRIP */
+.target-nav{display:flex;gap:3px;padding:4px 8px;border-bottom:1px solid rgba(59,130,246,0.2);flex-wrap:wrap;align-items:center}
+.target-nav-btn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;cursor:pointer;border:2px solid #444;background:transparent;color:#888;transition:all 0.15s}
+.target-nav-btn:hover{border-color:#3b82f6;color:#fff;background:rgba(59,130,246,0.15)}
+.target-nav-btn.top3{border-color:#ffd70088;color:#ffd700}
+.target-nav-btn.top7{border-color:#ff8c0088;color:#ff8c00}
+.target-nav-btn.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
 </style>
 </head>
 <body>
@@ -155,7 +179,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="reco-panel" id="recoPanel">
     <div class="reco-header" onclick="document.getElementById('recoPanel').classList.toggle('collapsed')">
         <h3>🎯 Today's Targets</h3>
-        <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+            <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+            <span style="color:#555;font-size:14px;">◀</span>
+        </div>
     </div>
     <div class="reco-body" id="recoBody">
         <div style="padding:8px;color:#888;font-size:11px;text-align:center;" id="recoLoading">Analyzing 154K+ sales records...</div>
@@ -889,21 +916,33 @@ async function loadRecommendations() {
         const recs = await sbFetch('/v_recommended_areas?select=zip_code,city,state,old_deals,new_deals,payable,close_rate,last_canvassed,last_30d,last_7d,reps_deployed,recent_reps,recommend_score,recommendation&recommend_score=gte.50&state=eq.' + currentState + '&order=recommend_score.desc,old_deals.desc&limit=25');
 
         const body = document.getElementById('recoBody');
-        if (!recs.length) { body.innerHTML = '<div style="padding:12px;color:#888;text-align:center;">No recommendations — check back after uploading new data</div>'; return; }
+        if (!recs.length) { body.innerHTML = '<div style="padding:12px;color:#888;text-align:center;">No recommendations â check back after uploading new data</div>'; return; }
 
         document.getElementById('recoCount').textContent = recs.length + ' areas';
 
-        let html = '';
+        // Quick-nav strip: numbered circles for instant jump
+        let html = '<div class="target-nav">';
+        html += '<span style="font-size:9px;color:#555;margin-right:2px;">GO:</span>';
+        recs.forEach((r, i) => {
+            const rank = i + 1;
+            const cls = rank <= 3 ? 'top3' : rank <= 7 ? 'top7' : '';
+            html += '<div class="target-nav-btn ' + cls + '" data-zip="' + r.zip_code + '" onclick="flyToZipPopup(\'' + r.zip_code + '\')" title="' + r.zip_code + ' â ' + (r.city||'') + '">' + rank + '</div>';
+        });
+        html += '</div>';
+
+        // Compact toggle
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-bottom:1px solid #333;">';
+        html += '<span style="font-size:9px;color:#555;">Click any card or number to fly there</span>';
+        html += '<button onclick="document.getElementById(\'recoPanel\').classList.toggle(\'compact\')" style="background:none;border:1px solid #444;color:#888;font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;">Â±</button>';
+        html += '</div>';
+
         recs.forEach((r, i) => {
             const rank = i + 1;
             const tagColor = r.recommendation.includes('REVISIT') ? '#ffd700' : r.recommendation.includes('REOPEN') ? '#ff9800' : r.recommendation.includes('UNTOUCHED') ? '#00c853' : r.recommendation.includes('ACTIVE') ? '#ff1744' : '#3b82f6';
             const tagBg = tagColor + '22';
-            const tagText = r.recommendation.split('—')[0].trim();
+            const tagText = r.recommendation.split('â')[0].trim();
 
-            // Shareable link: zoom to this ZIP
-            const shareUrl = window.location.href.split('?')[0] + '?zip=' + r.zip_code;
-
-            html += '<div class="reco-card" onclick="if(zipCentroids[\'' + r.zip_code + '\']){map.setView(zipCentroids[\'' + r.zip_code + '\'],14);}">';
+            html += '<div class="reco-card" data-zip="' + r.zip_code + '" onclick="flyToZipPopup(\'' + r.zip_code + '\')">';
             html += '<div style="display:flex;align-items:center;">';
             html += '<div class="reco-rank" style="color:' + (rank<=3?'#ffd700':rank<=7?'#ff8c00':'#888') + ';">' + rank + '</div>';
             html += '<div style="flex:1;">';
@@ -913,7 +952,6 @@ async function loadRecommendations() {
             html += '<span class="reco-metric-val" style="color:#10b981;">' + r.payable + ' payable</span> \u00b7 Close: <span class="reco-metric-val">' + r.close_rate + '%</span> \u00b7 ' + (r.old_deals + r.new_deals) + ' total deals';
             if (r.last_7d > 0) html += ' \u00b7 <span style="color:#60a5fa;">7d: ' + r.last_7d + '</span>';
             html += '</div>';
-            // WHY this area ranks
             const ae = areaEffectiveness[r.zip_code];
             let why = [];
             if (r.close_rate >= 70) why.push('high close rate');
@@ -923,12 +961,16 @@ async function loadRecommendations() {
             if (r.recent_reps === 0 && r.old_deals >= 50) why.push('no active reps');
             if (why.length) html += '<div class="reco-reason">Why: ' + why.join(', ') + '</div>';
             html += '</div>';
-            const zipMsg = encodeURIComponent('📍 ZIP '+r.zip_code+' — '+(r.city||'')+', '+r.state+'\n'+tagText+'\nOld: '+r.old_deals+' · New: '+r.new_deals+' · Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
-            html += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text to lead">💬</button>';
+            const zipMsg = encodeURIComponent('\ud83d\udccd ZIP '+r.zip_code+' \u2014 '+(r.city||'')+', '+r.state+'\n'+tagText+'\nOld: '+r.old_deals+' \u00b7 New: '+r.new_deals+' \u00b7 Payable: '+r.payable+'\nhttps://www.google.com/maps?q='+r.zip_code);
+            html += '<button class="reco-share" onclick="event.stopPropagation();window.open(\'sms:?&body='+zipMsg+'\');" title="Text to lead">\ud83d\udcac</button>';
             html += '</div></div>';
         });
 
         body.innerHTML = html;
+
+        // Add pulsing priority markers on the map
+        addPriorityMarkers(recs);
+
     } catch(e) {
         console.warn('Recommendations load error:', e);
         document.getElementById('recoBody').innerHTML = '<div style="padding:12px;color:#888;text-align:center;">Could not load recommendations</div>';
@@ -2223,6 +2265,61 @@ function setupUniversalClick() {
             .setContent(h)
             .openOn(map);
     });
+}
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ââ  FLY TO ZIP + OPEN POPUP (for target cards)   ââ
+// âââââââââââââââââââââââââââââââââââââââââââââââââââ
+function flyToZipPopup(zip) {
+    const centroid = zipCentroids[zip];
+    if (!centroid) return;
+
+    // Highlight active card
+    document.querySelectorAll('.reco-card').forEach(c => c.classList.remove('active'));
+    const card = document.querySelector('.reco-card[data-zip="' + zip + '"]');
+    if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+    // Highlight nav btn
+    document.querySelectorAll('.target-nav-btn').forEach(b => b.classList.remove('active'));
+    const navBtn = document.querySelector('.target-nav-btn[data-zip="' + zip + '"]');
+    if (navBtn) navBtn.classList.add('active');
+
+    // Fly to ZIP
+    map.flyTo(centroid, 14, { duration: 0.8 });
+
+    // Wait for fly animation, then programmatically fire the popup
+    setTimeout(() => {
+        const latlng = L.latLng(centroid[0], centroid[1]);
+        // Simulate a click at the centroid to trigger the universal popup
+        map.fire('click', { latlng: latlng });
+    }, 900);
+}
+
+// Priority target markers layer
+let priorityMarkerLayer = null;
+
+function addPriorityMarkers(recs) {
+    if (priorityMarkerLayer) { map.removeLayer(priorityMarkerLayer); }
+    priorityMarkerLayer = L.layerGroup();
+
+    recs.slice(0, 10).forEach((r, i) => {
+        const centroid = zipCentroids[r.zip_code];
+        if (!centroid) return;
+        const rank = i + 1;
+        const cls = rank <= 3 ? 'top3' : rank <= 7 ? 'top7' : 'rest';
+        const marker = L.marker(centroid, {
+            icon: L.divIcon({
+                className: '',
+                html: '<div class="priority-marker ' + cls + '">' + rank + '</div>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            }),
+            zIndexOffset: 1000 - rank
+        });
+        marker.on('click', () => flyToZipPopup(r.zip_code));
+        priorityMarkerLayer.addLayer(marker);
+    });
+    priorityMarkerLayer.addTo(map);
 }
 
 // ═══════════════════════════════════════════════════
