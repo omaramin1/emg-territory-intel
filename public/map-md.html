@@ -277,6 +277,26 @@
 .area-score.b-tier{border-color:#ff9800;color:#ff9800;background:#ff980015}
 .area-score.c-tier{border-color:#ff5252;color:#ff5252;background:#ff525215}
 .reco-reason{font-size:10px;color:#10b981;margin-top:3px;font-style:italic}
+.reco-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:10px;color:#888;margin-top:4px}
+.reco-metric-val{color:#fff;font-weight:600}
+
+/* PRIORITY TARGET MARKERS */
+@keyframes target-pulse{0%{box-shadow:0 0 0 0 rgba(255,215,0,0.7)}70%{box-shadow:0 0 0 14px rgba(255,215,0,0)}100%{box-shadow:0 0 0 0 rgba(255,215,0,0)}}
+.priority-marker{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#000;border:2px solid #fff;animation:target-pulse 2s infinite;cursor:pointer;text-shadow:0 0 2px rgba(255,255,255,0.5)}
+.priority-marker.top3{background:#ffd700;box-shadow:0 0 12px rgba(255,215,0,0.6)}
+.priority-marker.top7{background:#ff8c00;box-shadow:0 0 10px rgba(255,140,0,0.5)}
+.priority-marker.rest{background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.5)}
+.reco-card.active{border-color:#3b82f6!important;background:rgba(59,130,246,0.12)!important;box-shadow:0 0 12px rgba(59,130,246,0.3)}
+.reco-panel.compact{width:280px}
+.reco-panel.compact .reco-card{padding:6px 8px;margin-bottom:3px}
+.reco-panel.compact .reco-rank{font-size:14px;margin-right:6px}
+.reco-panel.compact .reco-stats,.reco-panel.compact .reco-reason{display:none}
+.target-nav{display:flex;gap:3px;padding:4px 8px;border-bottom:1px solid rgba(59,130,246,0.2);flex-wrap:wrap;align-items:center}
+.target-nav-btn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;cursor:pointer;border:2px solid #444;background:transparent;color:#888;transition:all 0.15s}
+.target-nav-btn:hover{border-color:#3b82f6;color:#fff;background:rgba(59,130,246,0.15)}
+.target-nav-btn.top3{border-color:#ffd70088;color:#ffd700}
+.target-nav-btn.top7{border-color:#ff8c0088;color:#ff8c00}
+.target-nav-btn.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
 </style>
 </head>
 <body>
@@ -285,7 +305,10 @@
     <div class="reco-panel" id="recoPanel">
         <div class="reco-header" onclick="document.getElementById('recoPanel').classList.toggle('collapsed')">
             <h3>🎯 Today's Targets</h3>
-            <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:#888;font-size:10px;" id="recoCount">Loading...</span>
+                <span style="color:#555;font-size:14px;">◀</span>
+            </div>
         </div>
         <div class="reco-body" id="recoBody">
             <div style="padding:8px;color:#888;font-size:11px;text-align:center;" id="recoLoading">Analyzing 154K+ sales records...</div>
@@ -553,11 +576,22 @@
             });
 
             const filt = selectedUtility==='ALL' ? zipRecos : zipRecos.filter(r=>r.utility===selectedUtility);
-            h += '<div style="font-size:11px;font-weight:700;color:#3b82f6;margin:10px 0 4px;padding-top:6px;border-top:1px solid #333;">🎯 ZIP TARGETS ('+filt.length+')</div>';
+
+            // Quick-nav strip for ZIP targets
+            h += '<div class="target-nav" style="margin-top:6px;padding-top:6px;border-top:1px solid #333;">';
+            h += '<span style="font-size:9px;color:#555;margin-right:2px;">🎯</span>';
+            filt.slice(0,15).forEach((r, i) => {
+                const rank = i + 1;
+                const cls = rank <= 3 ? 'top3' : rank <= 7 ? 'top7' : '';
+                h += '<div class="target-nav-btn ' + cls + '" data-zip="' + r.zip_code + '" onclick="flyToZipPopup(\'' + r.zip_code + '\')" title="' + r.zip_code + ' — ' + (r.city||'') + '">' + rank + '</div>';
+            });
+            h += '</div>';
+
+            h += '<div style="font-size:11px;font-weight:700;color:#3b82f6;margin:6px 0 4px;">🎯 ZIP TARGETS ('+filt.length+')</div>';
             filt.slice(0,15).forEach((r,i) => {
                 const tc = r.recommendation.includes('REVISIT')?'#ffd700':r.recommendation.includes('REOPEN')?'#ff9800':r.recommendation.includes('UNTOUCHED')?'#00c853':'#3b82f6';
                 const tag = r.recommendation.split('—')[0].trim();
-                h += '<div class="reco-card" onclick="if(zipCentroids[\''+r.zip_code+'\'])map.setView(zipCentroids[\''+r.zip_code+'\'],14);">';
+                h += '<div class="reco-card" data-zip="'+r.zip_code+'" onclick="flyToZipPopup(\''+r.zip_code+'\')">';
                 h += '<div style="display:flex;align-items:center;"><div style="font-size:14px;font-weight:800;color:#555;margin-right:8px;">'+(i+1)+'</div>';
                 h += '<div style="flex:1;"><div><b style="color:#fff;font-size:12px;">'+r.zip_code+'</b> <span style="color:#aaa;font-size:10px;">'+(r.city||'')+', '+r.state+'</span>';
                 if(r.utility)h+=' <span style="color:#10b981;font-size:9px;">'+r.utility+'</span>';
@@ -578,6 +612,9 @@
 
             body.innerHTML = h;
             document.getElementById('recoCount').textContent = dailyShifts.length+' shifts · '+filt.length+' ZIPs';
+
+            // Add pulsing priority markers on the map for ZIP targets
+            addPriorityMarkers(filt);
         }
 
         
@@ -1953,6 +1990,41 @@ function getViewEnrichment(zip) {
                 h += '</div>';
                 L.popup({ maxWidth: 400 }).setLatLng(e.latlng).setContent(h).openOn(map);
             });
+        }
+
+        // âââ FLY TO ZIP + OPEN POPUP (for target cards) âââ
+        function flyToZipPopup(zip) {
+            var centroid = zipCentroids[zip];
+            if (!centroid) return;
+            document.querySelectorAll('.reco-card').forEach(function(c){ c.classList.remove('active'); });
+            var card = document.querySelector('.reco-card[data-zip="' + zip + '"]');
+            if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+            document.querySelectorAll('.target-nav-btn').forEach(function(b){ b.classList.remove('active'); });
+            var navBtn = document.querySelector('.target-nav-btn[data-zip="' + zip + '"]');
+            if (navBtn) navBtn.classList.add('active');
+            map.flyTo(centroid, 14, { duration: 0.8 });
+            setTimeout(function() {
+                map.fire('click', { latlng: L.latLng(centroid[0], centroid[1]) });
+            }, 900);
+        }
+
+        var priorityMarkerLayer = null;
+        function addPriorityMarkers(recs) {
+            if (priorityMarkerLayer) map.removeLayer(priorityMarkerLayer);
+            priorityMarkerLayer = L.layerGroup();
+            recs.slice(0, 10).forEach(function(r, i) {
+                var centroid = zipCentroids[r.zip_code];
+                if (!centroid) return;
+                var rank = i + 1;
+                var cls = rank <= 3 ? 'top3' : rank <= 7 ? 'top7' : 'rest';
+                var marker = L.marker(centroid, {
+                    icon: L.divIcon({ className: '', html: '<div class="priority-marker ' + cls + '">' + rank + '</div>', iconSize: [28,28], iconAnchor: [14,14] }),
+                    zIndexOffset: 1000 - rank
+                });
+                marker.on('click', function() { flyToZipPopup(r.zip_code); });
+                priorityMarkerLayer.addLayer(marker);
+            });
+            priorityMarkerLayer.addTo(map);
         }
 
         // ── LOAD COUNTY BOUNDARIES ──
