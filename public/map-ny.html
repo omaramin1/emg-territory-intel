@@ -471,6 +471,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script>
         // ── Supabase Config ──
         const SB_URL = 'https://gfbbhvsfznxhimwvokob.supabase.co/rest/v1';
@@ -2080,6 +2082,7 @@ function getViewEnrichment(zip) {
                     h += '<div style="margin-top:4px;padding:4px 8px;background:rgba(16,185,129,0.1);border-radius:3px;font-size:11px;color:#aaa;">~8hr shift · ~25 doors/hr · ' + turf.county + '</div>';
                     h += '</div>';
                 }
+                h += getViewEnrichment(zip);
                 h += '</div>';
                 L.popup({ maxWidth: 400 }).setLatLng(e.latlng).setContent(h).openOn(map);
             });
